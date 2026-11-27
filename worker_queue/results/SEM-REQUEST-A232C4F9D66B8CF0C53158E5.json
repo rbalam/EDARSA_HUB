@@ -1,0 +1,192 @@
+{
+  "base_sha": "95a2009883a066160f8b4f5addb80d8c3f7e9b4d",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-27T06:58:39Z",
+  "execution_base_sha": "95a2009883a066160f8b4f5addb80d8c3f7e9b4d",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-A232C4F9D66B8CF0C53158E5",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-27T06:59:43Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro",
+              "sap",
+              "softrestaurant",
+              "vtiger"
+            ],
+            "matched_terms": [
+              "apiteststatus",
+              "online",
+              "pingstatus"
+            ],
+            "path": "frontend/src/pages/Servidores.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.integrations_center",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "api.admin_core_connections",
+              "collections",
+              "core.rbac_helper_sql",
+              "core.server_registry",
+              "homologation",
+              "homologation_repository",
+              "modules.api_connections.repository",
+              "modules.sync_historicos.catalog_service",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "estadoconexion",
+              "has_evidence",
+              "health",
+              "last_test_utc"
+            ],
+            "path": "backend/modules/integrations_center/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_attach_health",
+              "_bool",
+              "_id_key",
+              "_normalize_connection",
+              "_scope_sucursales",
+              "get_catalogs",
+              "get_communications_summary",
+              "get_connection_detail",
+              "get_overview",
+              "list_connections"
+            ],
+            "tables_referenced": [
+              "Servidores_ConexionEstado",
+              "Servidores_Conexiones"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.integrations_center",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.sql_first.connection_factory",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "estadoconexion",
+              "health"
+            ],
+            "path": "backend/modules/integrations_center/repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_id_key",
+              "_rows",
+              "get_catalogs",
+              "get_communications_summary",
+              "get_connection_enrichment",
+              "get_latest_health_map",
+              "get_sync_summary",
+              "get_universal_infra_summary"
+            ],
+            "tables_referenced": [
+              "Operativo_Notificaciones_Log",
+              "Servidores_ConexionEstado",
+              "Servidores_Conexiones",
+              "Sistema_Capacidades",
+              "Sistema_IdentificadoresExternos",
+              "Sistema_NotificacionesConfig",
+              "Sistema_Sync_Capacidades",
+              "Sistema_Sync_Catalogo",
+              "Sistema_Tipos",
+              "Sistema_VersionesSistemas",
+              "Sync_Control_Ejecuciones",
+              "Sync_Control_Evidencias",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "modules.api_connections",
+              "modules.integrations_center.routes",
+              "modules.integrations_center.service"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "estadoconexion",
+              "has_evidence",
+              "health"
+            ],
+            "path": "backend/tests/test_integrations_center_gate5b.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_active_flag_does_not_invent_connection_health",
+              "test_canonical_scope_contract_is_not_hardcoded",
+              "test_connection_homologation_is_fail_closed_by_default",
+              "test_gate5b_facade_is_mounted_on_existing_root_api_router",
+              "test_gate5b_never_projects_secret_values",
+              "test_gate5b_projects_persisted_inventory_filters_from_server_registry",
+              "test_gate5b_router_is_read_only",
+              "test_gate5b_unconfigured_api_connection_keeps_empty_catalog_defaults",
+              "test_health_is_attached_only_from_canonical_evidence"
+            ],
+            "tables_referenced": [
+              "Servidores_ConexionEstado",
+              "Servidores_Conexiones"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 4,
+          "scanned_files": 4,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-27T06:58:39Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
