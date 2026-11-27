@@ -1,10 +1,10 @@
 {
-  "ahead_count": 0,
+  "ahead_count": 1,
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
-  "convergence_status": "SYNC",
+  "convergence_status": "LOCAL_AHEAD_ONLY",
   "development_sha": "f448a7f0ec90019ba45af3acd1472df46a2b559b",
-  "generated_at_utc": "2026-11-27T05:05:39Z",
+  "generated_at_utc": "2026-11-27T05:07:00Z",
   "history": {
     "done_total_local": 2322,
     "pending_total_local": 0,
@@ -16,25 +16,25 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2786,
+      "age_seconds": 2867,
       "job_id": "SEM-REQUEST-21B7D1CF383AC3874632BBC1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2575,
+      "age_seconds": 2657,
       "job_id": "SEM-REQUEST-D399C7AB5178E194EF37832A",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2204,
+      "age_seconds": 2285,
       "job_id": "SEM-REQUEST-DECC40AE9FEEB3D057854315",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "f448a7f0ec90019ba45af3acd1472df46a2b559b",
+  "local_development_sha": "358bcf236906660fb99d1d8fd08dd41bb6ae6bb0",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -48,15 +48,15 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-27T05:05:35Z",
-    "last_receive_utc": "2026-11-27T05:05:30Z",
+    "last_cycle_utc": "2026-11-27T05:06:51Z",
+    "last_receive_utc": "2026-11-27T05:06:46Z",
     "last_terminal_utc": "2026-11-27T04:28:55Z",
     "pid": "349481",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "70bd308054cc7ce95bc005cdd8e49abcf59b7e58",
       "actual_generation": "20261117-universal-job-worker-lifecycle-v4",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "f448a7f0ec90019ba45af3acd1472df46a2b559b",
+      "development_sha": "358bcf236906660fb99d1d8fd08dd41bb6ae6bb0",
       "expected_generation": "20261117-universal-job-worker-lifecycle-v4",
       "generation_aligned": true,
       "production_touched": false,
