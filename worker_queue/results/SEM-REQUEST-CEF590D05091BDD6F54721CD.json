@@ -1,0 +1,278 @@
+{
+  "base_sha": "ab393668a12cc0af1675446c784ffee1d5ff22b7",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_RESULT_DETAIL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-27T06:15:59Z",
+  "execution_base_sha": "ab393668a12cc0af1675446c784ffee1d5ff22b7",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-CEF590D05091BDD6F54721CD",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-27T06:23:37Z",
+  "quality_gate": "PASS",
+  "result_detail_evidence": {
+    "checks": [
+      {
+        "blockers": [],
+        "certification": "CERTIFIED_READ_ONLY",
+        "evidence_availability": {
+          "maintenance_history_evidence": "NOT_APPLICABLE",
+          "repository_contract_evidence": "COMPLETE",
+          "sql_readonly_evidence": "NOT_APPLICABLE",
+          "worker_result_semantic_evidence": "NOT_APPLICABLE"
+        },
+        "evidence_status": "COMPLETE",
+        "evidence_summary": {
+          "check_count": 1,
+          "entries_returned": 3,
+          "matched_files": 3,
+          "scanned_files": 5,
+          "skipped_sensitive": 0
+        },
+        "evidence_truncated": false,
+        "failed_checks": [],
+        "files_changed": [],
+        "percent_complete": 100,
+        "production_touched": false,
+        "quality_gate": "PASS",
+        "repository_contract_evidence": {
+          "checks": [
+            {
+              "evidence": [
+                {
+                  "candidate_ownership": "backend.modules.api_connections",
+                  "connections": [],
+                  "helpers": [],
+                  "imports": [
+                    "core.cerebro",
+                    "core.config.edarsahub_config",
+                    "core.corporate_filters.service",
+                    "core.db",
+                    "core.secret_manager",
+                    "core.unidades_service",
+                    "datetime",
+                    "json",
+                    "logging",
+                    "modules.consultas_sql.validator",
+                    "modules.integrations_runtime.api_local_sync",
+                    "modules.integrations_runtime.health",
+                    "os",
+                    "re",
+                    "requests",
+                    "time",
+                    "typing",
+                    "uuid",
+                    "zoneinfo"
+                  ],
+                  "integrations": [
+                    "mpro"
+                  ],
+                  "matched_terms": [
+                    "sync-cache",
+                    "sync_all_to_mongo_cache"
+                  ],
+                  "path": "backend/modules/api_connections/repository.py",
+                  "rbac_contracts": [],
+                  "routes": [],
+                  "scheduler_contracts": [],
+                  "symbols": [
+                    "_default_api_replication_policy",
+                    "_escape_sql",
+                    "_log_operation",
+                    "_sql_row_to_api_dict",
+                    "check_duplicate_api",
+                    "create_api_connection",
+                    "delete_api_connection",
+                    "execute_test_query",
+                    "get_api_connection",
+                    "get_api_connection_by_id_full",
+                    "get_api_connection_sql",
+                    "get_api_connection_with_decrypted_key",
+                    "get_api_connections_for_adapters",
+                    "get_api_replication_policy",
+                    "get_decrypted_api_key",
+                    "init_api_connections_repository",
+                    "list_api_connections",
+                    "list_api_connections_sql",
+                    "normalize_api_replication_policy",
+                    "parse_json",
+                    "sync_all_to_mongo_cache",
+                    "test_api_connection_health",
+                    "update_api_connection",
+                    "update_api_replication_policy"
+                  ],
+                  "tables_referenced": [
+                    "Sistema_EmpresasServidores"
+                  ]
+                },
+                {
+                  "candidate_ownership": "backend.modules.api_connections",
+                  "connections": [],
+                  "helpers": [],
+                  "imports": [
+                    "assignment_repository",
+                    "core.corporate_filters.service",
+                    "core.rbac.middleware",
+                    "core.unidades_service",
+                    "fastapi",
+                    "fastapi.security",
+                    "logging",
+                    "modules.consultas_sql.validator",
+                    "pydantic",
+                    "repository",
+                    "requests",
+                    "time",
+                    "typing"
+                  ],
+                  "integrations": [
+                    "mpro",
+                    "softrestaurant"
+                  ],
+                  "matched_terms": [
+                    "sync-cache",
+                    "sync_all_to_mongo_cache",
+                    "sync_to_mongo",
+                    "test_connection"
+                  ],
+                  "path": "backend/modules/api_connections/routes.py",
+                  "rbac_contracts": [
+                    "get_current_user"
+                  ],
+                  "routes": [
+                    "/check-duplicate",
+                    "/sync-cache",
+                    "/test",
+                    "/test-query-draft",
+                    "/{api_id}",
+                    "/{api_id}/assignments",
+                    "/{api_id}/assignments/{empresa_id}/{rol_conexion}",
+                    "/{api_id}/replication-policy",
+                    "/{api_id}/test",
+                    "/{api_id}/test-query"
+                  ],
+                  "scheduler_contracts": [],
+                  "symbols": [
+                    "ApiConnectionCreate",
+                    "ApiConnectionUpdate",
+                    "ApiOperationalAssignmentRequest",
+                    "ApiReplicationPolicyRequest",
+                    "TestConnectionRequest",
+                    "TestQueryDraftRequest",
+                    "TestQueryRequest",
+                    "check_dup",
+                    "create_api",
+                    "create_or_reactivate_api_assignment",
+                    "delete_api",
+                    "get_api",
+                    "get_current_user",
+                    "get_replication_policy",
+                    "list_api_assignments",
+                    "list_apis",
+                    "put_replication_policy",
+                    "remove_api_assignment",
+                    "set_verify_token",
+                    "sync_to_mongo",
+                    "test_connection",
+                    "test_connection_by_id",
+                    "test_query_by_connection",
+                    "test_query_draft",
+                    "update_api"
+                  ],
+                  "tables_referenced": []
+                },
+                {
+                  "candidate_ownership": "backend.modules.comercial",
+                  "connections": [],
+                  "helpers": [],
+                  "imports": [
+                    "core.config.edarsahub_config",
+                    "core.corporate_filters.service",
+                    "core.db",
+                    "core.pool",
+                    "core.secret_manager",
+                    "core.unidades_service",
+                    "datetime",
+                    "json",
+                    "logging",
+                    "os",
+                    "typing"
+                  ],
+                  "integrations": [
+                    "mpro",
+                    "softrestaurant"
+                  ],
+                  "matched_terms": [
+                    "get_servers",
+                    "should_attempt_live_query"
+                  ],
+                  "path": "backend/modules/comercial/repository.py",
+                  "rbac_contracts": [],
+                  "routes": [],
+                  "scheduler_contracts": [],
+                  "symbols": [
+                    "_decrypt_server_password",
+                    "_get_edarsahub_config_dict",
+                    "_get_server_by_id_sql",
+                    "_get_servers_for_tablero_sql",
+                    "_get_sucursal_nombre_sql",
+                    "_sql_row_to_server_dict",
+                    "filtrar_unidades_por_visibilidad",
+                    "get_api_config_from_server",
+                    "get_cached_kpis",
+                    "get_cached_kpis_by_prefix",
+                    "get_dashboard_cache",
+                    "get_db",
+                    "get_metas_sucursal",
+                    "get_server_by_id",
+                    "get_server_connection_status",
+                    "get_servers_for_tablero",
+                    "get_sucursal_nombre",
+                    "get_sucursales_visibles_config",
+                    "init_comercial_repository",
+                    "is_server_recently_offline",
+                    "parse_json_field",
+                    "query_ticket_perfecto_mpro",
+                    "query_ventas_mpro",
+                    "query_ventas_softrestaurant",
+                    "save_dashboard_cache",
+                    "save_kpis_cache",
+                    "save_metas_sucursal",
+                    "save_server_connection_status",
+                    "should_attempt_live_query"
+                  ],
+                  "tables_referenced": []
+                }
+              ],
+              "mode": "READ_ONLY_REPOSITORY",
+              "status": "PASS",
+              "summary": {
+                "matched_files": 3,
+                "scanned_files": 5,
+                "skipped_sensitive": 0
+              },
+              "truncated": false
+            }
+          ]
+        },
+        "result_status": "READ_ONLY_COMPLETE",
+        "source_completed_at_utc": "2026-11-27T06:13:16Z",
+        "source_job_id": "SEM-REQUEST-9654C07A935F27DAF9134D53",
+        "source_terminal": true,
+        "tests": "PASS",
+        "work_completion": "COMPLETE"
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-27T06:15:58Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
