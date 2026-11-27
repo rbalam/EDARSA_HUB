@@ -1,0 +1,220 @@
+{
+  "base_sha": "49000ec2a08ee742703104db52f715903524654e",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-27T01:31:53Z",
+  "execution_base_sha": "49000ec2a08ee742703104db52f715903524654e",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-EDED885D10CD2CDDDA233B02",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-27T01:35:29Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.core.consumo_receta_service.py",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.recetas_service",
+              "logging",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "calcular_consumo_agregado",
+              "consumo_receta_service",
+              "consumorecetaservice",
+              "recetasservice"
+            ],
+            "path": "backend/core/consumo_receta_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ConsumoRecetaService",
+              "_key",
+              "calcular_consumo",
+              "calcular_consumo_agregado"
+            ],
+            "tables_referenced": [
+              "Sync_Productos_Recetas"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.recetas_service.py",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.db",
+              "core.server_registry",
+              "logging",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "recetasservice"
+            ],
+            "path": "backend/core/recetas_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RecetasService",
+              "_conn",
+              "get_componentes",
+              "get_componentes_bulk",
+              "get_componentes_by_producto_id",
+              "get_costo_total"
+            ],
+            "tables_referenced": [
+              "Sync_Productos_Recetas"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.consumo_receta_service",
+              "core.insumos_service",
+              "core.productos_service",
+              "core.recetas_service",
+              "dotenv",
+              "os"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "calcular_consumo_agregado",
+              "consumo_receta_service",
+              "consumorecetaservice",
+              "recetasservice"
+            ],
+            "path": "backend/tests/test_bloque_a_servicios_canonicos.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_producto_con_receta",
+              "test_consumo_agregado_suma_por_insumo",
+              "test_consumo_es_cantidad_por_unidades",
+              "test_insumos_service_softrestaurant",
+              "test_productos_service_contar",
+              "test_productos_service_lectura",
+              "test_receta_costo_es_suma_de_componentes"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.inventarios.sync_movimientos_canonico",
+              "pathlib"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "recetasservice"
+            ],
+            "path": "backend/tests/test_inventory_analysis_soft_canonical.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "test_inventory_backfill_does_not_hardcode_unit_exclusions",
+              "test_inventory_github_owner_is_non_production_and_canonical",
+              "test_inventory_movement_authorization_does_not_touch_commercial_syncs",
+              "test_inventory_owner_can_scope_softrestaurant_without_mpro",
+              "test_report_payload_preserves_warehouse_type_for_backend_rule",
+              "test_soft_analysis_sources_are_canonical_nolive",
+              "test_soft_ledger_accepts_canonical_warehouse_id_scope",
+              "test_soft_movements_keep_resolvable_rows_when_some_are_pending",
+              "test_soft_movements_prefer_visible_inventory_code_for_same_canonical_product",
+              "test_soft_presentation_warehouses_do_not_apply_sales",
+              "test_soft_report_recovers_missing_final_detail_by_folio",
+              "test_soft_report_uses_canonical_activity_helper",
+              "test_soft_selected_concepts_are_resolvable_by_nature",
+              "test_soft_source_merge_prefers_movsinv_for_same_natural_key",
+              "test_soft_sync_compras_runs_almacenes_before_movimientos",
+              "test_soft_sync_prefixes_movsinv_natural_references",
+              "test_soft_sync_reads_both_inventory_movement_sources_without_sales_sync",
+              "test_soft_sync_retains_all_concepts_and_read_filter_controls_report"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.inventarios",
+              "datetime",
+              "types",
+              "unittest.mock"
+            ],
+            "integrations": [
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "recetasservice"
+            ],
+            "path": "backend/tests/test_soft_inventory_drilldown_canonical.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "FakeCursor",
+              "__init__",
+              "_id",
+              "execute",
+              "fake_columns",
+              "fetchall",
+              "test_grouped_product_codes_sum_sales_recipe_factors_once",
+              "test_grouped_product_codes_use_parameterized_movement_filter",
+              "test_movement_detail_uses_canonical_ledger_full_window_and_warehouse_scope",
+              "test_movements_fail_closed_without_canonical_identity",
+              "test_sales_detail_no_recipe_consumption_returns_zero",
+              "test_sales_detail_uses_same_recipe_explosion_as_parent_report"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 5,
+          "scanned_files": 1277,
+          "skipped_sensitive": 421
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-27T01:31:50Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
