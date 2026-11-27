@@ -1,0 +1,54 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 60,
+        "paths": [
+          "backend/core/centro_control/sql_store.py",
+          "backend/core/scheduler/job_logger.py",
+          "frontend/src/components/compras/operativas/BitacoraList.jsx",
+          "frontend/src/components/admin/bitacora/useBitacoraRBACData.js",
+          "backend/core/rbac_sql/service.py"
+        ],
+        "search_terms": [
+          "Bitacora",
+          "Checklist",
+          "CorteCajaID",
+          "Usuario_RBAC_Bitacora",
+          "Scheduler_BitacoraJobs",
+          "Alertas_Sistema",
+          "audit",
+          "evidencia",
+          "incidencia"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-6771BEE7318F99FF9835C846",
+  "mode": "READ_ONLY",
+  "objective": "Caja-Bitacoras: descubrimiento READ_ONLY acotado de componentes existentes con posible rol transversal. Distinguir bitacora RBAC, compras, Centro Control y Scheduler de evidencias/checklists operativos; identificar contratos, permisos y brechas; no repetir Gate0 ni auditoria financiera certificada; no SQL LIVE ni cambios.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "BITACORAS",
+    "conflict_domains": [
+      "BITACORAS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
