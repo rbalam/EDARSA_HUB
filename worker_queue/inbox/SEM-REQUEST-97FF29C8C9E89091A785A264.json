@@ -1,0 +1,63 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "old_text": "@router.post(\"\")\nasync def create_api(\n    data: ApiConnectionCreate,\n    credentials: HTTPAuthorizationCredentials = Depends(security)\n):\n    \"\"\"\n    Crea una nueva conexión API.\n    DESTINO: EDARSAHUB SQL (autoritativo), luego caché MongoDB.\n    \"\"\"\n    user = get_current_user(credentials)\n    try:\n        api = await create_api_connection(\n            data.model_dump(),\n            created_by=user.get('email', 'system')\n        )\n        return {\n            \"success\": True,\n            \"data\": api,\n            \"message\": \"Conexión API creada en EDARSAHUB SQL\",\n            \"source\": \"EDARSAHUB_SQL\"\n        }\n    except ValueError as e:\n        # Duplicado u otro error de validación\n        raise HTTPException(status_code=400, detail=\"Error interno del servidor\")\n    except RuntimeError as e:\n        # Error de base de datos\n        raise HTTPException(status_code=503, detail=f\"Error guardando en EDARSAHUB SQL\")\n    except Exception as e:\n        logging.error(f\"[API_CONNECTIONS] Error creando: {e}\")\n        raise HTTPException(status_code=500, detail=\"Error interno del servidor\")\n\n\n@router.put(\"/{api_id}\")\nasync def update_api(\n    api_id: str,\n    data: ApiConnectionUpdate,\n    credentials: HTTPAuthorizationCredentials = Depends(security)\n):\n    \"\"\"\n    Actualiza una conexión API existente.\n    DESTINO: EDARSAHUB SQL (autoritativo), luego caché MongoDB.\n    \"\"\"\n    user = get_current_user(credentials)\n\n    try:\n        # Filtrar solo campos proporcionados\n        update_data = {k: v for k, v in data.model_dump().items() if v is not None}\n        if not update_data:\n            raise HTTPException(status_code=400, detail=\"No se proporcionaron campos para actualizar\")\n\n        api = await update_api_connection(\n            api_id,\n            update_data,\n            updated_by=user.get('email', 'system')\n        )\n        return {\n            \"success\": True,\n            \"data\": api,\n            \"message\": \"Conexión API actualizada en EDARSAHUB SQL\",\n            \"source\": \"EDARSAHUB_SQL\"\n        }\n    except ValueError as e:\n        raise HTTPException(status_code=400, detail=\"Error interno del servidor\")\n    except RuntimeError as e:\n        raise HTTPException(status_code=503, detail=f\"Error actualizando en EDARSAHUB SQL\")\n    except Exception as e:\n        logging.error(f\"[API_CONNECTIONS] Error actualizando: {e}\")\n        raise HTTPException(status_code=500, detail=\"Error interno del servidor\")\n\n\n@router.delete(\"/{api_id}\")\nasync def delete_api(api_id: str, credentials: HTTPAuthorizationCredentials = Depends(security)):\n    \"\"\"\n    Elimina (soft delete) una conexión API.\n    DESTINO: EDARSAHUB SQL (autoritativo).\n    \"\"\"\n    user = get_current_user(credentials)\n\n    try:\n        await delete_api_connection(api_id, deleted_by=user.get('email', 'system'))\n        return {\n            \"success\": True,\n            \"message\": \"Conexión API eliminada de EDARSAHUB SQL\",\n            \"source\": \"EDARSAHUB_SQL\"\n        }\n    except ValueError as e:\n        raise HTTPException(status_code=404, detail=\"Error interno del servidor\")\n    except RuntimeError as e:\n        raise HTTPException(status_code=503, detail=f\"Error eliminando en EDARSAHUB SQL\")\n    except Exception as e:\n        logging.error(f\"[API_CONNECTIONS] Error eliminando: {e}\")\n        raise HTTPException(status_code=500, detail=\"Error interno del servidor\")\n\n\n",
+      "path": "backend/modules/api_connections/routes.py",
+      "replacement": "@router.post(\"\")\nasync def create_api(\n    data: ApiConnectionCreate,\n    credentials: HTTPAuthorizationCredentials = Depends(security),\n    _admin: dict = Depends(require_explicit_permission(\"RBAC_ADMIN\")),\n):\n    \"\"\"\n    Crea una nueva conexión API.\n    DESTINO: EDARSAHUB SQL (autoritativo), luego caché MongoDB.\n    \"\"\"\n    user = get_current_user(credentials)\n    try:\n        api = await create_api_connection(\n            data.model_dump(),\n            created_by=user.get('email', 'system')\n        )\n        return {\n            \"success\": True,\n            \"data\": api,\n            \"message\": \"Conexión API creada en EDARSAHUB SQL\",\n            \"source\": \"EDARSAHUB_SQL\"\n        }\n    except ValueError as e:\n        # Duplicado u otro error de validación\n        raise HTTPException(status_code=400, detail=\"Error interno del servidor\")\n    except RuntimeError as e:\n        # Error de base de datos\n        raise HTTPException(status_code=503, detail=f\"Error guardando en EDARSAHUB SQL\")\n    except Exception as e:\n        logging.error(f\"[API_CONNECTIONS] Error creando: {e}\")\n        raise HTTPException(status_code=500, detail=\"Error interno del servidor\")\n\n\n@router.put(\"/{api_id}\")\nasync def update_api(\n    api_id: str,\n    data: ApiConnectionUpdate,\n    credentials: HTTPAuthorizationCredentials = Depends(security),\n    _admin: dict = Depends(require_explicit_permission(\"RBAC_ADMIN\")),\n):\n    \"\"\"\n    Actualiza una conexión API existente.\n    DESTINO: EDARSAHUB SQL (autoritativo), luego caché MongoDB.\n    \"\"\"\n    user = get_current_user(credentials)\n\n    try:\n        # Filtrar solo campos proporcionados\n        update_data = {k: v for k, v in data.model_dump().items() if v is not None}\n        if not update_data:\n            raise HTTPException(status_code=400, detail=\"No se proporcionaron campos para actualizar\")\n\n        api = await update_api_connection(\n            api_id,\n            update_data,\n            updated_by=user.get('email', 'system')\n        )\n        return {\n            \"success\": True,\n            \"data\": api,\n            \"message\": \"Conexión API actualizada en EDARSAHUB SQL\",\n            \"source\": \"EDARSAHUB_SQL\"\n        }\n    except ValueError as e:\n        raise HTTPException(status_code=400, detail=\"Error interno del servidor\")\n    except RuntimeError as e:\n        raise HTTPException(status_code=503, detail=f\"Error actualizando en EDARSAHUB SQL\")\n    except Exception as e:\n        logging.error(f\"[API_CONNECTIONS] Error actualizando: {e}\")\n        raise HTTPException(status_code=500, detail=\"Error interno del servidor\")\n\n\n@router.delete(\"/{api_id}\")\nasync def delete_api(\n    api_id: str,\n    credentials: HTTPAuthorizationCredentials = Depends(security),\n    _admin: dict = Depends(require_explicit_permission(\"RBAC_ADMIN\")),\n):\n    \"\"\"\n    Elimina (soft delete) una conexión API.\n    DESTINO: EDARSAHUB SQL (autoritativo).\n    \"\"\"\n    user = get_current_user(credentials)\n\n    try:\n        await delete_api_connection(api_id, deleted_by=user.get('email', 'system'))\n        return {\n            \"success\": True,\n            \"message\": \"Conexión API eliminada de EDARSAHUB SQL\",\n            \"source\": \"EDARSAHUB_SQL\"\n        }\n    except ValueError as e:\n        raise HTTPException(status_code=404, detail=\"Error interno del servidor\")\n    except RuntimeError as e:\n        raise HTTPException(status_code=503, detail=f\"Error eliminando en EDARSAHUB SQL\")\n    except Exception as e:\n        logging.error(f\"[API_CONNECTIONS] Error eliminando: {e}\")\n        raise HTTPException(status_code=500, detail=\"Error interno del servidor\")\n\n\n",
+      "source_sha256": "c274e84cea7005fff4f6182781b80f50daac09c9317dbba337092ab530cb2e30",
+      "type": "replace_text"
+    },
+    {
+      "content": "\"\"\"Regression checks for SQL_RBAC_019 P0-A API connection CRUD authorization.\"\"\"\nfrom unittest.mock import AsyncMock\n\nimport httpx\nimport pytest\nfrom fastapi import FastAPI, HTTPException\nfrom fastapi.routing import APIRoute\n\nfrom core.rbac.middleware import RBACExplicitDependency\nfrom modules.api_connections import routes as module\n\n\nCASES = [\n    (\"POST\", \"/api-connections\", \"create_api_connection\", {\"name\": \"P0A\", \"url\": \"https://example.invalid\"}),\n    (\"PUT\", \"/api-connections/11111111-1111-1111-1111-111111111111\", \"update_api_connection\", {\"name\": \"P0A\"}),\n    (\"DELETE\", \"/api-connections/11111111-1111-1111-1111-111111111111\", \"delete_api_connection\", None),\n]\n\n\ndef _app_and_guard(method: str, path: str):\n    app = FastAPI()\n    app.include_router(module.router)\n    route = next(\n        r for r in app.routes\n        if isinstance(r, APIRoute) and r.path == path.replace(\n            \"11111111-1111-1111-1111-111111111111\", \"{api_id}\"\n        ) and method in r.methods\n    )\n    guards = [\n        dependency.call\n        for dependency in route.dependant.dependencies\n        if isinstance(dependency.call, RBACExplicitDependency)\n    ]\n    assert len(guards) == 1\n    assert guards[0].permiso == \"RBAC_ADMIN\"\n    return app, guards[0]\n\n\n@pytest.mark.parametrize(\"method,path,writer_name,body\", CASES)\ndef test_crud_routes_require_explicit_sql_admin(method, path, writer_name, body):\n    _app_and_guard(method, path)\n\n\n@pytest.mark.asyncio\n@pytest.mark.parametrize(\"method,path,writer_name,body\", CASES)\nasync def test_denied_sql_admin_never_calls_writer(monkeypatch, method, path, writer_name, body):\n    app, guard = _app_and_guard(method, path)\n    writer = AsyncMock()\n    monkeypatch.setattr(module, writer_name, writer)\n\n    async def deny_access():\n        raise HTTPException(status_code=403, detail=\"PERMISO_DENEGADO\")\n\n    app.dependency_overrides[guard] = deny_access\n    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url=\"http://test\") as client:\n        response = await client.request(method, path, json=body, headers={\"Authorization\": \"Bearer test-token\"})\n    assert response.status_code == 403\n    writer.assert_not_awaited()\n\n\n@pytest.mark.asyncio\n@pytest.mark.parametrize(\"method,path,writer_name,body\", CASES)\nasync def test_sql_admin_can_reach_existing_writer(monkeypatch, method, path, writer_name, body):\n    app, guard = _app_and_guard(method, path)\n    writer = AsyncMock(return_value={\"id\": \"ok\"})\n    monkeypatch.setattr(module, writer_name, writer)\n    monkeypatch.setattr(module, \"_verify_token\", lambda token: {\"email\": \"admin@example.invalid\"})\n\n    async def allow_access():\n        return {\"email\": \"admin@example.invalid\"}\n\n    app.dependency_overrides[guard] = allow_access\n    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url=\"http://test\") as client:\n        response = await client.request(method, path, json=body, headers={\"Authorization\": \"Bearer test-token\"})\n    assert response.status_code == 200\n    writer.assert_awaited_once()\n",
+      "path": "backend/tests/test_api_connections_crud_rbac_p0a.py",
+      "type": "write_file"
+    }
+  ],
+  "authorization_ref": "GO-SQL-RBAC-CONNECTIONS-P0A-20261127",
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/api_connections/routes.py",
+        "backend/tests/test_api_connections_crud_rbac_p0a.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_api_connections_crud_rbac_p0a.py",
+        "backend/tests/test_api_connections_universal_rbac.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-97FF29C8C9E89091A785A264",
+  "mode": "MUTATION",
+  "objective": "P0-A autorizado: aplicar exclusivamente RBAC_ADMIN SQL explicito a POST PUT DELETE de API_LOCAL en backend/modules/api_connections/routes.py y crear prueba de regresion backend/tests/test_api_connections_crud_rbac_p0a.py; no tocar Produccion, SQL DDL, secretos ni otros dominios.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "SQL_RBAC_019",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "SQL_RBAC_019"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
