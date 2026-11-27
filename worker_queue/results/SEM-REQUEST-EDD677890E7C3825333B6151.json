@@ -1,0 +1,485 @@
+{
+  "base_sha": "49000ec2a08ee742703104db52f715903524654e",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-27T01:10:35Z",
+  "execution_base_sha": "49000ec2a08ee742703104db52f715903524654e",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-EDD677890E7C3825333B6151",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-27T01:12:54Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "marketingactivationrequest"
+            ],
+            "path": "backend/modules/agent_harness/marketing_cx.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "Customer360Request",
+              "MarketingActivationRequest",
+              "MarketingPolicyError",
+              "__post_init__",
+              "_required",
+              "to_envelope",
+              "view_contract"
+            ],
+            "tables_referenced": [
+              "CRM_Cuentas",
+              "CRM_PostventaEncuestas",
+              "Cliente_Catalogo",
+              "Cliente_Contactos",
+              "Cliente_Direcciones",
+              "Cliente_UsuariosPortal",
+              "RRR_Eventos",
+              "RRR_LedgerMovimientos",
+              "RRR_RankingHistorial",
+              "RRR_ScoreHistorial"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.rrr",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.empresa_resolver",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "hashlib",
+              "json",
+              "schemas",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "attributiontransactionrequest",
+              "process_attribution"
+            ],
+            "path": "backend/modules/rrr/attribution_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AttributionConflict",
+              "AttributionInvalidCommercial",
+              "AttributionInvalidCustomer",
+              "AttributionOrgScopeError",
+              "_cursor",
+              "_find_commercial_fact",
+              "_one",
+              "_resolve_org",
+              "_stable_payload_hash",
+              "_validate_customer",
+              "process_attribution"
+            ],
+            "tables_referenced": [
+              "Cliente_Catalogo",
+              "Comercial_Inteligencia_VentasDetalleProducto",
+              "RRR_Eventos"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.rrr",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "datetime",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "attributiontransactionrequest"
+            ],
+            "path": "backend/modules/rrr/schemas.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AttributionTransactionRequest",
+              "AttributionTransactionResponse"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial_v2",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.kpis_canonicos.service",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "core.utils.operational_window",
+              "datetime",
+              "decimal",
+              "json",
+              "logging",
+              "modules.comercial_v2.ticket_contract",
+              "os",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "get_kpis_diarios",
+              "ventas_total"
+            ],
+            "path": "backend/modules/comercial_v2/repository_readonly.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_execute_readonly_query",
+              "_overlay_softrestaurant_intraday_from_detail_json",
+              "_range_requires_current_day_exclusion",
+              "_resolver_unidades_abiertas",
+              "_sql_quote",
+              "_unidad_filter_abiertas",
+              "_unidad_filter_runtime",
+              "check_v2_health",
+              "get_comparativos_diarios",
+              "get_kpis_diarios",
+              "get_kpis_diarios_agregados",
+              "get_kpis_mensuales",
+              "get_kpis_por_unidad",
+              "get_last_sync_by_unidad",
+              "get_sync_status",
+              "get_ultimas_fechas_operacion_abiertas",
+              "get_unidades_disponibles",
+              "get_ventas_dia_abiertas"
+            ],
+            "tables_referenced": [
+              "Comercial_KPIs_Diarios_v2",
+              "Comercial_Ventas_Dia_Abiertas_v2",
+              "vw_Comercial_KPIs_Diarios_v2_Runtime"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial_v2",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "calendar",
+              "collections",
+              "dataclasses",
+              "datetime",
+              "enum",
+              "statistics",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "resolver_periodos_comparables",
+              "ventas_total"
+            ],
+            "path": "backend/modules/comercial_v2/periodos.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "EtiquetasPeriodo",
+              "ModoPeriodo",
+              "NivelConfianza",
+              "PeriodosComparables",
+              "ProyeccionDiaSemana",
+              "ProyeccionMes",
+              "RangoComparable",
+              "_coerce_date",
+              "_nivel_confianza",
+              "_normalizar_historico",
+              "_replace_year_safe",
+              "_shift_month",
+              "calcular_variacion",
+              "contar_unidades_comparables",
+              "proyectar_mes_por_dia_semana",
+              "resolver_etiquetas",
+              "resolver_periodos_comparables",
+              "to_dict"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial_analytics",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "calendar",
+              "datetime",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "resolve_temporal_selection"
+            ],
+            "path": "backend/modules/comercial_analytics/temporal_selection.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "TemporalSelectionError",
+              "_date",
+              "_date_optional",
+              "_daterange",
+              "_integer",
+              "_last_weekday",
+              "_nth_weekday",
+              "_resolve_key_dates",
+              "_resolve_nth_weekday_of_month",
+              "_resolve_ranges",
+              "_resolve_rules",
+              "_resolve_specific_dates",
+              "_resolve_weekdays_in_month_weeks",
+              "_resolve_weekdays_rule",
+              "_scope",
+              "_selection_semantics",
+              "_validate_coverage",
+              "_week_of_month",
+              "resolve_temporal_selection"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.auditoria_helpers",
+              "core.security",
+              "core.sql_first.db",
+              "datetime",
+              "decimal",
+              "fastapi",
+              "modules.finanzas.access",
+              "pydantic",
+              "typing",
+              "urllib.parse"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "finanzas_cxp_sync"
+            ],
+            "path": "backend/modules/finanzas/cuentas_por_pagar.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/decision-dashboard",
+              "/decision-dashboard/drilldown",
+              "/decision-pago-masivo",
+              "/proveedores",
+              "/resumen",
+              "/sucursales",
+              "/{factura_id}",
+              "/{factura_id}/decision-pago",
+              "/{factura_id}/decision-pago/autorizacion"
+            ],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "ActualizarDecisionPago",
+              "ActualizarDecisionPagoMasivo",
+              "AutorizarDecisionPago",
+              "_cxp_authorization_entity_id",
+              "_cxp_authorization_visibility",
+              "_cxp_block_if_pago_origen_locked",
+              "_cxp_cancel_queue_pendiente",
+              "_cxp_create_canonical_authorization",
+              "_cxp_decision_projection",
+              "_cxp_decision_row_for_hash",
+              "_cxp_decisiones_schema_ready",
+              "_cxp_enqueue_pago_origen",
+              "_cxp_factura_dict",
+              "_cxp_get_canonical_authorization",
+              "_cxp_listar_canonico",
+              "_cxp_project_authorization_state",
+              "_cxp_proveedores_canonico",
+              "_cxp_queue_estados_for_decision",
+              "_cxp_queue_schema_ready",
+              "_cxp_require_decisiones_schema",
+              "_cxp_require_queue_schema",
+              "_cxp_resolve_canonical_authorization",
+              "_cxp_resumen_canonico",
+              "_cxp_row_for_ref",
+              "_cxp_rows_canonico",
+              "_cxp_rows_for_refs",
+              "_cxp_sucursales_canonico",
+              "_cxp_update_autorizacion",
+              "_cxp_upsert_decision",
+              "_decision_dashboard_canonico",
+              "_decision_dashboard_compras",
+              "_decision_dashboard_drilldown",
+              "_decision_dashboard_period",
+              "_get_cxp_usuario_id",
+              "_month_span_inclusive",
+              "_normalizar_importe_decision",
+              "_parse_cxp_factura_ref",
+              "_validar_fecha_corte",
+              "actualizar_decision_pago",
+              "actualizar_decision_pago_masivo",
+              "autorizar_decision_pago",
+              "get_decision_dashboard",
+              "get_decision_dashboard_drilldown",
+              "get_factura_detalle",
+              "get_resumen_cuentas_por_pagar",
+              "listar_facturas_pendientes",
+              "listar_proveedores_con_saldo",
+              "listar_sucursales_cxp",
+              "set_finanzas_repository",
+              "set_mpro_repository",
+              "set_softrestaurant_repository"
+            ],
+            "tables_referenced": [
+              "Compras_Recepciones",
+              "Finanzas_CxP_DecisionesPago",
+              "Finanzas_CxP_PagosOrigenQueue",
+              "Finanzas_CxP_Sync",
+              "Proveedor_Catalogo",
+              "Unidades_Negocio",
+              "Usuario_Autorizaciones",
+              "Usuario_AutorizacionesDetalle",
+              "Usuario_TiposAutorizacion",
+              "sp_Usuario_CrearAutorizacion",
+              "sp_Usuario_ResolverAutorizacion"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.kpis_canonicos",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.kpis_canonicos.service"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "ventas_total"
+            ],
+            "path": "backend/core/kpis_canonicos/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "vw_Comercial_KPIs_Diarios_v2_Runtime"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.kpis_canonicos",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.db",
+              "core.server_registry",
+              "core.unidades_service",
+              "logging",
+              "threading",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "ventas_total"
+            ],
+            "path": "backend/core/kpis_canonicos/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "KPIsCanonicosService",
+              "_Catalogo",
+              "_conn",
+              "_div0",
+              "_identidad",
+              "_metricas_para_agregado",
+              "_safe_div",
+              "agregados_por_unidad",
+              "aplicar_definicion",
+              "calcular_metrica",
+              "cargar",
+              "definicion",
+              "defs",
+              "kpis_por_unidad",
+              "metricas_disponibles",
+              "refrescar",
+              "resolver_metrica",
+              "resumen_desde_agregados",
+              "resumen_periodo",
+              "resumen_periodo_desglosado",
+              "runtime_dia_operativo_actual_predicate",
+              "series_periodo",
+              "sinonimos"
+            ],
+            "tables_referenced": [
+              "Comercial_KPIs_Diarios_v2",
+              "Comercial_Metricas_Canonicas",
+              "Comercial_Metricas_Sinonimos",
+              "Comercial_Ventas_Dia_Abiertas_v2",
+              "vw_Comercial_KPIs_Diarios_v2_Runtime"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 9,
+          "scanned_files": 9,
+          "skipped_sensitive": 2
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-27T01:10:32Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
