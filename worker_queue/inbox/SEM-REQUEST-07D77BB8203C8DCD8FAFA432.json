@@ -1,0 +1,58 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 80,
+        "paths": [
+          "backend/modules/comercial/",
+          "backend/modules/comercial_v2/",
+          "backend/modules/agent_harness/",
+          "backend/modules/sistema/",
+          "backend/core/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "report_definition",
+          "custom_report",
+          "query_template",
+          "parameterized",
+          "corporate_filters",
+          "get_current_user",
+          "dashboard",
+          "export",
+          "rule_engine",
+          "report_config",
+          "data_scope",
+          "metric_definition"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-07D77BB8203C8DCD8FAFA432",
+  "mode": "READ_ONLY",
+  "objective": "Gate 4 Fabric Interna READ_ONLY: localizar contratos reutilizables para reportes, consultas parametrizadas, KPI, filtros corporativos y reglas declarativas autorizadas. Identificar superficies de acceso SQL-first, limites de datos y exportacion; no ejecutar consultas arbitrarias ni modificar codigo; no confundir coincidencias con certificacion funcional.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "FABRIC_INTERNA",
+    "conflict_domains": [
+      "FABRIC_INTERNA"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
