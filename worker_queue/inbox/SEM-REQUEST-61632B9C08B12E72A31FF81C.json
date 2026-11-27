@@ -1,0 +1,59 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 40,
+        "paths": [
+          "backend/modules/edge/motor_reglas_comerciales.py",
+          "backend/modules/edge/comandero_local_core.py",
+          "backend/modules/edge/comandero_terminal_ui.ts",
+          "backend/modules/edge/motor_inventario_parametrico.py",
+          "backend/modules/edge/orquestador_kds_core.py",
+          "backend/modules/edge/servidor_local_contingencia.py",
+          "backend/modules/comercial/services/precios_vinos_service.py",
+          "backend/modules/comercial/services/perfil_unidad_service.py"
+        ],
+        "search_terms": [
+          "interceptar_producto_para_maridaje",
+          "sqlite3",
+          "sincronizar",
+          "registrar_comanda_offline",
+          "evaluar_permiso_venta_tablet",
+          "procesar_y_rutear_comanda_a_kds",
+          "get_conn",
+          "menu_digital",
+          "rbac",
+          "stock",
+          "precio"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-61632B9C08B12E72A31FF81C",
+  "mode": "READ_ONLY",
+  "objective": "Gate 1 READ_ONLY Maridaje Menu Digital: inspeccion focalizada de contratos del motor de reglas comerciales Edge, comandero, inventario tablet, KDS, precios y perfil digital; identificar interfaces, persistencia local, sincronizacion y RBAC para delimitar reutilizacion sin duplicar. No mutaciones ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL",
+    "conflict_domains": [
+      "COMERCIAL"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
