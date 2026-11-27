@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "38691321111712bef14e09a392ae9cff6b383963",
-  "generated_at_utc": "2026-11-27T09:57:03Z",
+  "generated_at_utc": "2026-11-27T09:58:26Z",
   "history": {
     "done_total_local": 2388,
     "pending_total_local": 0,
@@ -16,43 +16,43 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2436,
+      "age_seconds": 2519,
       "job_id": "SEM-REQUEST-11A05F3B7852CC618B6E930E",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2627,
+      "age_seconds": 2710,
       "job_id": "SEM-REQUEST-6AB8E43898227A17386589A0",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2290,
+      "age_seconds": 2374,
       "job_id": "SEM-REQUEST-A0AAD7D1A83A1EDB7A97EC78",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1487,
+      "age_seconds": 1571,
       "job_id": "SEM-REQUEST-BBD38B92DB6020B64F3D9215",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1854,
+      "age_seconds": 1938,
       "job_id": "SEM-REQUEST-D6FD324A50FC5339A9EC903B",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3068,
+      "age_seconds": 3152,
       "job_id": "SEM-REQUEST-D8DF0758E0A64F1F4323AB7A",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2842,
+      "age_seconds": 2925,
       "job_id": "SEM-REQUEST-E92EC880025E654298670D9F",
       "reason": null,
       "state": "RESULT_READY"
@@ -72,8 +72,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-27T09:56:51Z",
-    "last_receive_utc": "2026-11-27T09:56:46Z",
+    "last_cycle_utc": "2026-11-27T09:58:21Z",
+    "last_receive_utc": "2026-11-27T09:58:16Z",
     "last_terminal_utc": "2026-11-27T09:32:15Z",
     "pid": "992051",
     "runtime_fingerprint": {
