@@ -1,0 +1,47 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 80,
+        "paths": [
+          "frontend/src/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "usuarios",
+          "Usuarios",
+          "Safari",
+          "RBAC_ADMIN",
+          "get_current_user"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-113CA69E5B282D077379F276",
+  "mode": "READ_ONLY",
+  "objective": "Auditar en READ_ONLY los contratos de seguridad de menu usuarios, autenticacion y compatibilidad Safari en frontend y pruebas backend. Identificar rutas y pruebas faltantes sin repetir Gate1D certificado, sin cambios, ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "SEC_RBAC",
+    "conflict_domains": [
+      "SEC_RBAC"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
