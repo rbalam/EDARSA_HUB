@@ -1,0 +1,49 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 20,
+        "paths": [
+          "frontend/src/pages/Servidores.js",
+          "frontend/src/services/serversService.js",
+          "backend/modules/api_connections/universal_test_routes.py",
+          "backend/modules/api_connections/routes.py"
+        ],
+        "search_terms": [
+          "pingServerSilent",
+          "testApiConnection",
+          "test-connectivity",
+          "useEffect",
+          "get_api_connection_access_result"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-2BB072FBFFB7F745E7086A1D",
+  "mode": "READ_ONLY",
+  "objective": "Auditar exclusivamente el comportamiento de comprobaciones de conectividad iniciadas automaticamente al montar frontend/src/pages/Servidores.js: efectos useEffect pingServerSilent y testApiConnection y permisos del backend test-connectivity. Identificar pruebas existentes y contrato minimo para que comprobaciones activas sean explicitas o programadas en Scheduler existente, manteniendo lectura del ultimo estado y RBAC; sin mutaciones ni conexiones reales.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "CONEXIONES_COMUNICACIONES",
+    "conflict_domains": [
+      "CONEXIONES_COMUNICACIONES"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
