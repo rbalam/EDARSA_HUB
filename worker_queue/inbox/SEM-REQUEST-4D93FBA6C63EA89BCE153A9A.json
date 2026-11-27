@@ -1,0 +1,56 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 75,
+        "paths": [
+          "backend/modules/fase2_operativo/repositories/sql_base_repository.py",
+          "backend/modules/finanzas/incidencias_caja_application.py",
+          "backend/modules/finanzas/incidencias_caja_workflow.py",
+          "backend/modules/finanzas/incidencias_caja_context.py",
+          "backend/modules/finanzas/incidencias_caja_routes.py",
+          "backend/modules/finanzas/repository_cortes_caja_edarsahub.py",
+          "backend/core/rbac_sql/service.py"
+        ],
+        "search_terms": [
+          "Operativo_BitacoraCompras",
+          "Checklist",
+          "Evidencia",
+          "CorteCajaID",
+          "RepositorioExpedientesCaja",
+          "PersistenciaCajaNoDisponible",
+          "RBACSQLService",
+          "idempotencia",
+          "bitacora"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-4D93FBA6C63EA89BCE153A9A",
+  "mode": "READ_ONLY",
+  "objective": "Gate READ_ONLY Caja-Bitacoras: verificar contratos de persistencia operativa y evidencias/checklists existentes con especial atención Operativo_BitacoraCompras, controles de Caja y referencias CorteCajaID. Determinar si son exclusivos de dominio, qué puede reutilizarse y qué falta. Verificar permisos SQL RBAC, idempotencia y fail-closed. No crear tablas, escribir datos, consultar POS LIVE ni duplicar Gates certificados. Entregar evidencia de rutas, tablas y brechas.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "BITACORAS",
+    "conflict_domains": [
+      "BITACORAS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
