@@ -1,0 +1,364 @@
+{
+  "base_sha": "49000ec2a08ee742703104db52f715903524654e",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-27T02:13:03Z",
+  "execution_base_sha": "49000ec2a08ee742703104db52f715903524654e",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-D3B0672490FE807B5809E23D",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-27T02:14:54Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "kpi"
+            ],
+            "path": "frontend/src/pages/DashboardEjecutivo.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "temporal",
+              "unidad_negocio_id"
+            ],
+            "path": "frontend/src/components/comercial/temporal/CommercialTemporalSelector.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "temporal",
+              "unidad_negocio_id"
+            ],
+            "path": "frontend/src/components/comercial/temporal/commercialTemporalApi.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "temporal",
+              "unidad_negocio_id"
+            ],
+            "path": "frontend/src/components/comercial/temporal/commercialTemporalContract.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "temporal"
+            ],
+            "path": "frontend/src/components/comercial/temporal/index.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "temporal",
+              "unidad_negocio_id"
+            ],
+            "path": "frontend/src/components/comercial/temporal/useCommercialTemporalSelection.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.kpis_canonicos",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.kpis_canonicos.service"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "kpi"
+            ],
+            "path": "backend/core/kpis_canonicos/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "vw_Comercial_KPIs_Diarios_v2_Runtime"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.kpis_canonicos",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.db",
+              "core.server_registry",
+              "core.unidades_service",
+              "logging",
+              "threading",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "kpi",
+              "unidad_negocio_id"
+            ],
+            "path": "backend/core/kpis_canonicos/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "KPIsCanonicosService",
+              "_Catalogo",
+              "_conn",
+              "_div0",
+              "_identidad",
+              "_metricas_para_agregado",
+              "_safe_div",
+              "agregados_por_unidad",
+              "aplicar_definicion",
+              "calcular_metrica",
+              "cargar",
+              "definicion",
+              "defs",
+              "kpis_por_unidad",
+              "metricas_disponibles",
+              "refrescar",
+              "resolver_metrica",
+              "resumen_desde_agregados",
+              "resumen_periodo",
+              "resumen_periodo_desglosado",
+              "runtime_dia_operativo_actual_predicate",
+              "series_periodo",
+              "sinonimos"
+            ],
+            "tables_referenced": [
+              "Comercial_KPIs_Diarios_v2",
+              "Comercial_Metricas_Canonicas",
+              "Comercial_Metricas_Sinonimos",
+              "Comercial_Ventas_Dia_Abiertas_v2",
+              "vw_Comercial_KPIs_Diarios_v2_Runtime"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.comercial_temporal_availability.py",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "kpi",
+              "temporal"
+            ],
+            "path": "backend/core/comercial_temporal_availability.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "TemporalAvailabilityError",
+              "_required_units",
+              "build_temporal_availability"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "modules.comercial_analytics.schemas",
+              "modules.comercial_analytics.temporal_selection",
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "resolve_temporal_selection",
+              "temporal",
+              "unidad_negocio_id"
+            ],
+            "path": "backend/tests/test_comercial_temporal_selection.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "key_date_resolver",
+              "resolve",
+              "test_all_fridays",
+              "test_configurable_commercial_weekend_is_thursday_to_sunday",
+              "test_configurable_weekend_for_selected_month_weeks",
+              "test_exclusions_are_applied",
+              "test_first_friday_of_each_month",
+              "test_friday_saturday_sunday_in_weeks_one_and_three",
+              "test_future_or_out_of_coverage_date_is_rejected",
+              "test_key_date_uses_catalog_resolver",
+              "test_key_dates_are_not_hardcoded",
+              "test_last_sunday_of_each_month",
+              "test_multiple_ranges_are_unified_without_duplicates",
+              "test_specific_non_contiguous_dates_are_sorted",
+              "test_specific_single_date",
+              "test_temporal_request_accepts_equivalent_single_and_multiple_scope",
+              "test_temporal_request_multiple_units_are_normalized",
+              "test_temporal_request_rejects_conflicting_scopes",
+              "test_temporal_request_rejects_unauthorized_unit",
+              "test_temporal_request_single_unit_is_compatible",
+              "test_temporal_request_without_scope_uses_all_allowed_units",
+              "test_weekend_definition_is_not_embedded_in_engine"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "asyncio",
+              "core.utils",
+              "datetime",
+              "fastapi",
+              "modules.comercial_v2",
+              "os",
+              "pytest"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "fecha_operativa",
+              "unidad_negocio_id"
+            ],
+            "path": "backend/tests/test_comercial_v2_ventas_dia_fecha_operativa.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_comparativos_vacios",
+              "_fila",
+              "comparativos",
+              "fecha_operacion_now",
+              "test_repositorio_no_consulta_cuando_scope_es_vacio",
+              "test_scope_explicito_se_conserva_para_filtrar_repositorio",
+              "test_scope_vacio_falla_cerrado_antes_de_consultar_repositorio",
+              "test_ventas_dia_conserva_fecha_operativa_por_unidad",
+              "test_ventas_dia_sin_fecha_canonica_ni_sql_devuelve_503",
+              "ultimas_fechas_sql",
+              "unidades_permitidas",
+              "ventas_dia"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.dashboard_ejecutivo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.config.edarsahub_sql",
+              "core.corporate_filters.service",
+              "core.kpis_canonicos",
+              "core.security",
+              "core.unidades_service",
+              "datetime",
+              "fastapi",
+              "modules.comercial_v2.routes",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "kpi"
+            ],
+            "path": "backend/modules/dashboard_ejecutivo/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/rentabilidad-base",
+              "/resumen"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_parse_iso_date",
+              "_resolver_scope_unidades",
+              "_resolver_unidad_pk",
+              "metricas_payload",
+              "q",
+              "rentabilidad_base",
+              "resumen",
+              "unidades_payload"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 12,
+          "scanned_files": 13,
+          "skipped_sensitive": 4
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-27T02:13:00Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
