@@ -1,0 +1,51 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 25,
+        "paths": [
+          "frontend/src/pages/Servidores.js",
+          "backend/modules/integrations_center/service.py",
+          "backend/modules/integrations_center/repository.py",
+          "backend/tests/test_integrations_center_gate5b.py"
+        ],
+        "search_terms": [
+          "health",
+          "pingStatus",
+          "apiTestStatus",
+          "has_evidence",
+          "EstadoConexion",
+          "last_test_utc",
+          "online"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-A232C4F9D66B8CF0C53158E5",
+  "mode": "READ_ONLY",
+  "objective": "Gate9 READ_ONLY nuevo y delimitado: certificar matriz de consumo frontend estado salud persistido de /integrations-center/connections (health.status,has_evidence,last_test_utc,last_success_utc,last_error_utc) y diferencia estados SQL en tarjetas/lista (pingStatus.status vs online/error) y API. Referenciar pruebas canonicas backend/tests/test_integrations_center_gate5b.py. No repetir Gate7 auto ping ni modificar codigo, credenciales, SQL o Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "CONEXIONES_COMUNICACIONES",
+    "conflict_domains": [
+      "CONEXIONES_COMUNICACIONES"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
