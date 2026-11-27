@@ -1,0 +1,61 @@
+{
+  "actions": [
+    {
+      "anchor": "register_sql_readonly_profile(\n    SqlReadonlyProfile(\n        profile_code=\"SEC_RBAC_PERMISSION_MATRIX\"",
+      "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+      "replacement": "register_sql_readonly_profile(\n    SqlReadonlyProfile(\n        profile_code=\"SERVIDORES_HEALTH_FRESHNESS_CONFIG_METADATA\",\n        description=\"Metadatos SQL de configuracion y evidencia health de conexiones sin filas ni secretos.\",\n        bounded_contexts=(\"CONEXIONES_COMUNICACIONES\", \"WORKER_CONTROL_PLANE\"),\n        queries=(\n            {\n                \"name\": \"servidores_health_metadata_identity\",\n                \"sql\": \"SELECT DB_NAME() AS database_name, SUSER_SNAME() AS login_name, USER_NAME() AS database_user\",\n            },\n            {\n                \"name\": \"servidores_health_metadata_tables\",\n                \"sql\": (\n                    \"SELECT s.name AS schema_name, t.name AS table_name \"\n                    \"FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id \"\n                    \"WHERE s.name='dbo' AND t.name IN (\"\n                    \"'Servidores_Conexiones','Servidores_ConexionEstado',\"\n                    \"'Sistema_ServidoresConexionEstado','Sistema_ConfiguracionOperativa'\"\n                    \") ORDER BY t.name\"\n                ),\n            },\n            {\n                \"name\": \"servidores_health_metadata_columns\",\n                \"sql\": (\n                    \"SELECT t.name AS table_name, c.column_id, c.name AS column_name, \"\n                    \"ty.name AS type_name, c.max_length, c.is_nullable \"\n                    \"FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id \"\n                    \"JOIN sys.columns c ON c.object_id=t.object_id \"\n                    \"JOIN sys.types ty ON ty.user_type_id=c.user_type_id \"\n                    \"WHERE s.name='dbo' AND t.name IN (\"\n                    \"'Servidores_Conexiones','Servidores_ConexionEstado',\"\n                    \"'Sistema_ServidoresConexionEstado','Sistema_ConfiguracionOperativa'\"\n                    \") ORDER BY t.name,c.column_id\"\n                ),\n            },\n        ),\n    )\n)\n\n\n",
+      "source_sha256": "3f14af2edcacd112e6a88e0a3fef99d397ff7f5ebcfd60fd0847893cb9b3ccc8",
+      "type": "insert_before"
+    },
+    {
+      "content": "\"\"\"Regresion de perfil SQL READ_ONLY del estado historico de conexiones.\"\"\"\nfrom modules.worker_ingress import semantic_capabilities as sem\n\nPROFILE = \"SERVIDORES_HEALTH_FRESHNESS_CONFIG_METADATA\"\n\n\ndef test_profile_registered_for_connections_and_worker_owner():\n    p = sem.sql_readonly_profiles()[PROFILE]\n    assert p.source == \"EDARSAHUB\"\n    assert p.login_policy == \"HRLectura\"\n    assert p.read_only is True\n    assert \"CONEXIONES_COMUNICACIONES\" in p.bounded_contexts\n    assert \"WORKER_CONTROL_PLANE\" in p.bounded_contexts\n    assert len(p.queries) == 3\n\n\ndef test_profile_contains_only_sealed_schema_metadata():\n    p = sem.sql_readonly_profiles()[PROFILE]\n    for query in p.queries:\n        sql = query[\"sql\"].upper()\n        assert sql.startswith(\"SELECT \")\n        assert \"SELECT *\" not in sql\n        assert \"DBO.SERVIDORES_CONEXIONES\" not in sql\n        assert \"PASSWORD\" not in sql\n        assert \"API_KEY\" not in sql\n        assert \"OPENROWSET\" not in sql\n        assert sem._validate_readonly_sql_query(query) == query\n    assert \"SYS.TABLES\" in p.queries[1][\"sql\"].upper()\n    assert \"SYS.COLUMNS\" in p.queries[2][\"sql\"].upper()\n",
+      "path": "backend/tests/test_worker_servidores_health_freshness_profile.py",
+      "type": "write_file"
+    }
+  ],
+  "authorization_ref": "GO-WK60-CONEXIONES-GATE12-HEALTH-SQL-PROFILE-R1",
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/worker_ingress/semantic_capabilities.py",
+        "backend/tests/test_worker_servidores_health_freshness_profile.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_servidores_health_freshness_profile.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-315F9714A49CE2A7FDB972AE",
+  "mode": "MUTATION",
+  "objective": "Gate12 implementar en Worker Control Plane perfil SQL_READONLY_PROFILE_AUDIT SERVIDORES_HEALTH_FRESHNESS_CONFIG_METADATA, solo metadatos sys.tables y sys.columns de conexiones/health en EDARSAHUB bajo HRLectura y test regresion fail-closed. No datos, secretos, SQL arbitrario ni Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
