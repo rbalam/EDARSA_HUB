@@ -1,0 +1,58 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 90,
+        "paths": [
+          "backend/core/server_registry.py",
+          "backend/modules/api_connections/repository.py",
+          "backend/modules/api_connections/routes.py",
+          "backend/modules/api_connections/assignment_repository.py",
+          "backend/modules/integrations_center/service.py",
+          "backend/tests/test_servers_crud_explicit_rbac_contract.py",
+          "backend/tests/test_api_connections_crud_rbac_p0a.py"
+        ],
+        "search_terms": [
+          "update_server",
+          "update_api_connection",
+          "EmpresaID",
+          "sucursales",
+          "config",
+          "rbac",
+          "permission",
+          "secret",
+          "health",
+          "scope",
+          "connection"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-11A05F3B7852CC618B6E930E",
+  "mode": "READ_ONLY",
+  "objective": "Gate16 READ_ONLY nuevo y acotado: validar contratos de escritura/alcance y RBAC de server_registry y API_LOCAL frente a posible política de vigencia por conexión. No repetir auditorías Gates12-15 sobre metadatos SQL ni configuracion operativa; identificar safe extension, límites de EmpresaID/sucursales, redacción secretos, permisos y si se requieren cambios de contrato. No establecer TTL ni ejecutar cambios ni tocar Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "CONEXIONES_COMUNICACIONES",
+    "conflict_domains": [
+      "CONEXIONES_COMUNICACIONES"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
