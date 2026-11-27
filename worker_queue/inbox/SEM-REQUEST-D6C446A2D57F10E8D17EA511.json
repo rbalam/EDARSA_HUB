@@ -1,0 +1,56 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/crm/",
+          "backend/modules/comercial/crm_router.py",
+          "backend/modules/auth/",
+          "backend/modules/catalogo_ampliado/",
+          "backend/core/"
+        ],
+        "search_terms": [
+          "CRM_Contratos",
+          "EstatusContrato",
+          "renovacion",
+          "cancelacion",
+          "licencia",
+          "entitlement",
+          "subscription",
+          "suscripcion",
+          "cuota",
+          "expiracion",
+          "vigencia"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-D6C446A2D57F10E8D17EA511",
+  "mode": "READ_ONLY",
+  "objective": "Gate 3 Fabric Comercial READ_ONLY: identificar contratos existentes reutilizables de contratación, vigencia, renovación, cancelación, licenciamiento, derechos de acceso, suscripciones y cuotas. Delimitar identidad contractual, estados, autorizaciones, versionado, expiración, trazabilidad y brechas para servicios digitales Fabric. Reutilizar evidencias Gate 0/R2/1/2; no asumir que referencias prueban funcionalidad, no modificar código ni Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "FABRIC_COMERCIAL",
+    "conflict_domains": [
+      "FABRIC_COMERCIAL"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
