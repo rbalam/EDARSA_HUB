@@ -1,0 +1,46 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 60,
+        "paths": [
+          "backend/modules/auth/routes.py",
+          "backend/core/auth/sql_user_identity.py",
+          "backend/modules/sistema_users_sql/routes.py"
+        ],
+        "search_terms": [
+          "login",
+          "USUARIOS_VER",
+          "resolve_sql_user_identity"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-353286B875A9B3ADD0006B29",
+  "mode": "READ_ONLY",
+  "objective": "Gate 1 READ_ONLY acotado: auditar contratos de Usuarios/Auth SQL identidad, login y sesiones, permisos del menu Usuarios en Desarrollo. Detectar posibles fallas fail-open y discrepancias de permisos, entregar evidencia por ruta y pruebas faltantes. No cambiar archivos, SQL ni Produccion, no repetir gates certificados Usuarios/RBAC R1 ni Safari R8B-R3. La auditoria de codigo NO certifica pruebas funcionales end-to-end.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "AUTH_RBAC",
+    "conflict_domains": [
+      "AUTH_RBAC"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
