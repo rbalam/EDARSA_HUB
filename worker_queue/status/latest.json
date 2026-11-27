@@ -4,44 +4,44 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "ed84bc4ca8d4fe90403fd8c094cf1a0c7c8d1284",
-  "generated_at_utc": "2026-11-27T08:52:30Z",
+  "generated_at_utc": "2026-11-27T08:53:53Z",
   "history": {
-    "done_total_local": 2380,
+    "done_total_local": 2381,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1415,
-    "results_total_local": 3554
+    "results_total_local": 3555
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1624,
+      "age_seconds": 1707,
       "job_id": "SEM-REQUEST-15DFBA6A6BA1EC8FDA733C39",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3200,
+      "age_seconds": 3283,
       "job_id": "SEM-REQUEST-246DD508CDEEC4AFCA4E79A7",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 193,
+      "age_seconds": 277,
       "job_id": "SEM-REQUEST-315F9714A49CE2A7FDB972AE",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3177,
+      "age_seconds": 3260,
       "job_id": "SEM-REQUEST-53B6BA7BD8C33B1FE9DF9442",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3565,
-      "job_id": "SEM-REQUEST-D2F85C7AEEC6DC63A88F83BB",
+      "age_seconds": 36,
+      "job_id": "SEM-REQUEST-A5E53D11DFC1F924D873E02F",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -60,9 +60,9 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-27T08:52:14Z",
-    "last_receive_utc": "2026-11-27T08:52:28Z",
-    "last_terminal_utc": "2026-11-27T08:49:16Z",
+    "last_cycle_utc": "2026-11-27T08:53:46Z",
+    "last_receive_utc": "2026-11-27T08:53:41Z",
+    "last_terminal_utc": "2026-11-27T08:53:17Z",
     "pid": "992051",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "32cceef9067917695576bf48509e93b5211c18e1",
