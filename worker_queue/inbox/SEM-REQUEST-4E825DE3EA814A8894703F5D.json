@@ -1,0 +1,54 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 65,
+        "paths": [
+          "backend/modules/",
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "license",
+          "copyright",
+          "ownership",
+          "provenance",
+          "consent",
+          "human_approval",
+          "merge",
+          "royalty",
+          "marketplace",
+          "distribution",
+          "authorization_ref",
+          "scope_digest"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-4E825DE3EA814A8894703F5D",
+  "mode": "READ_ONLY",
+  "objective": "Gate 8 Fabric Interna READ_ONLY: localizar contratos de incorporacion voluntaria de extensiones privadas al BOS oficial, autorizacion independiente, revision de cambios, procedencia, titularidad, licencias, distribucion y contraprestaciones. Identificar candidatos y brechas sin fusionar codigo, publicar extensiones ni inferir cumplimiento legal por coincidencias.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "FABRIC_INTERNA",
+    "conflict_domains": [
+      "FABRIC_INTERNA"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
