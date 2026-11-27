@@ -1,0 +1,339 @@
+{
+  "base_sha": "49000ec2a08ee742703104db52f715903524654e",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_RESULT_DETAIL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-27T02:05:50Z",
+  "execution_base_sha": "49000ec2a08ee742703104db52f715903524654e",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-4AE06F738609AA5C2B8F4064",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-27T02:08:10Z",
+  "quality_gate": "PASS",
+  "result_detail_evidence": {
+    "checks": [
+      {
+        "blockers": [],
+        "certification": "CERTIFIED_READ_ONLY",
+        "evidence_availability": {
+          "maintenance_history_evidence": "NOT_APPLICABLE",
+          "repository_contract_evidence": "COMPLETE",
+          "sql_readonly_evidence": "NOT_APPLICABLE",
+          "worker_result_semantic_evidence": "NOT_APPLICABLE"
+        },
+        "evidence_status": "COMPLETE",
+        "evidence_summary": {
+          "check_count": 1,
+          "entries_returned": 6,
+          "matched_files": 6,
+          "scanned_files": 1808,
+          "skipped_sensitive": 563
+        },
+        "evidence_truncated": false,
+        "failed_checks": [],
+        "files_changed": [],
+        "percent_complete": 100,
+        "production_touched": false,
+        "quality_gate": "PASS",
+        "repository_contract_evidence": {
+          "checks": [
+            {
+              "evidence": [
+                {
+                  "candidate_ownership": "backend.modules.comercial_v2",
+                  "connections": [],
+                  "helpers": [],
+                  "imports": [
+                    "__future__",
+                    "calendar",
+                    "collections",
+                    "dataclasses",
+                    "datetime",
+                    "enum",
+                    "statistics",
+                    "typing"
+                  ],
+                  "integrations": [],
+                  "matched_terms": [
+                    "ventas_pendientes"
+                  ],
+                  "path": "backend/modules/comercial_v2/periodos.py",
+                  "rbac_contracts": [],
+                  "routes": [],
+                  "scheduler_contracts": [],
+                  "symbols": [
+                    "EtiquetasPeriodo",
+                    "ModoPeriodo",
+                    "NivelConfianza",
+                    "PeriodosComparables",
+                    "ProyeccionDiaSemana",
+                    "ProyeccionMes",
+                    "RangoComparable",
+                    "_coerce_date",
+                    "_nivel_confianza",
+                    "_normalizar_historico",
+                    "_replace_year_safe",
+                    "_shift_month",
+                    "calcular_variacion",
+                    "contar_unidades_comparables",
+                    "proyectar_mes_por_dia_semana",
+                    "resolver_etiquetas",
+                    "resolver_periodos_comparables",
+                    "to_dict"
+                  ],
+                  "tables_referenced": []
+                },
+                {
+                  "candidate_ownership": "backend.modules.inventarios",
+                  "connections": [],
+                  "helpers": [],
+                  "imports": [
+                    "__future__",
+                    "bisect",
+                    "dataclasses",
+                    "enum",
+                    "math",
+                    "typing"
+                  ],
+                  "integrations": [],
+                  "matched_terms": [
+                    "consolidacion"
+                  ],
+                  "path": "backend/modules/inventarios/bottle_volumetric_engine.py",
+                  "rbac_contracts": [],
+                  "routes": [],
+                  "scheduler_contracts": [],
+                  "symbols": [
+                    "BottleEnvelopeProfile",
+                    "BottleOpacity",
+                    "CalibrationCurve",
+                    "CalibrationCurveValidationError",
+                    "CalibrationNode",
+                    "ConsolidatedBottleInventory",
+                    "CrossSectionType",
+                    "EmpiricalAccuracyEvaluation",
+                    "GravimetricParametersUnavailableError",
+                    "KnownVolumeTrial",
+                    "MeasurementMethod",
+                    "OpaqueBottleVisualMethodError",
+                    "PhysicalBoundsError",
+                    "UnvalidatedMeasurementError",
+                    "ValidatedOpenBottleMeasurement",
+                    "VolumetricEngineError",
+                    "VolumetricEstimationResult",
+                    "__init__",
+                    "__post_init__",
+                    "_compute_fritsch_carlson_pchip_slopes",
+                    "_evaluate_pchip_with_derivative",
+                    "_require_finite",
+                    "_require_non_empty_str",
+                    "consolidate_bottle_inventory",
+                    "convert_ml_to_canonical_unit",
+                    "estimate_volume_from_normalized_height",
+                    "estimate_volume_gravimetric",
+                    "normalize_liquid_height_from_frame",
+                    "verify_empirical_trials"
+                  ],
+                  "tables_referenced": []
+                },
+                {
+                  "candidate_ownership": "backend.modules.tablajeria",
+                  "connections": [
+                    "get_sql_connection",
+                    "sql_first"
+                  ],
+                  "helpers": [
+                    "get_sql_connection"
+                  ],
+                  "imports": [
+                    "core.config.edarsahub_config",
+                    "core.corporate_filters.service",
+                    "core.sql_first.db",
+                    "core.unidades_service",
+                    "dataclasses",
+                    "datetime",
+                    "decimal",
+                    "enum",
+                    "logging",
+                    "os",
+                    "pymssql",
+                    "typing",
+                    "uuid"
+                  ],
+                  "integrations": [],
+                  "matched_terms": [
+                    "ajuste_inventario"
+                  ],
+                  "path": "backend/modules/tablajeria/fase6_service.py",
+                  "rbac_contracts": [],
+                  "routes": [],
+                  "scheduler_contracts": [],
+                  "symbols": [
+                    "ConfigContable",
+                    "EstatusPoliza",
+                    "TablajeriaFase6Service",
+                    "TipoMovimiento",
+                    "TipoPoliza",
+                    "__init__",
+                    "_decimal_money",
+                    "_fetch_existing_costeo",
+                    "_fetch_existing_inventory_movements",
+                    "_fetch_existing_poliza",
+                    "_fetch_poliza_asientos",
+                    "_get_connection",
+                    "_now_utc",
+                    "_validar_balance_asientos",
+                    "afectar_inventario_orden",
+                    "calcular_costeo_orden",
+                    "generar_poliza_produccion",
+                    "get_tablajeria_fase6_service",
+                    "guardar_config_contable",
+                    "obtener_config_contable",
+                    "procesar_cierre_completo"
+                  ],
+                  "tables_referenced": []
+                },
+                {
+                  "candidate_ownership": "backend",
+                  "connections": [],
+                  "helpers": [],
+                  "imports": [
+                    "__future__",
+                    "core.inventarios.contracts",
+                    "math",
+                    "modules.cava_socios.blind_audit",
+                    "modules.inventarios.bottle_volumetric_engine",
+                    "pytest"
+                  ],
+                  "integrations": [],
+                  "matched_terms": [
+                    "consolidacion"
+                  ],
+                  "path": "backend/tests/test_bottle_volumetric_engine.py",
+                  "rbac_contracts": [],
+                  "routes": [],
+                  "scheduler_contracts": [],
+                  "symbols": [
+                    "_sample_750ml_curve",
+                    "_sample_750ml_profile",
+                    "test_empirical_accuracy_verification_against_known_volumes",
+                    "test_existing_inventarios_contracts_no_regression",
+                    "test_opaque_bottle_blocks_visual_and_computes_gravimetric",
+                    "test_out_of_range_heights_and_camera_tilt_rejected",
+                    "test_pchip_monotonicity_and_zero_overshoot_across_dense_grid",
+                    "test_rejects_nan_inf_and_invalid_types",
+                    "test_rejects_non_monotonic_and_invalid_anchor_curves",
+                    "test_thick_base_and_narrow_neck_geometry_effects",
+                    "test_uncertainty_propagation_with_confidence_tilt_and_opacity",
+                    "test_unit_conversions_and_inventory_consolidation_requires_human_validation",
+                    "test_valid_monotonic_curve_and_exact_nodal_reproduction"
+                  ],
+                  "tables_referenced": []
+                },
+                {
+                  "candidate_ownership": "backend",
+                  "connections": [],
+                  "helpers": [],
+                  "imports": [
+                    "datetime",
+                    "modules.comercial_v2.periodos",
+                    "pytest"
+                  ],
+                  "integrations": [],
+                  "matched_terms": [
+                    "ventas_pendientes"
+                  ],
+                  "path": "backend/tests/test_comercial_v2_periodos.py",
+                  "rbac_contracts": [],
+                  "routes": [],
+                  "scheduler_contracts": [],
+                  "symbols": [
+                    "test_calcular_variacion_sin_ceros_falsos",
+                    "test_conteo_unidades_actual_vs_anio_anterior",
+                    "test_etiqueta_multimes_conserva_periodo_anterior",
+                    "test_etiquetas_mes",
+                    "test_etiquetas_ventas_dia",
+                    "test_mes_cerrado_no_inventa_proyeccion",
+                    "test_periodos_mes_abierto_comparan_mismo_dia_de_corte",
+                    "test_periodos_mes_cerrado_comparan_mes_completo",
+                    "test_periodos_soportan_29_febrero",
+                    "test_periodos_ventas_dia",
+                    "test_proyeccion_mes_por_dia_semana_conserva_reales_y_proyecta_pendientes",
+                    "test_proyeccion_usa_respaldo_para_dia_con_muestras_insuficientes"
+                  ],
+                  "tables_referenced": []
+                },
+                {
+                  "candidate_ownership": "backend",
+                  "connections": [],
+                  "helpers": [],
+                  "imports": [
+                    "os",
+                    "pytest",
+                    "requests",
+                    "tests.test_config"
+                  ],
+                  "integrations": [
+                    "mpro"
+                  ],
+                  "matched_terms": [
+                    "comparativo_inventarios"
+                  ],
+                  "path": "backend/tests/test_comparativo_inventarios.py",
+                  "rbac_contracts": [],
+                  "routes": [],
+                  "scheduler_contracts": [],
+                  "symbols": [
+                    "TestComparativoInventarios",
+                    "TestFrontendDataStructure",
+                    "TestSQLQueryDateComparison",
+                    "setup",
+                    "test_01_login_success",
+                    "test_02_get_servers",
+                    "test_03_get_sucursales",
+                    "test_04_get_almacenes",
+                    "test_05_cache_has_4_documents",
+                    "test_06_export_comparativo_returns_excel",
+                    "test_07_export_without_almacen_fails",
+                    "test_08_export_with_invalid_server_fails",
+                    "test_09_inventory_analysis_endpoint_exists",
+                    "test_10_verify_cache_key_structure",
+                    "test_11_date_comparison_in_export",
+                    "test_12_inventarios_finales_info_structure"
+                  ],
+                  "tables_referenced": []
+                }
+              ],
+              "mode": "READ_ONLY_REPOSITORY",
+              "status": "PASS",
+              "summary": {
+                "matched_files": 6,
+                "scanned_files": 1808,
+                "skipped_sensitive": 563
+              },
+              "truncated": false
+            }
+          ]
+        },
+        "result_status": "READ_ONLY_COMPLETE",
+        "source_completed_at_utc": "2026-11-26T05:35:48Z",
+        "source_job_id": "SEM-REQUEST-10AF9C1CEB92756E48252219",
+        "source_terminal": true,
+        "tests": "PASS",
+        "work_completion": "COMPLETE"
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-27T02:05:48Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
