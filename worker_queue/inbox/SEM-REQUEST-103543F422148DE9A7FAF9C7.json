@@ -1,0 +1,65 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "old_text": "    if (repo_root / \".git\").exists():\n        proc = subprocess.run(\n            [\"git\", \"-C\", str(repo_root), \"rev-parse\", \"HEAD\"],\n            capture_output=True,\n            text=True,\n            check=False,\n            timeout=10,\n        )\n        if proc.returncode == 0:\n            live_head = proc.stdout.strip().lower()\n            if live_head and live_head != clean_head:\n                raise GateAuthorizationError(f\"AUTHORIZATION_HEAD_DIVERGED:{clean_head}!={live_head}\")\n\n    supplied_sha = {",
+      "path": "tools/mirror_sync/worker_lifecycle_recovery.py",
+      "replacement": "    if (repo_root / \".git\").exists():\n        proc = subprocess.run(\n            [\"git\", \"-C\", str(repo_root), \"rev-parse\", \"HEAD\"],\n            capture_output=True, text=True, check=False, timeout=10,\n        )\n        live_head = proc.stdout.strip().lower() if proc.returncode == 0 else \"\"\n        if not re.fullmatch(r\"[0-9a-f]{40}\", live_head):\n            raise GateAuthorizationError(\"AUTHORIZATION_HEAD_UNVERIFIABLE\")\n        if live_head != clean_head:\n            ancestor = subprocess.run(\n                [\"git\", \"-C\", str(repo_root), \"merge-base\", \"--is-ancestor\", clean_head, live_head],\n                capture_output=True, text=True, check=False, timeout=10,\n            )\n            if ancestor.returncode != 0:\n                raise GateAuthorizationError(f\"AUTHORIZATION_HEAD_DIVERGED:{clean_head}!={live_head}\")\n            unchanged_scope = subprocess.run(\n                [\"git\", \"-C\", str(repo_root), \"diff\", \"--quiet\", clean_head, live_head, \"--\", *clean_paths],\n                capture_output=True, text=True, check=False, timeout=10,\n            )\n            if unchanged_scope.returncode != 0:\n                raise GateAuthorizationError(\"AUTHORIZATION_SCOPE_CHANGED_SINCE_APPROVAL\")\n\n    supplied_sha = {",
+      "source_sha256": "41a76e6fd5ba69ab7f7c38ddcd734a46208e559ba6b6b6445f85190dc2fc1221",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "def test_concurrency_and_idempotency_across_request_approval_and_materialization(tmp_path, monkeypatch):",
+      "path": "backend/tests/test_worker_authorization_consent_bridge_g1.py",
+      "replacement": "def test_scope_aware_head_drift_preserves_exact_scope(tmp_path):\n    \"\"\"Descendant commits outside authorized scope are acceptable, not changed paths or divergent Git.\"\"\"\n    repo, base, shas = _init_git_repo(tmp_path)\n    target = \"backend/modules/demo_target.py\"\n    tests = [\"backend/tests/test_demo_target.py\"]\n\n    (repo / \"unrelated.txt\").write_text(\"other\\n\", encoding=\"utf-8\")\n    subprocess.run([\"git\", \"-C\", str(repo), \"add\", \"unrelated.txt\"], check=True)\n    subprocess.run([\"git\", \"-C\", str(repo), \"commit\", \"-m\", \"unrelated\"], check=True, capture_output=True)\n    result = lr._validate_gate_paths_and_hashes(\n        domain=\"COMERCIAL_POS\", allowed_paths=[target], source_sha256=shas,\n        verification_tests=tests, base_head_sha=base, repo_root=repo,\n    )\n    assert result[1][target] == shas[target] and result[3] == base\n\n    (repo / target).write_text(\"VALUE = 2\\n\", encoding=\"utf-8\")\n    subprocess.run([\"git\", \"-C\", str(repo), \"add\", target], check=True)\n    subprocess.run([\"git\", \"-C\", str(repo), \"commit\", \"-m\", \"changed scope\"], check=True, capture_output=True)\n    with pytest.raises(lr.GateAuthorizationError, match=\"AUTHORIZATION_SCOPE_CHANGED_SINCE_APPROVAL\"):\n        lr._validate_gate_paths_and_hashes(\n            domain=\"COMERCIAL_POS\", allowed_paths=[target], source_sha256=shas,\n            verification_tests=tests, base_head_sha=base, repo_root=repo,\n        )\n\n    subprocess.run([\"git\", \"-C\", str(repo), \"checkout\", \"--orphan\", \"unrelated-history\"], check=True, capture_output=True)\n    subprocess.run([\"git\", \"-C\", str(repo), \"rm\", \"-rf\", \".\"], check=True, capture_output=True)\n    for rel, content in ((target, \"VALUE = 1\\n\"), (tests[0], \"def test_ok():\\n    assert True\\n\")):\n        fp = repo / rel\n        fp.parent.mkdir(parents=True, exist_ok=True)\n        fp.write_text(content, encoding=\"utf-8\")\n    subprocess.run([\"git\", \"-C\", str(repo), \"add\", \".\"], check=True)\n    subprocess.run([\"git\", \"-C\", str(repo), \"commit\", \"-m\", \"unrelated history\"], check=True, capture_output=True)\n    with pytest.raises(lr.GateAuthorizationError, match=\"AUTHORIZATION_HEAD_DIVERGED\"):\n        lr._validate_gate_paths_and_hashes(\n            domain=\"COMERCIAL_POS\", allowed_paths=[target], source_sha256=shas,\n            verification_tests=tests, base_head_sha=base, repo_root=repo,\n        )\n\n\ndef test_concurrency_and_idempotency_across_request_approval_and_materialization(tmp_path, monkeypatch):",
+      "source_sha256": "07b15a7d3cc019430d2204bb6c2b4c4431d3e0edecb7605da77303d00b7b3ac8",
+      "type": "replace_text"
+    }
+  ],
+  "authorization_ref": "GO-WORKER-CTRL-P0-HEAD-DRIFT-SCOPE-AWARE-20261127",
+  "checks": [
+    {
+      "paths": [
+        "tools/mirror_sync/worker_lifecycle_recovery.py",
+        "backend/tests/test_worker_authorization_consent_bridge_g1.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_authorization_consent_bridge_g1.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-103543F422148DE9A7FAF9C7",
+  "mode": "MUTATION",
+  "objective": "Corregir en Desarrollo validacion de HEAD del Consent Bridge P0: permitir solo commits descendientes con el scope autorizado identico y SHA comprobado, sin debilitar consentimiento, CAS o failclosed; probar caso positivo y negativos.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
