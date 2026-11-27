@@ -1,0 +1,57 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 80,
+        "paths": [
+          "backend/modules/configuracion/",
+          "backend/modules/hospitality/",
+          "backend/modules/comercial/services/perfil_unidad_service.py",
+          "backend/core/utils/operational_window.py",
+          "backend/core/corporate_filters/"
+        ],
+        "search_terms": [
+          "empresa_id",
+          "unidad_id",
+          "unidad_negocio_id",
+          "giro",
+          "capacidad",
+          "horario",
+          "timezone",
+          "scope",
+          "configuracion",
+          "service_type",
+          "resource",
+          "reserva"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-F83FD06DBD1FC4B281546E10",
+  "mode": "READ_ONLY",
+  "objective": "Gate 4: identificar contratos existentes de configuración por empresa, unidad, giro, recursos y reglas de servicio para parametrizar reservas y atención omnicanal. Reutilizar Gates 0-3 certificados; no repetir auditoría de agentes ni comunicaciones. Determinar precedencia, aislamiento, permisos y configuración sin hardcode. Sin mutaciones, SQL ni Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "ATENCION_OMNICANAL",
+    "conflict_domains": [
+      "ATENCION_OMNICANAL"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
