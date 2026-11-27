@@ -1,0 +1,142 @@
+{
+  "base_sha": "49000ec2a08ee742703104db52f715903524654e",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-27T01:18:29Z",
+  "execution_base_sha": "49000ec2a08ee742703104db52f715903524654e",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-B8DEC97268D3B07B73F6AABE",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-27T01:20:55Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "argparse",
+              "collections",
+              "hashlib",
+              "json",
+              "pathlib",
+              "re",
+              "sys",
+              "tools.mirror_sync"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "focused_linkage",
+              "source_job_id",
+              "superseded",
+              "unknown",
+              "unregistered_referenced_capabilities"
+            ],
+            "path": "tools/mirror_sync/worker_maintenance_history_readonly.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_bounded_code",
+              "_fingerprint",
+              "_focused_linkage",
+              "_learned_registry_summary",
+              "_safe_file",
+              "_safe_result_summary",
+              "_superseded_linkage",
+              "collect",
+              "main"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "enum",
+              "pathlib",
+              "tools.mirror_sync.worker_auditor",
+              "tools.mirror_sync.worker_maintenance_contract",
+              "tools.mirror_sync.worker_repair",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "maintenancestate",
+              "superseded"
+            ],
+            "path": "tools/mirror_sync/worker_maintenance_controller.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "MaintenanceDecision",
+              "MaintenanceIncident",
+              "MaintenanceState",
+              "audit_incident",
+              "declare_incident",
+              "repair_plan_for",
+              "repaired_pending_audit"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "tools.mirror_sync",
+              "types"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "unknown"
+            ],
+            "path": "backend/tests/test_worker_repair_planner_canonical_ingress_capability.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_capability_bound_to_incident",
+              "test_capability_registered",
+              "test_capability_scope",
+              "test_existing_test_write_has_expected_sha256",
+              "test_recipe_scope_is_bounded",
+              "test_unknown_capability_fail_closed"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 3,
+          "scanned_files": 3,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-27T01:18:26Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
