@@ -1,0 +1,63 @@
+{
+  "actions": [
+    {
+      "anchor": "    \"COMUNICACIONES_CFDI\": frozenset({\n",
+      "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+      "replacement": "    \"AUTH_RBAC\": frozenset({\n        \"backend/core/auth/sql_user_identity.py\",\n    }),\n",
+      "source_sha256": "3450080f52a2e4d3f750de6b827b694e4699f1ba3a3d5b9042fe701ae669193d",
+      "type": "insert_before"
+    },
+    {
+      "expected_occurrences": 1,
+      "path": "backend/tests/test_worker_authorization_consent_bridge_g1.py",
+      "replacement": "\n\ndef test_auth_rbac_p0_b_exact_context_ownership():\n    target = \"backend/core/auth/sql_user_identity.py\"\n    assert sem_caps._dev_context_owned_paths(\"AUTH_RBAC\") == frozenset({target})\n    assert sem_caps._dev_validate_path(target, context=\"AUTH_RBAC\") == target\n    for domain in (\"WORKER_CONTROL_PLANE\", \"SEC_RBAC\", \"CRM\", \"WORKER_MCP\", None):\n        with pytest.raises(sem_caps.SemanticCapabilityError):\n            sem_caps._dev_validate_path(target, context=domain)\n    for path in (\"backend/core/auth/other.py\", \"backend/core/auth/../auth/sql_user_identity.py\", \"backend/core/auth/sql_user_identity.py.bak\"):\n        with pytest.raises(sem_caps.SemanticCapabilityError):\n            sem_caps._dev_validate_path(path, context=\"AUTH_RBAC\")\n    assert \"backend/core/\" not in sem_caps._G3_ROOTS\n",
+      "source_sha256": "a7fd68fe5b17c23a77c31c02a46337e87471eb67b1c4b7659f08ae43400a2cec",
+      "type": "append_once"
+    }
+  ],
+  "authorization_ref": "GO-AUTH-RBAC-P0-B-EXACT-PATH-OWNERSHIP-20261127",
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/worker_ingress/semantic_capabilities.py",
+        "backend/tests/test_worker_authorization_consent_bridge_g1.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_authorization_consent_bridge_g1.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-E0B5CBF7E30B81EBB534E060",
+  "mode": "MUTATION",
+  "objective": "Registrar exclusivamente el ownership exacto AUTH_RBAC de backend/core/auth/sql_user_identity.py en _DEV_CONTEXT_PATH_OWNERSHIP y agregar pruebas de aislamiento positivo y negativo al suite existente de consentimiento. No ampliar roots globales ni conceder autorización funcional ni modificar el resolvedor de identidad.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
