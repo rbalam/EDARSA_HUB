@@ -1,0 +1,57 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "frontend/src/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "suscripcion",
+          "subscription",
+          "licenciamiento",
+          "facturacion",
+          "cobranza",
+          "NetPay",
+          "recurring",
+          "regalia",
+          "royalty",
+          "billing",
+          "metering",
+          "finops",
+          "token_usage",
+          "usage_cost"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-D6555EB2AF747B21D12F18BF",
+  "mode": "READ_ONLY",
+  "objective": "Complemento focalizado Gate 0 Fabric Comercial certificado SEM-REQUEST-031D4113B222D9351791C548: identificar evidencia de suscripciones, licenciamiento, facturación, cobranza, pagos recurrentes, NetPay, regalías y medición de consumo IA/infraestructura. Excluir términos genéricos catalogo, contrato y pricing que saturaron resultado anterior; distinguir coincidencia de capacidad funcional, registrar rutas y propietarios, brechas no verificadas. Solo lectura, sin repetir auditoría certificada ni modificar Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "FABRIC_COMERCIAL",
+    "conflict_domains": [
+      "FABRIC_COMERCIAL"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
