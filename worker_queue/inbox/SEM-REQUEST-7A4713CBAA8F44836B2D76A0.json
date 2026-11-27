@@ -1,0 +1,53 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 60,
+        "paths": [
+          "backend/modules/finanzas/",
+          "backend/modules/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "PaymentRail",
+          "BankingChannel",
+          "BankingIdentifierModel",
+          "BankingExternalEvent",
+          "Finanzas_CuentasBancarias",
+          "Finanzas_Bancos",
+          "IBAN",
+          "UETR",
+          "conciliacion_bancaria",
+          "cuentas_bancarias"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-7A4713CBAA8F44836B2D76A0",
+  "mode": "READ_ONLY",
+  "objective": "Identificar exclusivamente referencias reales a tablas y contratos de banca universal para delimitar el perfil sellado UNIVERSAL_BANKING_SCHEMA_METADATA; no repetir extractor ni canary certificados, sin SQL ni cambios.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
