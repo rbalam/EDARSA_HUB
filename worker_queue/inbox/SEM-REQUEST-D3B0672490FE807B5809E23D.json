@@ -1,0 +1,53 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 60,
+        "paths": [
+          "frontend/src/pages/DashboardEjecutivo.js",
+          "frontend/src/components/comercial/temporal/",
+          "backend/core/kpis_canonicos/",
+          "backend/core/comercial_temporal_availability.py",
+          "backend/tests/test_comercial_temporal_selection.py",
+          "backend/tests/test_comercial_v2_ventas_dia_fecha_operativa.py",
+          "backend/modules/dashboard_ejecutivo/"
+        ],
+        "search_terms": [
+          "fecha_operativa",
+          "resolve_temporal_selection",
+          "ventas_sin_propina",
+          "unidad_negocio_id",
+          "kpi",
+          "temporal"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-D3B0672490FE807B5809E23D",
+  "mode": "READ_ONLY",
+  "objective": "G1-G2 inspección diferencial focalizada de consumidores frontend y contratos canónicos temporales/KPI y pruebas existentes, identificar divergencias de fechas discontinuas, unidad, ventas sin propina y paridad Ejecutivo Comercial Inteligencia. No repetir inventario G0, no ejecutar LIVE ni modificar. Reportar rutas, símbolos y brechas verificables; distinguir evidencia estática de pruebas funcionales.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL_ANALYTICS",
+    "conflict_domains": [
+      "COMERCIAL_ANALYTICS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
