@@ -252,7 +252,13 @@ async def get_api_connection_access_result(
     connection_id = connection_raw.get("id")
 
     try:
-        usuario_id = resolve_sql_usuario_id(current_user)
+        # Solo el email del token autenticado puede resolver identidad SQL.
+        # Nunca confiar en UsuarioID/_sql_usuario_id precargados en el contexto.
+        verified_email = current_user.get("email")
+        if isinstance(verified_email, str) and verified_email.strip():
+            usuario_id = resolve_sql_usuario_id({"email": verified_email.strip()})
+        else:
+            usuario_id = None
 
         if not usuario_id:
             logger.warning("[API-UQT] Identidad SQL no resoluble para %s", user_email)
