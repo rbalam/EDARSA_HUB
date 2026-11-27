@@ -106,6 +106,21 @@ UPDATABLE_HANDOFF_STATES = frozenset({
     "ESCALATED_HUMAN_REQUIRED",
 })
 
+SEMANTIC_REASSIGNABLE_EXCEPTIONS = frozenset({
+    "HANDOFF_CANARY_INSUFFICIENT_FOR_OBJECTIVE",
+    "HANDOFF_SEMANTIC_CRITERIA_UNMET",
+    "NO_COMPATIBLE_CAPABILITY_AVAILABLE",
+})
+
+
+def _is_semantic_blocker_reassignable(handoff: Mapping[str, Any]) -> bool:
+    """True when a handoff is blocked by a semantically insufficient capability (e.g. READ_ONLY_CANARY)."""
+    if handoff.get("dependency_satisfied") is True:
+        return False
+    exec_st = _clean(handoff.get("executor_status")).upper()
+    exc_code = _clean(handoff.get("exception_code")).upper()
+    return exec_st == "SEMANTIC_BLOCKER" or exc_code in SEMANTIC_REASSIGNABLE_EXCEPTIONS
+
 MAX_HISTORY_ENTRIES = 100
 NO_EXECUTOR_STALL_SECONDS = max(
     60, int(os.environ.get("EDARSAHUB_HANDOFF_NO_EXECUTOR_STALL_SECONDS", "900"))
@@ -1177,8 +1192,24 @@ def _find_existing_certified_resolution(
                 if requested_capability == "REPOSITORY_CONTRACT_AUDIT_BOUNDED"
                 else []
             )
+            published_dir = state_root / "published"
+            done_dir = state_root / "done"
+            deadline = time.monotonic() + 4.0
+            scanned = 0
             for res_path in sorted(results_dir.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True):
+                if scanned >= 80 or time.monotonic() > deadline:
+                    break
                 jid = res_path.stem
+                # Fast pre-filter before parsing multi-MB result payloads (prevents 504 timeouts)
+                if not (published_dir / f"{jid}.json").is_file() and res_path.stat().st_size > 524288:
+                    continue
+                req_preview = _read_json_safe(done_dir / f"{jid}.json") or {}
+                inner_preview = req_preview.get("job") if isinstance(req_preview.get("job"), Mapping) else req_preview
+                if isinstance(inner_preview, Mapping) and inner_preview:
+                    sched_bc = _clean(((inner_preview.get("scheduling") or {}) if isinstance(inner_preview.get("scheduling"), Mapping) else {}).get("bounded_context")).upper()
+                    if sched_bc and sched_bc != target_domain:
+                        continue
+                scanned += 1
                 verified = _verify_terminal_result_certification(jid, state_root=state_root)
                 if verified is None:
                     continue
@@ -2159,9 +2190,19 @@ def validate_handoff_constraints(
         existing_res_jid = _clean(existing.get("resolution_job_id")) or None
 
         exact_payload_match = _clean(existing.get("payload_fingerprint")) == fingerprint
-        wants_cap_assignment = (
-            existing_cap is None
+        semantic_reassignable = _is_semantic_blocker_reassignable(existing)
+        wants_cap_reassignment = (
+            semantic_reassignable
             and requested_capability is not None
+            and (requested_capability != existing_cap or requested_constraints != existing_constraints)
+        )
+        if wants_cap_reassignment and requested_capability == "READ_ONLY_CANARY":
+            domain_criteria = [c for c in acceptance_criteria if c not in _GENERIC_ACCEPTANCE_CRITERIA]
+            if domain_criteria:
+                raise HandoffError("HANDOFF_CANARY_INSUFFICIENT_FOR_OBJECTIVE")
+        wants_cap_assignment = (
+            (existing_cap is None and requested_capability is not None)
+            or wants_cap_reassignment
         )
         wants_auto_dispatch_activation = (
             auto_dispatch_supplied
@@ -2194,14 +2235,13 @@ def validate_handoff_constraints(
                 "production_touched": False,
             }
 
-        # Controlled enrichment of an existing pending handoff without duplicating it:
-        # requires identical core contract, pending non-terminal state, no active resolution_job_id
-        # (unless linking a certified resolution), and non-conflicting capability assignment.
+        # Controlled enrichment or semantic-blocker recovery of an existing handoff without duplicating it:
+        # preserves identity, history, RBAC, acceptance criteria, and prior evidence.
         can_update_pending = (
             existing_core_fp == core_fp
-            and existing_state in UPDATABLE_HANDOFF_STATES
+            and (existing_state in UPDATABLE_HANDOFF_STATES or semantic_reassignable)
             and existing.get("dependency_satisfied") is not True
-            and (existing_res_jid is None or wants_resolution_link)
+            and (existing_res_jid is None or wants_resolution_link or semantic_reassignable)
             and (
                 wants_cap_assignment
                 or wants_auto_dispatch_activation
@@ -2210,10 +2250,12 @@ def validate_handoff_constraints(
             )
             and (
                 existing_cap is None
+                or wants_cap_reassignment
                 or (
                     requested_capability == existing_cap
                     and requested_constraints == existing_constraints
                 )
+                or (semantic_reassignable and wants_resolution_link and requested_capability is None)
             )
         )
         if not can_update_pending:
@@ -2266,6 +2308,9 @@ def validate_handoff_constraints(
         updated_candidate["auto_dispatch"] = eff_auto
         updated_candidate["authorization_ref"] = eff_auth_ref
         updated_candidate["authorization_verification"] = auth_eval
+        if wants_cap_reassignment and not wants_resolution_link:
+            # Clear stale insufficient canary resolution before re-classifying with real capability
+            updated_candidate["resolution_job_id"] = None
         if wants_resolution_link:
             updated_candidate["resolution_job_id"] = resolution_job_id
         updated_candidate["core_fingerprint"] = core_fp
@@ -2297,6 +2342,7 @@ def validate_handoff_constraints(
             "classification": classification,
             "update_changes": {
                 "capability_assigned": eff_cap if wants_cap_assignment else None,
+                "allow_reassign_capability": bool(wants_cap_reassignment),
                 "auto_dispatch_activated": wants_auto_dispatch_activation,
                 "authorization_ref_updated": wants_auth_upgrade,
                 "resolution_job_id_linked": resolution_job_id if wants_resolution_link else None,
@@ -3497,9 +3543,10 @@ def update_pending_handoff(
         raise HandoffSecurityError("HANDOFF_PRODUCTION_FORBIDDEN")
 
     state = _clean(existing.get("lifecycle_state")).upper()
-    if state not in UPDATABLE_HANDOFF_STATES or existing.get("dependency_satisfied") is True:
+    semantic_blocker_existing = _is_semantic_blocker_reassignable(existing)
+    if (state not in UPDATABLE_HANDOFF_STATES and not semantic_blocker_existing) or existing.get("dependency_satisfied") is True:
         raise HandoffConflictError(f"HANDOFF_UPDATE_NOT_ALLOWED_IN_STATE:{state}")
-    if _clean(existing.get("resolution_job_id")) and not resolution_job_id:
+    if _clean(existing.get("resolution_job_id")) and not resolution_job_id and not semantic_blocker_existing:
         raise HandoffConflictError("HANDOFF_ALREADY_HAS_RESOLUTION_JOB")
 
     source_domain = validate_domain_token(existing.get("source_domain"), field_name="source_domain")
@@ -3572,8 +3619,27 @@ def update_pending_handoff(
             raise HandoffSecurityError("HANDOFF_RECURSIVE_CAPABILITY_FORBIDDEN")
 
         prev_cap = _clean(handoff.get("requested_capability")).upper() or None
-        if prev_cap is not None and prev_cap != clean_cap and not allow_reassign_capability:
+        semantic_reassign = _is_semantic_blocker_reassignable(handoff)
+        if prev_cap is not None and prev_cap != clean_cap and not (allow_reassign_capability or semantic_reassign):
             raise HandoffConflictError("IDEMPOTENCY_CONFLICT:CAPABILITY_ALREADY_ASSIGNED")
+        if semantic_reassign and clean_cap == "READ_ONLY_CANARY":
+            dom_crit = [c for c in (handoff.get("acceptance_criteria") or ()) if str(c).strip() not in _GENERIC_ACCEPTANCE_CRITERIA]
+            if dom_crit:
+                raise HandoffError("HANDOFF_CANARY_INSUFFICIENT_FOR_OBJECTIVE")
+        if semantic_reassign and handoff.get("resolution_job_id"):
+            prior_list = list(handoff.get("prior_insufficient_resolutions") or [])
+            prior_list.append({
+                "resolution_job_id": handoff.get("resolution_job_id"),
+                "previous_capability": prev_cap,
+                "exception_code": handoff.get("exception_code"),
+                "evidence_link": handoff.get("evidence_link"),
+                "archived_at_utc": utc_now(),
+            })
+            handoff["prior_insufficient_resolutions"] = prior_list[-20:]
+            handoff["resolution_job_id"] = None
+            handoff["evidence_link"] = None
+            handoff["semantic_validation"] = None
+            changes["reassigned_from_semantic_blocker"] = prev_cap
 
         new_constraints = (
             dict(requested_constraints)
@@ -3849,6 +3915,7 @@ def register_cross_domain_handoff(
             auto_dispatch=True if changes.get("auto_dispatch_activated") else None,
             authorization_ref=constraints.get("authorization_ref") if changes.get("authorization_ref_updated") else None,
             resolution_job_id=changes.get("resolution_job_id_linked"),
+            allow_reassign_capability=bool(changes.get("allow_reassign_capability", False)),
             current_user=current_user,
             requester=requester,
             state_root=qroot,

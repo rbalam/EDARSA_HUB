@@ -1847,6 +1847,11 @@ CONSENT_REQUEST_STATES = frozenset({
     "DENIED",
     "EXPIRED",
     "CONSUMED",
+    "INVALIDATED_STALE_SCOPE",
+})
+_DEFAULT_PRODUCTION_ORIGIN_HOSTS = frozenset({
+    "hub.edarsa.com.mx",
+    "stock-tracker-990.emergent.host",
 })
 
 ALLOWED_MUTATION_OPERATIONS = frozenset({
@@ -2271,41 +2276,100 @@ def verify_consent_attestation(
     raise GateAuthorizationError("CONSENT_CHANNEL_UNVERIFIABLE_FAIL_CLOSED")
 
 
-def _resolve_public_approval_base_url(public_origin: str | None = None) -> str | None:
-    """Resolve canonical HTTPS public origin for human consent review links (no loopback/secrets)."""
+def _production_origin_hosts() -> frozenset[str]:
+    hosts = set(_DEFAULT_PRODUCTION_ORIGIN_HOSTS)
+    extra = str(os.environ.get("EDARSAHUB_PRODUCTION_HOSTS") or "").strip()
+    for item in extra.split(","):
+        clean = item.strip().lower()
+        if clean:
+            hosts.add(clean)
+    return frozenset(hosts)
+
+
+def _is_production_origin_host(host: str) -> bool:
+    clean = str(host or "").strip().lower()
+    if not clean:
+        return False
+    return clean in _production_origin_hosts()
+
+
+def _is_preview_development_host(host: str) -> bool:
+    clean = str(host or "").strip().lower()
+    return bool(
+        clean
+        and not _is_production_origin_host(clean)
+        and (".preview." in clean or clean.endswith(".preview.emergentagent.com") or "desarrollo" in clean or "staging" in clean)
+    )
+
+
+def _validate_https_origin(raw: str | None, *, forbid_production: bool = True) -> str | None:
     from urllib.parse import urlsplit
 
-    candidates: list[str] = []
-    if public_origin:
-        candidates.append(str(public_origin).strip())
-    env_pub = str(os.environ.get("EDARSAHUB_MCP_PUBLIC_ORIGIN") or "").strip()
-    if env_pub:
-        candidates.append(env_pub)
-    cors_raw = str(os.environ.get("CORS_ORIGINS") or "").strip()
-    if cors_raw:
-        candidates.extend(part.strip() for part in cors_raw.split(",") if part.strip())
+    clean = str(raw or "").strip().rstrip("/")
+    if not clean:
+        return None
+    try:
+        parts = urlsplit(clean)
+    except ValueError:
+        return None
+    host = (parts.hostname or "").lower()
+    if (
+        parts.scheme != "https"
+        or not parts.netloc
+        or not host
+        or host in {"localhost", "127.0.0.1", "0.0.0.0"}
+        or parts.username is not None
+        or parts.password is not None
+        or parts.path not in ("", "/")
+        or parts.query
+        or parts.fragment
+    ):
+        return None
+    if forbid_production and _is_production_origin_host(host):
+        return None
+    return f"https://{parts.netloc}"
 
-    for raw in candidates:
-        clean = raw.rstrip("/")
-        try:
-            parts = urlsplit(clean)
-        except ValueError:
-            continue
-        host = (parts.hostname or "").lower()
-        if (
-            parts.scheme != "https"
-            or not parts.netloc
-            or not host
-            or host in {"localhost", "127.0.0.1", "0.0.0.0"}
-            or parts.username is not None
-            or parts.password is not None
-            or parts.path not in ("", "/")
-            or parts.query
-            or parts.fragment
-        ):
-            continue
-        return f"https://{parts.netloc}"
-    return None
+
+def _resolve_mcp_public_origin() -> str | None:
+    """Resolve distinct public MCP connector origin (never conflated with Production human portal)."""
+    for env_key in ("EDARSAHUB_MCP_PUBLIC_ORIGIN", "EDARSAHUB_PREVIEW_PUBLIC_ORIGIN"):
+        cand = _validate_https_origin(os.environ.get(env_key), forbid_production=True)
+        if cand:
+            return cand
+    return _resolve_public_approval_base_url()
+
+
+def _resolve_public_approval_base_url(public_origin: str | None = None) -> str | None:
+    """Resolve canonical Preview/Development HTTPS human portal origin for Gate consent links.
+
+    Explicitly excludes Production hosts (e.g. stock-tracker-990.emergent.host,
+    hub.edarsa.com.mx) which do not host the Development worker queue or consent routes.
+    """
+    from urllib.parse import urlsplit
+
+    direct_candidates = [
+        public_origin,
+        os.environ.get("EDARSAHUB_CONSENT_HUMAN_PORTAL_ORIGIN"),
+        os.environ.get("EDARSAHUB_PREVIEW_PUBLIC_ORIGIN"),
+        os.environ.get("EDARSAHUB_MCP_PUBLIC_ORIGIN"),
+    ]
+    for raw in direct_candidates:
+        valid = _validate_https_origin(raw, forbid_production=True)
+        if valid:
+            return valid
+
+    cors_raw = str(os.environ.get("CORS_ORIGINS") or "").strip()
+    cors_valid: list[str] = []
+    for part in cors_raw.split(","):
+        valid = _validate_https_origin(part, forbid_production=True)
+        if valid:
+            cors_valid.append(valid)
+    # Pass 1: strongly prefer Preview/Development hosts over generic non-production hosts
+    for origin in cors_valid:
+        host = (urlsplit(origin).hostname or "").lower()
+        if _is_preview_development_host(host):
+            return origin
+    return cors_valid[0] if cors_valid else None
 
 
 def _build_approval_urls(
@@ -2587,6 +2651,8 @@ def _resolve_verified_consent_from_request(
         raise GateAuthorizationError("CONSENT_PENDING_HUMAN_APPROVAL")
     if state == "DENIED":
         raise GateAuthorizationError("CONSENT_DENIED_BY_HUMAN")
+    if state == "INVALIDATED_STALE_SCOPE":
+        raise GateAuthorizationError("CONSENT_INVALIDATED_STALE_SCOPE")
     if state == "EXPIRED":
         raise GateAuthorizationError("CONSENT_EXPIRED")
     if state == "CONSUMED":
@@ -2718,6 +2784,9 @@ def preflight_consent_request(
         "consent_request_id": preview_id,
         "approval_path": approval_path,
         "approval_url": approval_url,
+        "human_portal_origin": _resolve_public_approval_base_url(public_origin),
+        "mcp_public_origin": _resolve_mcp_public_origin(),
+        "target_environment": "PREVIEW_DESARROLLO",
         "human_action_required": not (existing_match and existing_match.get("status") == "APPROVED"),
         "auto_approved": False,
         "ready_to_materialize": bool(existing_match and existing_match.get("status") == "APPROVED"),
@@ -2781,6 +2850,9 @@ def create_human_consent_request(
                     "allowed_paths": list(existing_doc.get("allowed_paths") or []),
                     "approval_path": approval_path,
                     "approval_url": approval_url,
+                    "human_portal_origin": _resolve_public_approval_base_url(public_origin),
+                    "mcp_public_origin": _resolve_mcp_public_origin(),
+                    "target_environment": "PREVIEW_DESARROLLO",
                     "approval_id": existing_doc.get("approval_id"),
                     "expires_at_utc": existing_doc.get("expires_at_utc"),
                     "handoff_id": existing_doc.get("handoff_id"),
@@ -2866,6 +2938,9 @@ def create_human_consent_request(
                 "allowed_paths": list(doc["allowed_paths"]),
                 "approval_path": approval_path,
                 "approval_url": approval_url,
+                "human_portal_origin": _resolve_public_approval_base_url(public_origin),
+                "mcp_public_origin": _resolve_mcp_public_origin(),
+                "target_environment": "PREVIEW_DESARROLLO",
                 "approval_id": None,
                 "expires_at_utc": exp_str,
                 "handoff_id": doc.get("handoff_id"),
@@ -3045,6 +3120,8 @@ def record_human_consent_decision(
             state = str(doc.get("status") or "").strip().upper()
             if state == "DENIED":
                 raise GateAuthorizationError("CONSENT_DENIED_BY_HUMAN")
+            if state == "INVALIDATED_STALE_SCOPE":
+                raise GateAuthorizationError("CONSENT_INVALIDATED_STALE_SCOPE")
             if state == "CONSUMED":
                 raise GateAuthorizationError("CONSENT_ALREADY_CONSUMED")
             if state == "EXPIRED":
@@ -3305,6 +3382,9 @@ def inspect_human_consent_request(
         "allowed_paths": list(doc.get("allowed_paths") or []),
         "approval_path": approval_path,
         "approval_url": approval_url,
+        "human_portal_origin": _resolve_public_approval_base_url(public_origin),
+        "mcp_public_origin": _resolve_mcp_public_origin(),
+        "target_environment": "PREVIEW_DESARROLLO",
         "approval_id": doc.get("approval_id") if state in {"APPROVED", "CONSUMED"} else None,
         "handoff_id": doc.get("handoff_id"),
         "created_at_utc": doc.get("created_at_utc"),
@@ -3319,6 +3399,179 @@ def inspect_human_consent_request(
         "production_allowed": False,
         "production_touched": False,
     }
+
+
+
+
+def invalidate_stale_consent_request(
+    consent_request_id: str,
+    *,
+    current_user: Mapping[str, Any] | None,
+    domain: str | None = None,
+    reason: str = "BASE_HEAD_OR_SHA_DIVERGED",
+    state_root: Path | None = None,
+    repo_root: Path | None = None,
+    identity_resolver: Any = None,
+    now_utc: datetime | None = None,
+) -> dict[str, Any]:
+    """Canonically invalidate a PENDING/APPROVED consent request ONLY when live HEAD or SHA-256 diverged.
+
+    If live HEAD, file SHA-256, and TTL remain valid, preserves the existing consent request
+    (status=STILL_VALID, invalidated=False) so it can be reused without duplication.
+    Never auto-approves.
+    """
+    actor = _validate_authorized_actor_identity(current_user, identity_resolver=identity_resolver)
+    qroot = state_root or (Path(os.environ.get("EDARSAHUB_ROOT", "/app")) / ".git" / "universal-worker-queue")
+    rroot = repo_root or Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
+    clean_id = _safe_id(consent_request_id)
+    if not clean_id:
+        raise GateAuthorizationError("CONSENT_REQUEST_ID_REQUIRED")
+
+    cdir = _consent_requests_dir(qroot)
+    cdir.mkdir(parents=True, exist_ok=True)
+    lock_path = cdir / ".consent_requests.lock"
+    with open(lock_path, "a+", encoding="utf-8") as lock_fh:
+        fcntl.flock(lock_fh.fileno(), fcntl.LOCK_EX)
+        try:
+            path = cdir / f"{clean_id}.json"
+            doc = _read_json_safe(path)
+            if not isinstance(doc, dict) or doc.get("schema") != SCHEMA_CONSENT_REQUEST:
+                raise GateAuthorizationError("CONSENT_REQUEST_NOT_FOUND")
+            if doc.get("production_allowed") is True:
+                raise GateAuthorizationError("PRODUCTION_AUTHORIZATION_FORBIDDEN")
+            if (
+                int(doc.get("requested_by_usuario_id") or 0) != actor["usuario_id"]
+                or str(doc.get("requested_by_email") or "").strip().lower() != actor["email"]
+            ):
+                raise GateAuthorizationError("CONSENT_IMPERSONATION_FORBIDDEN")
+            clean_dom = str(domain or "").strip().upper()
+            if clean_dom and str(doc.get("domain") or "").strip().upper() != clean_dom:
+                raise GateAuthorizationError("CONSENT_DOMAIN_MISMATCH")
+
+            now = now_utc or datetime.now(timezone.utc)
+            if now.tzinfo is None:
+                now = now.replace(tzinfo=timezone.utc)
+            now_str = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+            state = str(doc.get("status") or "").strip().upper()
+            live_head = ""
+            if (rroot / ".git").exists():
+                proc = subprocess.run(
+                    ["git", "-C", str(rroot), "rev-parse", "HEAD"],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                    timeout=10,
+                )
+                if proc.returncode == 0:
+                    live_head = proc.stdout.strip().lower()
+
+            if state == "INVALIDATED_STALE_SCOPE":
+                return {
+                    "status": "INVALIDATED_STALE_SCOPE",
+                    "invalidated": True,
+                    "duplicate_prevented": True,
+                    "consent_request_id": clean_id,
+                    "gate_id": doc.get("gate_id"),
+                    "authorization_id": doc.get("authorization_id"),
+                    "domain": doc.get("domain"),
+                    "scope_digest": doc.get("scope_digest"),
+                    "base_head_sha": doc.get("base_head_sha"),
+                    "live_head_sha": live_head or None,
+                    "invalidated_reason": doc.get("invalidated_reason"),
+                    "production_allowed": False,
+                    "production_touched": False,
+                }
+            if state not in {"PENDING_HUMAN_CONSENT", "APPROVED"}:
+                return {
+                    "status": state,
+                    "invalidated": False,
+                    "consent_request_id": clean_id,
+                    "gate_id": doc.get("gate_id"),
+                    "authorization_id": doc.get("authorization_id"),
+                    "domain": doc.get("domain"),
+                    "scope_digest": doc.get("scope_digest"),
+                    "live_head_sha": live_head or None,
+                    "production_allowed": False,
+                    "production_touched": False,
+                }
+
+            stale_reason: str | None = None
+            exp_dt = _parse_iso_utc_dt(doc.get("expires_at_utc"))
+            if exp_dt is None or exp_dt <= now:
+                stale_reason = "CONSENT_EXPIRED"
+            else:
+                try:
+                    _validate_gate_paths_and_hashes(
+                        domain=str(doc.get("domain") or ""),
+                        allowed_paths=doc.get("allowed_paths") or (),
+                        source_sha256=doc.get("source_sha256") or {},
+                        verification_tests=doc.get("verification_tests") or (),
+                        base_head_sha=str(doc.get("base_head_sha") or ""),
+                        repo_root=rroot,
+                    )
+                except GateAuthorizationError as exc:
+                    stale_reason = str(exc)
+
+            if stale_reason is None:
+                approval_path, approval_url = _build_approval_urls(clean_id)
+                return {
+                    "status": "STILL_VALID",
+                    "invalidated": False,
+                    "consent_request_id": clean_id,
+                    "gate_id": doc.get("gate_id"),
+                    "authorization_id": doc.get("authorization_id"),
+                    "domain": doc.get("domain"),
+                    "scope_digest": doc.get("scope_digest"),
+                    "base_head_sha": doc.get("base_head_sha"),
+                    "live_head_sha": live_head or None,
+                    "approval_path": approval_path,
+                    "approval_url": approval_url,
+                    "human_portal_origin": _resolve_public_approval_base_url(),
+                    "mcp_public_origin": _resolve_mcp_public_origin(),
+                    "target_environment": "PREVIEW_DESARROLLO",
+                    "human_action_required": state == "PENDING_HUMAN_CONSENT",
+                    "auto_approved": False,
+                    "production_allowed": False,
+                    "production_touched": False,
+                }
+
+            clean_reason = str(reason or stale_reason).strip()[:200] or stale_reason
+            doc["status"] = "INVALIDATED_STALE_SCOPE"
+            doc["human_approved"] = False
+            doc["invalidated_at_utc"] = now_str
+            doc["invalidated_by_email"] = actor["email"]
+            doc["invalidated_reason"] = f"{clean_reason}:{stale_reason}"
+            doc["live_head_at_invalidation"] = live_head or None
+            trail = doc.get("audit_trail") if isinstance(doc.get("audit_trail"), list) else []
+            trail.append({
+                "event": "INVALIDATED_STALE_SCOPE",
+                "at_utc": now_str,
+                "actor_email": actor["email"],
+                "sql_usuario_id": actor["usuario_id"],
+                "stale_reason": stale_reason,
+                "live_head_sha": live_head or None,
+            })
+            doc["audit_trail"] = trail[-50:]
+            _atomic_write_json(path, doc)
+            return {
+                "status": "INVALIDATED_STALE_SCOPE",
+                "invalidated": True,
+                "duplicate_prevented": False,
+                "consent_request_id": clean_id,
+                "gate_id": doc.get("gate_id"),
+                "authorization_id": doc.get("authorization_id"),
+                "domain": doc.get("domain"),
+                "scope_digest": doc.get("scope_digest"),
+                "base_head_sha": doc.get("base_head_sha"),
+                "live_head_sha": live_head or None,
+                "invalidated_reason": doc["invalidated_reason"],
+                "human_action_required": True,
+                "auto_approved": False,
+                "production_allowed": False,
+                "production_touched": False,
+            }
+        finally:
+            fcntl.flock(lock_fh.fileno(), fcntl.LOCK_UN)
 
 
 def list_domain_consent_requests_summary(
@@ -3560,8 +3813,29 @@ def preflight_gate_authorization_lifecycle(
         raise GateAuthorizationError("PRODUCTION_AUTHORIZATION_FORBIDDEN")
 
     action = str(constraints.get("action") or "PREFLIGHT").strip().upper()
-    if action not in {"PREFLIGHT", "INSPECT", "REQUEST_CONSENT", "CONSENT_STATUS", "MATERIALIZE", "REVOKE"}:
+    if action not in {"PREFLIGHT", "INSPECT", "REQUEST_CONSENT", "CONSENT_STATUS", "INVALIDATE_STALE", "MATERIALIZE", "REVOKE"}:
         raise GateAuthorizationError(f"AUTHORIZATION_ACTION_UNSUPPORTED:{action}")
+
+    if action == "INVALIDATE_STALE":
+        cid_in = str(constraints.get("consent_request_id") or "").strip()
+        if not cid_in:
+            raise GateAuthorizationError("CONSENT_REQUEST_ID_REQUIRED")
+        info = inspect_human_consent_request(
+            cid_in,
+            current_user=current_user,
+            domain=domain,
+            state_root=qroot,
+            identity_resolver=identity_resolver,
+            now_utc=now_utc,
+        )
+        if not info.get("found"):
+            raise GateAuthorizationError("CONSENT_REQUEST_NOT_FOUND")
+        return {
+            "schema": SCHEMA_AUTH_LIFECYCLE_PREFLIGHT,
+            "ok": True,
+            "action": "INVALIDATE_STALE",
+            **info,
+        }
 
     if action == "REQUEST_CONSENT":
         return preflight_consent_request(

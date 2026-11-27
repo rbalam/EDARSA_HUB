@@ -18,6 +18,14 @@ AUTHORIZED_LOCAL_AHEAD_EMAILS = {
 }
 MAX_AUTHORIZED_LOCAL_AHEAD_COMMITS = 20
 PLATFORM_MANAGED_SYSTEM_DEPS = ".emergent/system_deps.txt"
+PLATFORM_MANAGED_ONLY_PATHS = frozenset({
+    ".emergent/system_deps.txt",
+    "app.code-workspace",
+})
+PLATFORM_AUTO_COMMIT_EMAILS = frozenset({
+    "github@emergent.sh",
+    "emergent-agent-e1@emergent.sh",
+})
 
 def _expected_platform_system_deps_drift(repo: Path) -> bool:
     path = repo / PLATFORM_MANAGED_SYSTEM_DEPS
@@ -357,6 +365,167 @@ def recover_authorized_local_ahead(repo: Path, state: dict[str, Any], *, job_id:
         raise GitGuardError("GIT_PUSH_FAILED", {"reason": "LOCAL_AHEAD_FAST_FORWARD_PUSH_FAILED", "output": (published.stdout or "")[-2000:]})
     post = post_push_verify(repo, local)
     return {"proof": proof, "recovery_branch": recovery_branch, "post_push": post}
+
+
+def classify_platform_only_local_ahead(repo: Path, state: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Fail-closed classification of local-only platform metadata commits on Edarsahub_Desarrollo.
+
+    Returns eligible=True ONLY when every local-only commit ahead of origin/Edarsahub_Desarrollo
+    is linear (1 parent), authored/committed by an Emergent platform identity, and modifies
+    EXCLUSIVELY PLATFORM_MANAGED_ONLY_PATHS. Any application/config/test/doc commit fails closed
+    so legitimate local work is NEVER dropped or overwritten.
+    """
+    st = state if isinstance(state, dict) else inspect_repository(repo)
+    if st.get("current_branch") != DEV_BRANCH:
+        return {"eligible": False, "reason": "WRONG_CANONICAL_BRANCH", "state": st, "commits": []}
+    ahead = int(st.get("ahead_count") or 0)
+    behind = int(st.get("behind_count") or 0)
+    if ahead < 1 or behind != 0 or st.get("merge_base") != st.get("remote_head"):
+        return {"eligible": False, "reason": f"NOT_LOCAL_AHEAD_ONLY:{st.get('classification')}", "state": st, "commits": []}
+    # Inspect dirty working tree files: only allow platform-managed files to be dirty; any non-platform dirty file fails closed
+    raw_status = _run(repo, "status", "--porcelain=v1", "--untracked-files=all", check=False).stdout.splitlines()
+    dirty_non_platform = []
+    for line in raw_status:
+        if len(line) < 4:
+            continue
+        rel = line[3:].strip().split(" -> ")[-1].strip()
+        if rel and rel not in PLATFORM_MANAGED_ONLY_PATHS:
+            dirty_non_platform.append(rel)
+    if dirty_non_platform:
+        return {
+            "eligible": False,
+            "reason": "DIRTY_WORKTREE_NON_PLATFORM_FILES",
+            "dirty_non_platform_paths": sorted(dirty_non_platform),
+            "state": st,
+            "commits": [],
+        }
+
+    commits = list(st.get("local_only_commits") or [])
+    if ahead > MAX_AUTHORIZED_LOCAL_AHEAD_COMMITS or len(commits) != ahead:
+        return {"eligible": False, "reason": "UNSAFE_AHEAD_COUNT", "state": st, "commits": []}
+
+    inspected: list[dict[str, Any]] = []
+    for sha in commits:
+        parents = _run(repo, "rev-list", "--parents", "-n", "1", sha).stdout.strip().split()
+        if len(parents) != 2:
+            return {"eligible": False, "reason": "NON_LINEAR_LOCAL_COMMIT", "commit": sha, "commits": inspected}
+        meta = _run(repo, "show", "-s", "--format=%H%x00%ae%x00%ce", sha).stdout.rstrip("\n").split("\x00")
+        if len(meta) != 3:
+            return {"eligible": False, "reason": "COMMIT_IDENTITY_UNREADABLE", "commit": sha, "commits": inspected}
+        _, author_email, committer_email = meta
+        ae = author_email.strip().lower()
+        ce = committer_email.strip().lower()
+        changed = [
+            p.strip()
+            for p in _run(repo, "diff-tree", "--no-commit-id", "--name-only", "-r", sha).stdout.splitlines()
+            if p.strip()
+        ]
+        non_platform = sorted(p for p in changed if p not in PLATFORM_MANAGED_ONLY_PATHS)
+        inspected.append({
+            "commit": sha,
+            "author_email": ae,
+            "committer_email": ce,
+            "changed_paths": changed,
+            "non_platform_paths": non_platform,
+        })
+        if ae not in PLATFORM_AUTO_COMMIT_EMAILS or ce not in PLATFORM_AUTO_COMMIT_EMAILS:
+            return {
+                "eligible": False,
+                "reason": "LOCAL_AHEAD_CONTAINS_NON_PLATFORM_AUTHOR",
+                "commit": sha,
+                "commits": inspected,
+            }
+        if not changed or non_platform:
+            return {
+                "eligible": False,
+                "reason": "LOCAL_AHEAD_CONTAINS_NON_PLATFORM_CHANGES",
+                "commit": sha,
+                "non_platform_paths": non_platform,
+                "commits": inspected,
+            }
+
+    return {
+        "eligible": True,
+        "reason": "PLATFORM_ONLY_LOCAL_AHEAD_VERIFIED",
+        "local_head": st["local_head"],
+        "remote_head": st["remote_head"],
+        "ahead_count": ahead,
+        "commits": inspected,
+    }
+
+
+def recover_platform_only_local_ahead(
+    repo: Path,
+    *,
+    owner: str = "worker-runtime-recovery",
+    dry_run: bool = False,
+) -> dict[str, Any]:
+    """Non-destructively align Edarsahub_Desarrollo to origin after preserving platform-only local commits.
+
+    Never executes git reset --hard, git push --force, or git clean.
+    Preserves the local commit SHA on recovery/preserved-platform-<sha[:12]> and uses
+    git reset --mixed <remote_head> so working-tree files remain intact.
+    """
+    env_name = str(os.environ.get("EDARSA_ENV") or os.environ.get("APP_ENV") or os.environ.get("ENVIRONMENT") or "").upper()
+    if "PROD" in env_name:
+        raise GitGuardError("PRODUCTION_ENV_FORBIDDEN", {"owner": owner})
+
+    state = inspect_repository(repo)
+    classification = classify_platform_only_local_ahead(repo, state)
+    if not classification.get("eligible"):
+        raise GitGuardError(
+            str(classification.get("reason") or "LOCAL_AHEAD_NOT_PLATFORM_ONLY"),
+            classification,
+        )
+
+    local_head = str(classification["local_head"])
+    remote_head = str(classification["remote_head"])
+    preserved_branch = f"recovery/preserved-platform-{local_head[:12]}"
+
+    if dry_run:
+        return {
+            "recovered": False,
+            "dry_run": True,
+            "status": "ELIGIBLE_PLATFORM_ONLY_LOCAL_AHEAD",
+            "local_head_before": local_head,
+            "remote_head": remote_head,
+            "preserved_branch": preserved_branch,
+            "commits": classification["commits"],
+            "production_touched": False,
+        }
+
+    existing_ref = _run(repo, "rev-parse", "--verify", f"refs/heads/{preserved_branch}", check=False)
+    if existing_ref.returncode == 0:
+        existing_sha = existing_ref.stdout.strip().lower()
+        if existing_sha != local_head.lower():
+            raise GitGuardError(
+                "PRESERVATION_BRANCH_COLLISION",
+                {"branch": preserved_branch, "existing_sha": existing_sha, "local_head": local_head},
+            )
+    else:
+        _run(repo, "branch", preserved_branch, local_head)
+
+    # Strictly non-destructive mixed reset: keeps working-tree files untouched, zero reset --hard!
+    _run(repo, "reset", "--mixed", remote_head)
+    after_head = _run(repo, "rev-parse", "HEAD").stdout.strip().lower()
+    if after_head != remote_head.lower():
+        raise GitGuardError(
+            "PLATFORM_LOCAL_AHEAD_ALIGN_FAILED",
+            {"expected": remote_head, "actual": after_head},
+        )
+    return {
+        "recovered": True,
+        "dry_run": False,
+        "status": "RECOVERED_PLATFORM_LOCAL_AHEAD",
+        "owner": owner,
+        "local_head_before": local_head,
+        "local_head_after": after_head,
+        "remote_head": remote_head,
+        "preserved_branch": preserved_branch,
+        "commits_preserved": classification["commits"],
+        "reset_mode": "mixed_non_destructive",
+        "production_touched": False,
+    }
 
 def compare_and_swap(repo: Path, remote_at_start: str) -> str:
     _run(repo,"fetch",REMOTE,DEV_BRANCH); now=_run(repo,"rev-parse",f"{REMOTE}/{DEV_BRANCH}").stdout.strip()

@@ -319,17 +319,48 @@ def _worker_repair_bounded_submitter(
     ):
         raise SemanticCapabilityError("SEMANTIC_REPAIR_CAPABILITY_INVALID")
 
+    clean_cap_code = capability_code.upper()
+    if clean_cap_code == "RUNTIME_CONVERGENCE_RECOVERY":
+        from tools.mirror_sync import worker_control_plane
+        from tools.mirror_sync import worker_maintenance_runtime as _maint
+        from tools.mirror_sync.worker_requester_rbac import authorize_requester
+
+        auth_res = authorize_requester(dict(requester))
+        if not isinstance(auth_res, dict) or auth_res.get("allowed") is not True:
+            reason = str((auth_res or {}).get("reason") or "DENIED") if isinstance(auth_res, dict) else "DENIED"
+            raise SemanticCapabilityError(f"REPAIR_RBAC_DENIED:{reason}")
+        try:
+            _maint.declare_runtime_incident(
+                incident_id,
+                ["tools/mirror_sync/worker_control_plane.py"],
+                problem_signature="RUNTIME_CONVERGENCE_RECOVERY",
+                capability_code="RUNTIME_CONVERGENCE_RECOVERY",
+                requester=dict(requester),
+            )
+        except ValueError:
+            pass
+        try:
+            result = worker_control_plane.execute_bounded_runtime_convergence_recovery(
+                incident_id=incident_id,
+                requester_email=str(requester.get("email") or ""),
+            )
+        except ValueError as exc:
+            raise SemanticCapabilityError(str(exc)) from exc
+        if not isinstance(result, dict) or result.get("production_touched") is not False:
+            raise SemanticCapabilityError("SEMANTIC_REPAIR_PRODUCTION_POLICY_VIOLATION")
+        return result
+
     from tools.mirror_sync import worker_repair_planner
 
     try:
         worker_repair_planner.declare_registered_incident(
             incident_id,
-            capability_code=capability_code.upper(),
+            capability_code=clean_cap_code,
             requester=dict(requester),
         )
         result = worker_repair_planner.publish_planned_repair(
             incident_id,
-            capability_code=capability_code.upper(),
+            capability_code=clean_cap_code,
             requester=dict(requester),
         )
     except ValueError as exc:
@@ -1272,7 +1303,11 @@ def _capability_contract_details(code: str, meta: Mapping[str, Any]) -> dict[str
                 "incident_id": _G3_JOB_ID.pattern,
                 "capability_code": _WORKER_REPAIR_CODE.pattern,
             },
-            "limits": {},
+            "limits": {
+                "convergence_recovery_capability": "RUNTIME_CONVERGENCE_RECOVERY",
+                "arbitrary_shell_forbidden": True,
+                "production_allowed": False,
+            },
             "ownership": ownership,
             "safe_example": {
                 "objective": "Ejecutar reparacion declarativa registrada.",
@@ -1433,7 +1468,7 @@ def _capability_contract_details(code: str, meta: Mapping[str, Any]) -> dict[str
             "required_constraints": ["action", "gate_id"],
             "allowed_operations": ["replace_text", "insert_before", "insert_after", "append_once", "write_file"],
             "formats": {
-                "action": "PREFLIGHT|INSPECT|REQUEST_CONSENT|CONSENT_STATUS|MATERIALIZE|REVOKE",
+                "action": "PREFLIGHT|INSPECT|REQUEST_CONSENT|CONSENT_STATUS|INVALIDATE_STALE|MATERIALIZE|REVOKE",
                 "gate_id": _G3_JOB_ID.pattern,
                 "authorization_id": _DEV_AUTH_REF_RE.pattern,
                 "base_head_sha": r"^[0-9a-f]{40}$",
@@ -2123,10 +2158,19 @@ def _gate_authorization_lifecycle_submitter(
 
     if action in {"MATERIALIZE", "REVOKE"} and requested_mode != "MUTATION":
         raise SemanticCapabilityError("SEMANTIC_CAPABILITY_MODE_MISMATCH")
-    if action in {"PREFLIGHT", "INSPECT", "REQUEST_CONSENT", "CONSENT_STATUS"} and requested_mode not in {"READ_ONLY", "MUTATION"}:
+    if action in {"PREFLIGHT", "INSPECT", "REQUEST_CONSENT", "CONSENT_STATUS", "INVALIDATE_STALE"} and requested_mode not in {"READ_ONLY", "MUTATION"}:
         raise SemanticCapabilityError("SEMANTIC_CAPABILITY_MODE_MISMATCH")
 
     try:
+        if action == "INVALIDATE_STALE":
+            return lifecycle_mod.invalidate_stale_consent_request(
+                str(constraints.get("consent_request_id") or ""),
+                current_user=current_user,
+                domain=str(clean_req.get("bounded_context") or ""),
+                reason=str(constraints.get("revocation_reason") or "BASE_HEAD_OR_SHA_DIVERGED"),
+                state_root=ingress_service.STATE_ROOT,
+                repo_root=ingress_service.REPO_ROOT,
+            )
         if action == "REQUEST_CONSENT":
             return lifecycle_mod.create_human_consent_request(
                 clean_req,

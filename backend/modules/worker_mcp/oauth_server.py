@@ -1016,6 +1016,7 @@ def _consent_error_http_status(code: str) -> int:
         "CONSENT_REPLAY_DETECTED",
         "CONSENT_DENIED_BY_HUMAN",
         "CONSENT_REQUEST_ALREADY_DECIDED",
+        "CONSENT_INVALIDATED_STALE_SCOPE",
         "AUTHORIZATION_CONFLICT_SCOPE_DRIFT",
     }:
         return 409
@@ -1113,7 +1114,13 @@ async def oauth_gate_consent_review(consent_request_id: str, request: Request):
     rollback_text = html.escape(str(rollback_raw))
     action_url = f"/api/mcp/oauth/consent/{html.escape(str(review['consent_request_id']), quote=True)}"
     controls = ""
-    if review.get("status") == "PENDING_HUMAN_CONSENT" and review.get("challenge_token"):
+    if review.get("status") == "PENDING_HUMAN_CONSENT" and review.get("live_scope_valid") is False:
+        err_msg = html.escape(str(review.get("live_scope_error") or "STALE_HEAD_OR_SHA"))
+        controls = (
+            f"<p><strong>Alcance desactualizado (STALE_HEAD_OR_SHA_INVALIDATION_REQUIRED):</strong> <code>{err_msg}</code></p>"
+            "<p>No se permite aprobar una solicitud cuyo HEAD o SHA-256 cambio. Solicita un nuevo consentimiento vigente desde ChatGPT/MCP.</p>"
+        )
+    elif review.get("status") == "PENDING_HUMAN_CONSENT" and review.get("challenge_token"):
         controls = (
             f'<form method="post" action="{action_url}">'
             + _hidden("confirm_scope_digest", str(review["scope_digest"]))

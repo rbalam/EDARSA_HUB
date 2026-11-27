@@ -186,7 +186,7 @@ def test_legitimate_e2e_consent_bridge_oauth_mcp_and_6_tools_preserved(tmp_path,
     monkeypatch.setattr(wis, "_require_mutation_runtime_convergence", lambda: {"overall_converged": True})
     monkeypatch.setenv("EDARSAHUB_ROOT", str(repo))
     monkeypatch.setenv("EDARSAHUB_CONSENT_SIGNING_SECRET", "edarsahub-test-consent-secret-0123456789")
-    monkeypatch.setenv("EDARSAHUB_MCP_PUBLIC_ORIGIN", "https://hub.edarsa.com.mx")
+    monkeypatch.setenv("EDARSAHUB_MCP_PUBLIC_ORIGIN", "https://erp-crm-enterprise-1.preview.emergentagent.com")
 
     # 1. Exact 6 MCP tools preserved
     if importlib.util.find_spec("mcp") is None:
@@ -223,7 +223,7 @@ def test_legitimate_e2e_consent_bridge_oauth_mcp_and_6_tools_preserved(tmp_path,
     assert created["human_action_required"] is True
     assert created["ready_to_materialize"] is False
     assert created["approval_path"] == f"/api/mcp/oauth/consent/{cid}"
-    assert created["approval_url"] == f"https://hub.edarsa.com.mx/api/mcp/oauth/consent/{cid}"
+    assert created["approval_url"] == f"https://erp-crm-enterprise-1.preview.emergentagent.com/api/mcp/oauth/consent/{cid}"
     assert created["production_touched"] is False
 
     # 4. get_go_context exposes consent_bridge read-only with pending request

@@ -2077,6 +2077,203 @@ def _restart_service(service: str, reason: str) -> bool:
     return ok
 
 
+
+
+def _record_runtime_recovery_audit(
+    state_root: Path,
+    entry: dict[str, Any],
+) -> None:
+    """Append one secret-free runtime convergence recovery audit entry."""
+    audit_path = state_root / "maintenance" / "runtime_recovery_audit.jsonl"
+    try:
+        audit_path.parent.mkdir(parents=True, exist_ok=True)
+        with audit_path.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(entry, ensure_ascii=False, sort_keys=True) + "\n")
+    except OSError:
+        pass
+
+
+def execute_bounded_runtime_convergence_recovery(
+    *,
+    incident_id: str,
+    requester_email: str,
+    repo_root: Path | None = None,
+    state_root: Path | None = None,
+    dry_run: bool = False,
+) -> dict[str, Any]:
+    """Bounded, idempotent, auditable, fail-closed runtime convergence recovery.
+
+    Breaks the circular dependency between Repair Planner / WORKER_REPAIR_BOUNDED
+    and runtime convergence without exposing arbitrary shell, without touching
+    Production, and without discarding legitimate non-platform local commits.
+    """
+    if _is_production_env():
+        raise ValueError("RUNTIME_RECOVERY_PRODUCTION_FORBIDDEN")
+
+    clean_incident = str(incident_id or "").strip()
+    clean_email = str(requester_email or "").strip().lower()
+    if not clean_incident:
+        raise ValueError("INCIDENT_ID_REQUIRED")
+    if not clean_email or "@" not in clean_email:
+        raise ValueError("REQUESTER_EMAIL_REQUIRED")
+
+    root = repo_root or ROOT
+    qroot = state_root or (root / ".git" / "universal-worker-queue")
+    from tools.mirror_sync import git_divergence_guard as gdg
+    from tools.mirror_sync.worker_runtime_fingerprint import build_mcp_runtime_convergence_report
+
+    before = build_mcp_runtime_convergence_report(repo_root=root, state_root=qroot)
+    if before.get("overall_converged") is True:
+        outcome = {
+            "schema": "edarsahub.runtime-convergence-recovery.v1",
+            "recovery_kind": "RUNTIME_CONVERGENCE_RECOVERY",
+            "incident_id": clean_incident,
+            "requester_email": clean_email,
+            "status": "ALREADY_CONVERGED",
+            "overall_converged": True,
+            "duplicate_prevented": True,
+            "git_recovery": None,
+            "runtime_autoconvergence": None,
+            "before": {
+                "local_head": before.get("local_head"),
+                "remote_development_head": before.get("remote_development_head"),
+                "head_aligned": before.get("head_aligned"),
+                "overall_converged": True,
+            },
+            "after": {
+                "local_head": before.get("local_head"),
+                "remote_development_head": before.get("remote_development_head"),
+                "head_aligned": before.get("head_aligned"),
+                "overall_converged": True,
+            },
+            "production_touched": False,
+            "recorded_at_utc": utc_now(),
+        }
+        if not dry_run:
+            _record_runtime_recovery_audit(qroot, outcome)
+        return outcome
+
+    branch = str(before.get("branch") or "").strip()
+    if branch != DEV_BRANCH:
+        raise ValueError(f"RUNTIME_RECOVERY_WRONG_BRANCH:{branch}")
+
+    git_recovery: dict[str, Any] | None = None
+    if before.get("head_aligned") is not True:
+        topo = gdg.inspect_repository(root)
+        cls_name = str(topo.get("classification") or "").upper()
+        ahead_n = int(topo.get("ahead_count") or 0)
+        behind_n = int(topo.get("behind_count") or 0)
+        if ahead_n >= 1 and behind_n == 0 and topo.get("merge_base") == topo.get("remote_head"):
+            plat = gdg.classify_platform_only_local_ahead(root, topo)
+            if not plat.get("eligible"):
+                blocked = {
+                    "schema": "edarsahub.runtime-convergence-recovery.v1",
+                    "recovery_kind": "RUNTIME_CONVERGENCE_RECOVERY",
+                    "incident_id": clean_incident,
+                    "requester_email": clean_email,
+                    "status": "BLOCKED_HUMAN_REQUIRED",
+                    "reason": f"HUMAN_INTERVENTION_REQUIRED:{plat.get('reason') or 'NON_PLATFORM_LOCAL_COMMITS'}",
+                    "overall_converged": False,
+                    "preserved_commits": plat.get("commits") or [],
+                    "production_touched": False,
+                    "recorded_at_utc": utc_now(),
+                }
+                if not dry_run:
+                    _record_runtime_recovery_audit(qroot, blocked)
+                return blocked
+            git_recovery = gdg.recover_platform_only_local_ahead(
+                root,
+                owner=f"bounded-recovery:{clean_incident}",
+                dry_run=dry_run,
+            )
+        elif cls_name == "BEHIND_ONLY":
+            if dry_run:
+                git_recovery = {
+                    "recovered": False,
+                    "dry_run": True,
+                    "status": "ELIGIBLE_FAST_FORWARD",
+                    "local_head_before": topo.get("local_head"),
+                    "remote_head": topo.get("remote_head"),
+                    "production_touched": False,
+                }
+            else:
+                ff_res = gdg.fast_forward_refresh(root)
+                git_recovery = {
+                    "recovered": bool(ff_res.get("fast_forwarded") or ff_res.get("status") == "ALIGNED"),
+                    "dry_run": False,
+                    "status": str(ff_res.get("status") or "FAST_FORWARD_REFRESH"),
+                    "details": ff_res,
+                    "production_touched": False,
+                }
+        else:
+            blocked = {
+                "schema": "edarsahub.runtime-convergence-recovery.v1",
+                "recovery_kind": "RUNTIME_CONVERGENCE_RECOVERY",
+                "incident_id": clean_incident,
+                "requester_email": clean_email,
+                "status": "BLOCKED_HUMAN_REQUIRED",
+                "reason": f"HUMAN_INTERVENTION_REQUIRED:GIT_TOPOLOGY_{cls_name}",
+                "overall_converged": False,
+                "topology": {
+                    "local_head": topo.get("local_head"),
+                    "remote_head": topo.get("remote_head"),
+                    "ahead_count": topo.get("ahead_count"),
+                    "behind_count": topo.get("behind_count"),
+                },
+                "production_touched": False,
+                "recorded_at_utc": utc_now(),
+            }
+            if not dry_run:
+                _record_runtime_recovery_audit(qroot, blocked)
+            return blocked
+
+    runtime_autoconv: dict[str, Any] | None = None
+    if not dry_run and repo_root is None:
+        try:
+            runtime_autoconv = converge_runtime_permanently(
+                ff={"status": "BOUNDED_RECOVERY"},
+                runtime={"current_job_id": read_text(RUNTIME / "current_job_id")},
+            )
+        except Exception as exc:  # noqa: BLE001
+            runtime_autoconv = {"status": "AUTOCONVERGENCE_ERROR", "error": type(exc).__name__}
+
+    after = build_mcp_runtime_convergence_report(repo_root=root, state_root=qroot)
+    converged_now = bool(after.get("overall_converged") is True)
+    outcome = {
+        "schema": "edarsahub.runtime-convergence-recovery.v1",
+        "recovery_kind": "RUNTIME_CONVERGENCE_RECOVERY",
+        "incident_id": clean_incident,
+        "requester_email": clean_email,
+        "status": (
+            "PREFLIGHT_READY"
+            if dry_run
+            else ("CONVERGED" if converged_now else "PARTIAL_RECOVERY_PENDING_RUNTIME")
+        ),
+        "overall_converged": converged_now,
+        "duplicate_prevented": False,
+        "preserved_branch": (git_recovery or {}).get("preserved_branch"),
+        "git_recovery": git_recovery,
+        "runtime_autoconvergence": runtime_autoconv,
+        "before": {
+            "local_head": before.get("local_head"),
+            "remote_development_head": before.get("remote_development_head"),
+            "head_aligned": before.get("head_aligned"),
+            "overall_converged": bool(before.get("overall_converged")),
+        },
+        "after": {
+            "local_head": after.get("local_head"),
+            "remote_development_head": after.get("remote_development_head"),
+            "head_aligned": after.get("head_aligned"),
+            "overall_converged": converged_now,
+        },
+        "production_touched": False,
+        "recorded_at_utc": utc_now(),
+    }
+    if not dry_run:
+        _record_runtime_recovery_audit(qroot, outcome)
+    return outcome
+
+
 def converge_runtime_permanently(
     *,
     ff: dict[str, Any],

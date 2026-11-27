@@ -828,6 +828,7 @@ def submit_objective_tool(
         or result.get("authorization_id")
         or result.get("gate_id")
         or result.get("consent_request_id")
+        or result.get("recovery_kind")
     ):
         for extra_key in (
             "handoff_id",
@@ -855,10 +856,21 @@ def submit_objective_tool(
             "approval_id",
             "approval_path",
             "approval_url",
+            "human_portal_origin",
+            "mcp_public_origin",
+            "target_environment",
             "human_action_required",
             "auto_approved",
             "ready_to_materialize",
             "consent_channel",
+            "invalidated",
+            "invalidated_reason",
+            "live_head_sha",
+            "recovery_kind",
+            "incident_id",
+            "overall_converged",
+            "preserved_branch",
+            "reason",
         ):
             if extra_key in result:
                 response[extra_key] = result.get(extra_key)

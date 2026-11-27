@@ -735,15 +735,38 @@ def submit_objective(
                 "approval_id",
                 "approval_path",
                 "approval_url",
+                "human_portal_origin",
+                "mcp_public_origin",
+                "target_environment",
                 "human_action_required",
                 "auto_approved",
                 "ready_to_materialize",
                 "handoff_id",
                 "consent_channel",
+                "invalidated",
+                "invalidated_reason",
+                "live_head_sha",
             ):
                 if extra_key in result:
                     out_auth[extra_key] = result.get(extra_key)
             return out_auth
+
+        if capability_code == "WORKER_REPAIR_BOUNDED" and result.get("recovery_kind") == "RUNTIME_CONVERGENCE_RECOVERY":
+            return {
+                "status": _clean(result.get("status")) or "CONVERGED",
+                "job_id": _clean(result.get("incident_id")) or "RUNTIME_CONVERGENCE_RECOVERY",
+                "incident_id": result.get("incident_id"),
+                "recovery_kind": "RUNTIME_CONVERGENCE_RECOVERY",
+                "overall_converged": bool(result.get("overall_converged", False)),
+                "preserved_branch": result.get("preserved_branch"),
+                "reason": result.get("reason"),
+                "duplicate_prevented": bool(result.get("duplicate_prevented", False)),
+                "before": result.get("before"),
+                "after": result.get("after"),
+                "production_touched": False,
+                "capability": capability_code,
+                "bounded_context": bounded_context,
+            }
 
         if capability_code == "CROSS_DOMAIN_HANDOFF_REGISTER":
             handoff_id = _clean(result.get("handoff_id"))
@@ -2388,12 +2411,22 @@ def resolve_go_context(
                 "actions": [
                     "REQUEST_CONSENT",
                     "CONSENT_STATUS",
+                    "INVALIDATE_STALE",
                     "PREFLIGHT",
                     "MATERIALIZE",
                     "INSPECT",
                     "REVOKE",
                 ],
                 "approval_endpoint_template": "/api/mcp/oauth/consent/{consent_request_id}",
+                "human_portal_origin": (
+                    __import__("tools.mirror_sync.worker_lifecycle_recovery", fromlist=["_resolve_public_approval_base_url"])
+                    ._resolve_public_approval_base_url()
+                ),
+                "mcp_public_origin": (
+                    __import__("tools.mirror_sync.worker_lifecycle_recovery", fromlist=["_resolve_mcp_public_origin"])
+                    ._resolve_mcp_public_origin()
+                ),
+                "target_environment": "PREVIEW_DESARROLLO",
                 "pending_consent_requests": (
                     __import__("tools.mirror_sync.worker_lifecycle_recovery", fromlist=["list_domain_consent_requests_summary"])
                     .list_domain_consent_requests_summary(domain=domain_upper, state_root=STATE_ROOT)
@@ -2783,6 +2816,21 @@ def _verify_authorization_scope(
             raise WorkerIngressError("SCOPE_AUTHORIZATION_DENIED")
 
 
+def _is_convergence_recovery_request(
+    capability_code: str,
+    bounded_context: str,
+    constraints: Any,
+) -> bool:
+    """Allow ONLY the bounded RUNTIME_CONVERGENCE_RECOVERY capability to break the convergence deadlock."""
+    if str(capability_code or "").strip().upper() != "WORKER_REPAIR_BOUNDED":
+        return False
+    if str(bounded_context or "").strip().upper() != "WORKER_RUNTIME_CONVERGENCE":
+        return False
+    if not isinstance(constraints, Mapping):
+        return False
+    return str(constraints.get("capability_code") or "").strip().upper() == "RUNTIME_CONVERGENCE_RECOVERY"
+
+
 def _require_mutation_runtime_convergence() -> dict[str, Any]:
     """Fail closed before any mutation publication when the active runtime is stale."""
     from tools.mirror_sync.worker_runtime_fingerprint import (
@@ -2839,7 +2887,11 @@ def preflight_semantic_objective(
         _requester_from_authenticated_user(current_user, project="EDARSAHUB")
         if requested_mode == "MUTATION":
             _assert_mutation_rbac(current_user)
-            if enforce_runtime_convergence:
+            if enforce_runtime_convergence and not _is_convergence_recovery_request(
+                capability.code,
+                bounded_context,
+                payload.get("constraints"),
+            ):
                 _require_mutation_runtime_convergence()
 
         if capability.submitter is not None:
@@ -2888,12 +2940,18 @@ def preflight_semantic_objective(
                     "approval_id",
                     "approval_path",
                     "approval_url",
+                    "human_portal_origin",
+                    "mcp_public_origin",
+                    "target_environment",
                     "human_action_required",
                     "auto_approved",
                     "ready_to_materialize",
                     "handoff_id",
                     "expires_at_utc",
                     "consent_channel",
+                    "invalidated",
+                    "invalidated_reason",
+                    "live_head_sha",
                 ):
                     if extra_key in pf_auth:
                         pf_out[extra_key] = pf_auth.get(extra_key)
