@@ -1,0 +1,45 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 25,
+        "paths": [
+          "tools/mirror_sync/worker_lifecycle_recovery.py",
+          "backend/modules/worker_ingress/service.py"
+        ],
+        "search_terms": [
+          "AUTHORIZATION_HEAD_DIVERGED",
+          "CONSENT_SCOPE_MISMATCH",
+          "preflight_gate_authorization_lifecycle"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-FDA64113FDC90B3DF1886271",
+  "mode": "READ_ONLY",
+  "objective": "[HANDOFF HO-AUTHRBAC-WORKERCONTROLP-914584412B3C95B7 AUTH_RBAC->WORKER_CONTROL_PLANE] Handoff NUEVO incidente distinto del ownership ya certificado: AUTH_RBAC Gate2 P0 funcional consentimiento humano aprobado CONSENT-BOS-AUTH-RBAC-SQL-IDENTITY-FAILCLOSE-2BFFFBB999B2, scope digest 2bfffbb999b261027d735e63f5b11fb62cf743c7dd81dfe7fcdc3b4ea237b897, base HEAD bab667a291a9ff71b5c768af2a916b49030f3f78; al materializar HEAD cambio a 7a1c5562ce8d38be1465881c0d19dd82d17c51c2 por trabajo concurrente de otros dominios. Resolver causa raiz de HEAD drift en autorizacion de Gate sin aflojar fail-closed, consentimiento firmado, SHA por archivo, permisos de ownership ni compare-and-swap. No reusar consentimiento para scope diferente, ni autoaprobar, ni crear Worker o colas alternativas. Reconciliar workflow canonico bajo WORKER_CONTROL_PLANE con test positivo y negativo; proponer gate acotado y autorizado de Desarrollo si hace falta, y devolver evidencia certificada a AUTH_RBAC para corregir sql_user_identity.py. No tocar Produccion, secretos, Scheduler ni trabajo de otros dominios. No repetir handoffs de ownership resueltos.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "P0",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
