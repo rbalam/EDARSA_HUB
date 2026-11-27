@@ -1,0 +1,63 @@
+{
+  "actions": [
+    {
+      "anchor": "    \"COMUNICACIONES_CFDI\": frozenset({\n",
+      "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+      "replacement": "    \"SQL_CONNECTIONS_8OF10\": frozenset({\n        \"backend/core/pool.py\",\n    }),\n",
+      "source_sha256": "5da59ced7d5dc498e08e683ec2387c145e5151a5a5cf37b01a03d62c7c596370",
+      "type": "insert_before"
+    },
+    {
+      "expected_occurrences": 1,
+      "path": "backend/tests/test_worker_authorization_consent_bridge_g1.py",
+      "replacement": "\n\ndef test_sql_connections_8of10_exact_context_ownership():\n    target = \"backend/core/pool.py\"\n    assert sem_caps._dev_context_owned_paths(\"SQL_CONNECTIONS_8OF10\") == frozenset({target})\n    assert sem_caps._dev_validate_path(target, context=\"SQL_CONNECTIONS_8OF10\") == target\n    for domain in (\"WORKER_CONTROL_PLANE\", \"AUTH_RBAC\", \"SEC_RBAC\", \"CRM\", None):\n        with pytest.raises(sem_caps.SemanticCapabilityError):\n            sem_caps._dev_validate_path(target, context=domain)\n    for path in (\"backend/core/db.py\", \"backend/core/auth/sql_user_identity.py\", \"backend/core/../core/pool.py\", \"backend/core/pool.py.bak\"):\n        with pytest.raises(sem_caps.SemanticCapabilityError):\n            sem_caps._dev_validate_path(path, context=\"SQL_CONNECTIONS_8OF10\")\n    assert \"backend/core/\" not in sem_caps._G3_ROOTS\n",
+      "source_sha256": "dddcc49dfe7a3490573ab3bba123707ded5da634a32a5d4ec1b65396c780463a",
+      "type": "append_once"
+    }
+  ],
+  "authorization_ref": "GO-SQL-CONNECTIONS-8OF10-EXACT-PATH-OWNERSHIP-20261127",
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/worker_ingress/semantic_capabilities.py",
+        "backend/tests/test_worker_authorization_consent_bridge_g1.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_authorization_consent_bridge_g1.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-BF4E7664D1A89F08BDFFFC12",
+  "mode": "MUTATION",
+  "objective": "Registrar exclusivamente el ownership exacto SQL_CONNECTIONS_8OF10 de backend/core/pool.py en _DEV_CONTEXT_PATH_OWNERSHIP y agregar pruebas de aislamiento positivo y negativo al suite existente de consentimiento. No ampliar roots globales, conceder autorización funcional ni modificar el pool.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
