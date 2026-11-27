@@ -779,56 +779,8 @@ const Servidores = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Ping automático cuando se cargan los servidores (silencioso, con delay entre cada uno)
-  useEffect(() => {
-    if (servers.length > 0) {
-      // Hacer ping silencioso con delay para no parecer ataque
-      const pingWithDelay = async () => {
-        for (let i = 0; i < servers.length; i++) {
-          const server = servers[i];
-          if (!pingStatus[server.id]) {
-            pingServerSilent(server.id);
-            // Esperar 4 segundos entre cada ping (excepto el último)
-            if (i < servers.length - 1) {
-              await new Promise(resolve => setTimeout(resolve, 4000));
-            }
-          }
-        }
-      };
-      
-      // Iniciar después de 2 segundos de cargar la página
-      const timeoutId = setTimeout(pingWithDelay, 2000);
-      return () => clearTimeout(timeoutId);
-    }
-    // Note: pingStatus and pingServerSilent are intentionally omitted to prevent infinite loops
-    // This effect runs once when servers load, not on every status update
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [servers]);
-
-  // Probar APIs locales automáticamente al cargar
-  useEffect(() => {
-    if (apiConnections.length > 0) {
-      const testApisWithDelay = async () => {
-        for (let i = 0; i < apiConnections.length; i++) {
-          const apiConn = apiConnections[i];
-          if (!apiTestStatus[apiConn.id] && apiConn.activo) {
-            await testApiConnection(apiConn);
-            // Esperar 2 segundos entre cada test
-            if (i < apiConnections.length - 1) {
-              await new Promise(resolve => setTimeout(resolve, 2000));
-            }
-          }
-        }
-      };
-      
-      // Iniciar después de 3 segundos de cargar las APIs
-      const timeoutId = setTimeout(testApisWithDelay, 3000);
-      return () => clearTimeout(timeoutId);
-    }
-    // Note: apiTestStatus and testApiConnection are intentionally omitted to prevent infinite loops
-    // This effect runs once when apiConnections load, not on every status update
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiConnections]);
+  // Las comprobaciones de conectividad requieren acción explícita del usuario.
+  // La carga del menú no realiza pruebas automáticas a servidores ni APIs.
 
   // ========== FUNCIONES DE DRAG PARA MODALES ==========
   // Usar refs para almacenar setPosition callback actual
