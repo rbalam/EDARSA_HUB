@@ -1,0 +1,61 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "tools/mirror_sync/",
+          "backend/core/",
+          "backend/modules/",
+          "frontend/src/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "authorization_ref",
+          "production_allowed",
+          "source_sha256",
+          "sessionStorage",
+          "tenant",
+          "rollback",
+          "idempotency",
+          "timezone",
+          "RBAC",
+          "sync_run_id",
+          "fail_closed",
+          "audit_log",
+          "mongo",
+          "capability_registry",
+          "source_of_truth",
+          "correlation_id"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-C64FD67786DBF78BAE6CA90D",
+  "mode": "READ_ONLY",
+  "objective": "Auditar READ_ONLY patrones de arquitectura y fallas recurrentes para proponer nuevas Máximas de Oro EDARSAHUB BOS sin duplicar las 21 reglas conversacionales existentes. Revisar controles de Worker, RBAC, idempotencia, sincronización, autorización, sesiones, rollback, aislamiento multiempresa, fuente de verdad SQL y contratos frontend. Devolver rutas y evidencia concreta; no mutar ni tocar Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "ARCHITECTURE_GOVERNANCE",
+    "conflict_domains": [
+      "ARCHITECTURE_GOVERNANCE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
