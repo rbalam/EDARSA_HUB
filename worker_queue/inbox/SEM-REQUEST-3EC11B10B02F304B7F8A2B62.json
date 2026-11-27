@@ -1,0 +1,53 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 40,
+        "paths": [
+          "backend/modules/admin_sql/routes.py",
+          "frontend/src/components/QueryConfigWizard.js",
+          "frontend/src/components/SyncStatusIndicator.jsx",
+          "frontend/src/components/admin/ResyncPanel.jsx",
+          "frontend/src/components/catalogo-consultas/useCatalogoConsultasData.js"
+        ],
+        "search_terms": [
+          "connection",
+          "server",
+          "sql",
+          "query",
+          "sync",
+          "mpro",
+          "softrestaurant",
+          "tenant"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-3EC11B10B02F304B7F8A2B62",
+  "mode": "READ_ONLY",
+  "objective": "Gate 2 READ_ONLY EDARSA Universal Platform: evaluate reuse of canonical server connection registry, SQL connection resolver, query config and authorized no-LIVE synchronization for independent future Emergent applications. Build on Gate 0 SEM-REQUEST-454CC6DF06087EED5E234906 and certified Gate 1 SEM-REQUEST-FF091B902F46BFA5A2E03E94 without repeating those audits. Return evidence of existing paths/routes, security boundaries, integration gaps, readiness and precise next minimal Gate. No changes to production, connections, secrets, repository or Worker infrastructure.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "ARCHITECTURE",
+    "conflict_domains": [
+      "ARCHITECTURE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
