@@ -1,0 +1,49 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "profile_code": "WORKER_OPERATIONS_STATE_SUMMARY",
+      "queries": [
+        {
+          "name": "worker_jobs_by_stage",
+          "sql": "SELECT LifecycleStage, CertificationStatus, COUNT_BIG(*) AS total_jobs FROM dbo.Sys_Worker_Jobs GROUP BY LifecycleStage, CertificationStatus ORDER BY LifecycleStage, CertificationStatus"
+        },
+        {
+          "name": "worker_incidents_by_state",
+          "sql": "SELECT IncidentState, Severity, COUNT_BIG(*) AS total_incidents FROM dbo.Sys_Worker_Incidents GROUP BY IncidentState, Severity ORDER BY IncidentState, Severity"
+        },
+        {
+          "name": "worker_capabilities_summary",
+          "sql": "SELECT CapabilityKind, CertificationStatus, COUNT_BIG(*) AS total_capabilities FROM dbo.Sys_Worker_Capabilities GROUP BY CapabilityKind, CertificationStatus ORDER BY CapabilityKind, CertificationStatus"
+        }
+      ],
+      "source": "EDARSAHUB",
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-6E43F3AA950F0E51B5927771",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Consultar estado operativo SQL canónico de Worker Console posterior a M2 R3, agregados de trabajos, incidentes y capacidades, sin modificar datos ni producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONSOLE",
+    "conflict_domains": [
+      "WORKER_CONSOLE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
