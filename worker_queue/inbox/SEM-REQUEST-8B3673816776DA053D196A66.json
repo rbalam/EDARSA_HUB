@@ -1,0 +1,47 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 20,
+        "paths": [
+          "backend/core/auth/sql_user_identity.py",
+          "backend/modules/api_connections/universal_test_routes.py",
+          "backend/core/rbac/middleware.py"
+        ],
+        "search_terms": [
+          "resolve_sql_usuario_id",
+          "resolve_sql_user_identity",
+          "usuario_id",
+          "get_api_connection_access_result"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-8B3673816776DA053D196A66",
+  "mode": "READ_ONLY",
+  "objective": "Auditar exclusivamente los contratos y consumidores del resolver identidad SQL para cerrar el riesgo de IDs no revalidados en rutas API_LOCAL; no modificar el helper transversal, no repetir gate de conexiones ya certificado; reportar exact paths y checks fail-closed.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "SQL_RBAC_019",
+    "conflict_domains": [
+      "SQL_RBAC_019"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
