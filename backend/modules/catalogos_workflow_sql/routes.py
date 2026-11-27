@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import Dict, Optional
 from core.security import get_current_user
+from core.rbac.middleware import require_explicit_permission
 from modules.catalogos_workflow_sql.repository import CatalogosWorkflowSQLRepository
 
 router = APIRouter(prefix="/api/sql/catalogos-workflow", tags=["Catalogos Workflow SQL"])
@@ -20,7 +21,8 @@ async def get_catalogos_disponibles(current_user: Dict = Depends(get_current_use
 async def put_catalogo_niveles(
     catalogo_id: str,
     body: Dict,
-    current_user: Dict = Depends(get_current_user)
+    current_user: Dict = Depends(get_current_user),
+    _rbac_admin: Dict = Depends(require_explicit_permission("RBAC_ADMIN"))
 ):
     """Upsert niveles de aprobación para un catálogo"""
     try:
@@ -33,7 +35,8 @@ async def put_catalogo_niveles(
 @router.get("/permisos/usuario/{user_id}")
 async def get_permisos_catalogo(
     user_id: int,
-    current_user: Dict = Depends(get_current_user)
+    current_user: Dict = Depends(get_current_user),
+    _rbac_admin: Dict = Depends(require_explicit_permission("RBAC_ADMIN"))
 ):
     """Obtiene permisos de catálogos para un usuario específico"""
     try:
@@ -45,7 +48,8 @@ async def get_permisos_catalogo(
 @router.post("/permisos")
 async def post_permisos_catalogo(
     body: Dict,
-    current_user: Dict = Depends(get_current_user)
+    current_user: Dict = Depends(get_current_user),
+    _rbac_admin: Dict = Depends(require_explicit_permission("RBAC_ADMIN"))
 ):
     """Crea o actualiza permisos de catálogo"""
     try:
