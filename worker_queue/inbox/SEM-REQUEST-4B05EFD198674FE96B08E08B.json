@@ -1,0 +1,54 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "dnd-kit",
+          "react-dnd",
+          "dragstart",
+          "draggable",
+          "onDragEnd",
+          "FormBuilder",
+          "PageBuilder",
+          "MenuBuilder",
+          "i18n",
+          "aria-label",
+          "lucide-react",
+          "ComponentRegistry",
+          "preview"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-4B05EFD198674FE96B08E08B",
+  "mode": "READ_ONLY",
+  "objective": "Cerrar brecha específica de evidencia frontend del G0 truncado, sin repetir auditoría general: identificar contratos reales para editor visual, componentes reutilizables, formularios, menús, iconos, accesibilidad, internacionalización, arrastrar y soltar, previsualización y edición. Base para arquitectura funcional Studio; no implementar ni modificar archivos.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "FABRIC_STUDIO",
+    "conflict_domains": [
+      "FABRIC_STUDIO"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
