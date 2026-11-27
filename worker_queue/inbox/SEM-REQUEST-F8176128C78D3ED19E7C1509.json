@@ -1,0 +1,51 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 40,
+        "paths": [
+          "backend/modules/proveedores/",
+          "backend/modules/compras/",
+          "frontend/src/portal/"
+        ],
+        "search_terms": [
+          "ATP",
+          "CTP",
+          "VMI",
+          "CPFR",
+          "ASN",
+          "pronostico",
+          "reserva",
+          "disponibilidad"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-F8176128C78D3ED19E7C1509",
+  "mode": "READ_ONLY",
+  "objective": "Auditar exclusivamente brechas nuevas del handoff COMPRAS Portal 2.0 HO-COMPRAS-PORTALPROVEEDO-B6A1A5FF95CEE4D7: contratos de disponibilidad ATP/CTP, VMI, CPFR, ASN, pronosticos y reservas con aislamiento proveedor. Reutilizar auditoria B5262EEDF55F0F2FC5DA; no repetir CFDI/CxP. Solo lectura.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "PORTAL_PROVEEDORES",
+    "conflict_domains": [
+      "PORTAL_PROVEEDORES"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
