@@ -1,0 +1,655 @@
+{
+  "base_sha": "f448a7f0ec90019ba45af3acd1472df46a2b559b",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-27T05:32:20Z",
+  "execution_base_sha": "f448a7f0ec90019ba45af3acd1472df46a2b559b",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-547D5DA45EA24A617E431D87",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-27T05:37:31Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.api_connections",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.cerebro",
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.db",
+              "core.secret_manager",
+              "core.unidades_service",
+              "datetime",
+              "json",
+              "logging",
+              "modules.consultas_sql.validator",
+              "modules.integrations_runtime.api_local_sync",
+              "modules.integrations_runtime.health",
+              "os",
+              "re",
+              "requests",
+              "time",
+              "typing",
+              "uuid",
+              "zoneinfo"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "resolve_api_local_sync_config"
+            ],
+            "path": "backend/modules/api_connections/repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_default_api_replication_policy",
+              "_escape_sql",
+              "_log_operation",
+              "_sql_row_to_api_dict",
+              "check_duplicate_api",
+              "create_api_connection",
+              "delete_api_connection",
+              "execute_test_query",
+              "get_api_connection",
+              "get_api_connection_by_id_full",
+              "get_api_connection_sql",
+              "get_api_connection_with_decrypted_key",
+              "get_api_connections_for_adapters",
+              "get_api_replication_policy",
+              "get_decrypted_api_key",
+              "init_api_connections_repository",
+              "list_api_connections",
+              "list_api_connections_sql",
+              "normalize_api_replication_policy",
+              "parse_json",
+              "sync_all_to_mongo_cache",
+              "test_api_connection_health",
+              "update_api_connection",
+              "update_api_replication_policy"
+            ],
+            "tables_referenced": [
+              "Sistema_EmpresasServidores"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.api_connections",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.auth.sql_user_identity",
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.rbac_sql.runtime",
+              "core.secret_manager",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "fastapi",
+              "fastapi.security",
+              "httpx",
+              "logging",
+              "os",
+              "pydantic",
+              "pymssql",
+              "re",
+              "time",
+              "typing",
+              "urllib.parse"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "_build_safe_url",
+              "_mask_headers",
+              "validate_api_connection_access"
+            ],
+            "path": "backend/modules/api_connections/universal_test_routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/api-connections/{connection_id}/test-connection",
+              "/api-connections/{connection_id}/test-connectivity",
+              "/api-connections/{connection_id}/universal-query-test"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "APIConnectionTestRequest",
+              "_build_safe_url",
+              "_filter_response_headers",
+              "_mask_headers",
+              "_mask_params",
+              "_mask_url_if_sensitive",
+              "_validate_no_sql_in_endpoint_path",
+              "_validate_no_sql_params",
+              "execute_api_connection_test",
+              "get_api_connection_access_result",
+              "get_api_connection_raw_for_auth",
+              "get_api_connection_with_secret",
+              "get_current_user",
+              "set_verify_token",
+              "test_api_connection_secure",
+              "test_api_connectivity_simple",
+              "validate_api_connection_access"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.integrations_center",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "api_factory_contract",
+              "dataclasses",
+              "enum",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "consumer_can_call",
+              "validate_consumer_grant"
+            ],
+            "path": "backend/modules/integrations_center/api_factory_access.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ApiConsumerGrant",
+              "ApiConsumerStatus",
+              "PublishedApiVersion",
+              "consumer_can_call",
+              "validate_api_version",
+              "validate_consumer_grant"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.integrations_center",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.communications.notifications.repository",
+              "core.rbac.middleware",
+              "fastapi",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "_reject_secret_fields"
+            ],
+            "path": "backend/modules/integrations_center/communications_routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/configs",
+              "/configs/{config_id}",
+              "/logs",
+              "/providers",
+              "/providers/{provider_id}",
+              "/queue",
+              "/templates",
+              "/templates/{template_id}"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_meta",
+              "_reject_secret_fields",
+              "_repo",
+              "_safe_doc",
+              "create_config",
+              "create_provider",
+              "create_template",
+              "deactivate_config",
+              "deactivate_template",
+              "list_configs",
+              "list_providers",
+              "list_templates",
+              "logs",
+              "queue_status",
+              "update_config",
+              "update_provider",
+              "update_template"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.integrations_center",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "api.admin_core_connections",
+              "collections",
+              "core.rbac_helper_sql",
+              "core.server_registry",
+              "homologation",
+              "homologation_repository",
+              "modules.api_connections.repository",
+              "modules.sync_historicos.catalog_service",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "_scope_sucursales"
+            ],
+            "path": "backend/modules/integrations_center/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_attach_health",
+              "_bool",
+              "_id_key",
+              "_normalize_connection",
+              "_scope_sucursales",
+              "get_catalogs",
+              "get_communications_summary",
+              "get_connection_detail",
+              "get_overview",
+              "list_connections"
+            ],
+            "tables_referenced": [
+              "Servidores_ConexionEstado",
+              "Servidores_Conexiones"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.integrations_runtime",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "api_local_sync",
+              "external_ids",
+              "health",
+              "scope_materializer",
+              "sucursal_scope",
+              "sync_ledger"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "externalidentifierconflict",
+              "materialize_external_sucursal_scope_atomic",
+              "resolve_api_local_sync_config",
+              "sucursalscopeconflict"
+            ],
+            "path": "backend/modules/integrations_runtime/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.integrations_runtime",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.server_registry",
+              "dataclasses",
+              "read_only_sql",
+              "requests",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "resolve_api_local_sync_config"
+            ],
+            "path": "backend/modules/integrations_runtime/api_local_sync.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ApiLocalSyncConfig",
+              "ApiLocalSyncError",
+              "classify_api_local_http_error",
+              "execute_api_local_readonly",
+              "resolve_api_local_sync_config"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.integrations_runtime",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "externalidentifierconflict"
+            ],
+            "path": "backend/modules/integrations_runtime/external_ids.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ExternalIdentifierConflict",
+              "_normalized_scope",
+              "_uuid",
+              "ensure_external_identifier"
+            ],
+            "tables_referenced": [
+              "Sistema_IdentificadoresExternos"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.integrations_runtime",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "external_ids",
+              "sucursal_scope",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "materialize_external_sucursal_scope_atomic"
+            ],
+            "path": "backend/modules/integrations_runtime/scope_materializer.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "MaterializedSucursalScope",
+              "materialize_external_sucursal_scope_atomic"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.integrations_runtime",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "sucursalscopeconflict"
+            ],
+            "path": "backend/modules/integrations_runtime/sucursal_scope.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "SucursalScopeConflict",
+              "_canonical_origin_id",
+              "_canonical_uuid",
+              "_require_server",
+              "_require_sucursal",
+              "ensure_sucursal_server_mapping"
+            ],
+            "tables_referenced": [
+              "Servidores_Conexiones",
+              "Sistema_SucursalServidorMapeo",
+              "Sistema_Sucursales"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "modules.api_connections.repository",
+              "modules.integrations_runtime.api_local_sync",
+              "pytest",
+              "sys",
+              "types"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "resolve_api_local_sync_config"
+            ],
+            "path": "backend/tests/test_api_connection_health_canonical_timeout.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "fake_execute",
+              "fake_resolve",
+              "test_health_reuses_canonical_api_local_timeout"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "modules.api_connections.repository",
+              "modules.integrations_runtime.api_local_sync",
+              "pytest",
+              "sys",
+              "types"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "resolve_api_local_sync_config"
+            ],
+            "path": "backend/tests/test_api_connection_health_internal_auth.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "fake_execute",
+              "fake_persist",
+              "fake_resolve",
+              "public_path_must_not_be_used",
+              "test_health_uses_canonical_api_local_transport"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "ast",
+              "inspect",
+              "modules.api_connections",
+              "pytest",
+              "textwrap"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "validate_api_connection_access"
+            ],
+            "path": "backend/tests/test_api_connections_universal_rbac.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "empresa",
+              "explode",
+              "permission",
+              "test_access_result_has_no_runtime_role_bypass",
+              "test_access_result_keeps_empresa_scope_denial_as_permission_error",
+              "test_access_result_reports_missing_empresaid_as_metadata_error",
+              "test_validate_access_allows_with_permission_and_empresa",
+              "test_validate_access_denies_without_empresa",
+              "test_validate_access_denies_without_empresa_scope",
+              "test_validate_access_denies_without_servidores_ver",
+              "test_validate_access_denies_without_sql_identity",
+              "test_validate_access_fails_closed_on_exception"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "modules.integrations_center.api_factory_access",
+              "modules.integrations_center.api_factory_contract",
+              "pytest"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "consumer_can_call",
+              "validate_consumer_grant"
+            ],
+            "path": "backend/tests/test_integrations_center_api_factory_access.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_api",
+              "_grant",
+              "test_active_consumer_requires_credential_reference",
+              "test_consumer_cannot_call_non_published_api",
+              "test_consumer_scope_is_company_and_unit_fail_closed",
+              "test_mutable_published_version_is_rejected",
+              "test_published_version_must_be_immutable_and_fingerprinted",
+              "test_suspended_consumer_cannot_call"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "asyncio",
+              "modules.integrations_runtime.api_local_sync",
+              "pytest",
+              "requests"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "resolve_api_local_sync_config"
+            ],
+            "path": "backend/tests/test_integrations_runtime_api_local_sync.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "FakeResponse",
+              "__init__",
+              "fake_get",
+              "fake_get_server_by_id",
+              "json",
+              "test_config_repr_does_not_expose_api_key",
+              "test_execute_readonly_select_contract",
+              "test_http_500_classifier_distinguishes_connectivity_and_query",
+              "test_http_500_classifier_never_returns_raw_error_text",
+              "test_resolver_rejects_non_api_local",
+              "test_resolver_uses_canonical_registry_and_decryption",
+              "test_transport_fail_closed_on_timeout",
+              "test_transport_rejects_invalid_payload",
+              "test_transport_rejects_non_read_only_sql_before_http"
+            ],
+            "tables_referenced": [
+              "Missing",
+              "Sucursales",
+              "X",
+              "Y"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "backend.modules.integrations_runtime.scope_materializer",
+              "unittest.mock"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "materialize_external_sucursal_scope_atomic"
+            ],
+            "path": "backend/tests/test_integrations_runtime_scope_materializer.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "FakeConnection",
+              "FakeCursor",
+              "__init__",
+              "call_subject",
+              "close",
+              "commit",
+              "cursor",
+              "rollback",
+              "test_commits_once_after_both_writers_succeed",
+              "test_connection_is_required",
+              "test_rolls_back_when_external_identifier_fails",
+              "test_rolls_back_when_mapping_fails_after_external_writer"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "backend.modules.integrations_runtime.sucursal_scope"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "sucursalscopeconflict"
+            ],
+            "path": "backend/tests/test_integrations_runtime_sucursal_scope.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "FakeCursor",
+              "__init__",
+              "execute",
+              "fetchall",
+              "fetchone",
+              "test_branch_reassignment_fails_closed",
+              "test_duplicate_origin_fails_closed",
+              "test_idempotent_existing_mapping_returns_same_id",
+              "test_missing_canonical_server_is_rejected",
+              "test_new_mapping_uses_locking_hints_and_inserts",
+              "test_origin_reassignment_fails_closed"
+            ],
+            "tables_referenced": [
+              "Servidores_Conexiones",
+              "Sistema_SucursalServidorMapeo",
+              "Sistema_Sucursales"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 17,
+          "scanned_files": 718,
+          "skipped_sensitive": 37
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-27T05:32:20Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
