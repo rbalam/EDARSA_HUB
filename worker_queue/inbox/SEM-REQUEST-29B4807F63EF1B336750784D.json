@@ -1,0 +1,55 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/crm/",
+          "backend/modules/comercial/",
+          "backend/modules/catalogo_ampliado/",
+          "backend/modules/catalogos/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "partner",
+          "distribuidor",
+          "revendedor",
+          "afiliado",
+          "referidor",
+          "referido",
+          "comision",
+          "integrador",
+          "Gobierno_PersonaVinculo",
+          "CRM_Cuentas"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-29B4807F63EF1B336750784D",
+  "mode": "READ_ONLY",
+  "objective": "Gate 6 Fabric Comercial READ_ONLY: identificar contratos reutilizables para red de partners, distribuidores, revendedores, afiliados e integradores, alta y vinculación a persona/empresa/cliente canónico, atribución comercial, acuerdos y permisos. Reutilizar Gates 0-5 y evidencia histórica COMERCIAL.CRM.COMISIONES_RP SEM-REQUEST-FC126210D21604272CB1E11A sin repetir sus auditorías; distinguir brechas de evidencia. No duplicar CRM, catálogos o Marketplace; no modificar código, SQL ni Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "FABRIC_COMERCIAL",
+    "conflict_domains": [
+      "FABRIC_COMERCIAL"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
