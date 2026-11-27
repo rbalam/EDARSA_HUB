@@ -1,0 +1,52 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 50,
+        "paths": [
+          "backend/modules/admin_sql/routes.py",
+          "backend/modules/admin_sql/rbac_pilot_service.py",
+          "backend/core/access_context/sql_context.py",
+          "frontend/src/components/ProtectedRoute.jsx",
+          "frontend/src/components/admin/BitacoraRBAC.jsx"
+        ],
+        "search_terms": [
+          "get_current_user",
+          "tenant",
+          "rbac",
+          "login",
+          "permission",
+          "session",
+          "scope"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-FF091B902F46BFA5A2E03E94",
+  "mode": "READ_ONLY",
+  "objective": "Gate 1 READ_ONLY: validate reusable identity and RBAC contracts across future EDARSA Emergent apps based on certified Gate0, without repeating global audit. Verify existing user identity, role assignment, per-app tenant/unit scopes, frontend guard versus backend RBAC, missing SSO evidence, acceptance criteria. No mutations, no Production.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "ARCHITECTURE",
+    "conflict_domains": [
+      "ARCHITECTURE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
