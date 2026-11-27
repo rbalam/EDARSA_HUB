@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "49000ec2a08ee742703104db52f715903524654e",
-  "generated_at_utc": "2026-11-27T00:31:19Z",
+  "generated_at_utc": "2026-11-27T00:32:45Z",
   "history": {
     "done_total_local": 2256,
     "pending_total_local": 0,
@@ -16,115 +16,115 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1903,
+      "age_seconds": 1989,
       "job_id": "SEM-REQUEST-01FF4EB1E2BEEBC49804E5E1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2912,
+      "age_seconds": 2997,
       "job_id": "SEM-REQUEST-08E2D3D2BC7E86E4138B236C",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2355,
+      "age_seconds": 2441,
       "job_id": "SEM-REQUEST-10F2B5D04C4973476071A5D8",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1517,
+      "age_seconds": 1602,
       "job_id": "SEM-REQUEST-3194DE41F63B2B638EEC63AA",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2071,
+      "age_seconds": 2157,
       "job_id": "SEM-REQUEST-3C112C8939439EC51216A560",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1293,
+      "age_seconds": 1378,
       "job_id": "SEM-REQUEST-59AB7E764A925AB7B7B67A56",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1435,
+      "age_seconds": 1521,
       "job_id": "SEM-REQUEST-5DAC1D1F1472F1B50D898CE6",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2908,
+      "age_seconds": 2993,
       "job_id": "SEM-REQUEST-6CF60C531B77FB2747890788",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2159,
+      "age_seconds": 2244,
       "job_id": "SEM-REQUEST-7A3A2B65B2F2DE2E5CFE59FF",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2155,
+      "age_seconds": 2241,
       "job_id": "SEM-REQUEST-7B3ED8C95B55D36053CBC5FB",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2068,
+      "age_seconds": 2154,
       "job_id": "SEM-REQUEST-7CB608A6F6A45B61885315F7",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1875,
+      "age_seconds": 1960,
       "job_id": "SEM-REQUEST-82C5F4BEBA5C60BB20CD2E0E",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1262,
+      "age_seconds": 1348,
       "job_id": "SEM-REQUEST-8C6F57CDA14C41E5BD4F8F74",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1431,
+      "age_seconds": 1516,
       "job_id": "SEM-REQUEST-999F548BE7B25C05BDBFC3D3",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1096,
+      "age_seconds": 1182,
       "job_id": "SEM-REQUEST-A378067C8B85FCD13D38D3EE",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 156,
+      "age_seconds": 241,
       "job_id": "SEM-REQUEST-C2D0AEFF6CAA20810DD716AD",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2384,
+      "age_seconds": 2469,
       "job_id": "SEM-REQUEST-D93C9285286D0878F1D38910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2352,
+      "age_seconds": 2438,
       "job_id": "SEM-REQUEST-ECCFACBCFEEBB1742C16F7A8",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1513,
+      "age_seconds": 1599,
       "job_id": "SEM-REQUEST-FE14ABB6D63F41213303B824",
       "reason": null,
       "state": "RESULT_READY"
@@ -144,8 +144,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-27T00:30:56Z",
-    "last_receive_utc": "2026-11-27T00:30:50Z",
+    "last_cycle_utc": "2026-11-27T00:32:37Z",
+    "last_receive_utc": "2026-11-27T00:32:32Z",
     "last_terminal_utc": "2026-11-27T00:28:43Z",
     "pid": "87",
     "runtime_fingerprint": {
