@@ -2460,6 +2460,25 @@ def cycle() -> dict[str, Any]:
             "production_touched": False,
         }
     claims = reconcile_agent_guard_orphans()
+    try:
+        try:
+            from tools.mirror_sync import agent_guard_telemetry as _ag_tel
+        except ModuleNotFoundError:
+            import agent_guard_telemetry as _ag_tel
+        agent_guard_supervision = _ag_tel.collect_agent_guard_supervision(
+            repo_root=ROOT,
+            state_root=STATE,
+        )
+    except Exception as exc:
+        audit("AGENT_GUARD_SUPERVISION_EXCEPTION", error=str(exc))
+        agent_guard_supervision = {
+            "schema": "edarsahub.agent-guard-telemetry.v1",
+            "health": "UNAVAILABLE",
+            "supervision_mode": "CONTROL_PLANE_INDEPENDENT",
+            "vscode_dependency": False,
+            "error": type(exc).__name__,
+            "production_touched": False,
+        }
     requeued = requeue_stale_processing()
     automatic_repair = automatic_repair_orchestration()
     automatic_repair_execution = advance_repair_automation(
@@ -2482,6 +2501,7 @@ def cycle() -> dict[str, Any]:
         "runtime": runtime,
         "autoconvergence": autoconvergence,
         "agent_guard": claims,
+        "agent_guard_supervision": agent_guard_supervision,
         "stale_processing_requeued": requeued,
         "maintenance": maintenance_runtime_summary(),
         "automatic_repair": automatic_repair,

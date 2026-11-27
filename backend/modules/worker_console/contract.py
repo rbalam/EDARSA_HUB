@@ -1069,6 +1069,36 @@ def get_worker_self_healing_snapshot(*, queue_root: Optional[Path] = None) -> Di
     # Cross-domain handoffs read-only telemetry (Fase 6)
     handoffs_overview = get_cross_domain_handoffs_overview(queue_root=qroot)
 
+    # Independent Agent Guard supervision telemetry (Gate G3, READ_ONLY, zero VS Code dependency)
+    agent_guard_summary: Dict[str, Any]
+    cp_ag = cp.get("agent_guard_supervision")
+    if isinstance(cp_ag, dict) and cp_ag:
+        agent_guard_summary = dict(cp_ag)
+        agent_guard_summary["production_touched"] = False
+    elif qroot == QUEUE_ROOT:
+        try:
+            from tools.mirror_sync import agent_guard_telemetry as _ag_tel
+
+            agent_guard_summary = _ag_tel.load_agent_guard_telemetry(state_root=qroot)
+        except Exception:
+            agent_guard_summary = {
+                "schema": "edarsahub.agent-guard-telemetry.v1",
+                "health": "UNAVAILABLE",
+                "supervision_mode": "CONTROL_PLANE_INDEPENDENT",
+                "vscode_dependency": False,
+                "production_touched": False,
+            }
+    else:
+        agent_guard_summary = {
+            "schema": "edarsahub.agent-guard-telemetry.v1",
+            "health": "NOT_CONFIGURED",
+            "supervision_mode": "CONTROL_PLANE_INDEPENDENT",
+            "vscode_dependency": False,
+            "alerts": [],
+            "alert_summary": {"total_active": 0, "errors": 0, "warnings": 0, "suppressed_duplicates_this_cycle": 0},
+            "production_touched": False,
+        }
+
     system_degraded = bool(detection.get("system_degraded") is True or runtime_info.get("runtime_repair_needed") is True)
     mcp_degraded = str(mcp_summary.get("health") or "").upper() == "DEGRADED"
     handoff_human_req = int((handoffs_overview.get("counts") or {}).get("human_intervention_required") or 0)
@@ -1119,6 +1149,7 @@ def get_worker_self_healing_snapshot(*, queue_root: Optional[Path] = None) -> Di
             "circuit_breakers_open": open_circuits,
         },
         "extensible_capabilities": capabilities_summary,
+        "agent_guard": agent_guard_summary,
         "cross_domain_handoffs": {
             "counts": handoffs_overview.get("counts") or {},
             "owners_by_domain": handoffs_overview.get("owners_by_domain") or [],
