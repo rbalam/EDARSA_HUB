@@ -1,0 +1,50 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "old_text": "  // Ping automático cuando se cargan los servidores (silencioso, con delay entre cada uno)\n  useEffect(() => {\n    if (servers.length > 0) {\n      // Hacer ping silencioso con delay para no parecer ataque\n      const pingWithDelay = async () => {\n        for (let i = 0; i < servers.length; i++) {\n          const server = servers[i];\n          if (!pingStatus[server.id]) {\n            pingServerSilent(server.id);\n            // Esperar 4 segundos entre cada ping (excepto el último)\n            if (i < servers.length - 1) {\n              await new Promise(resolve => setTimeout(resolve, 4000));\n            }\n          }\n        }\n      };\n      \n      // Iniciar después de 2 segundos de cargar la página\n      const timeoutId = setTimeout(pingWithDelay, 2000);\n      return () => clearTimeout(timeoutId);\n    }\n    // Note: pingStatus and pingServerSilent are intentionally omitted to prevent infinite loops\n    // This effect runs once when servers load, not on every status update\n    // eslint-disable-next-line react-hooks/exhaustive-deps\n  }, [servers]);\n\n  // Probar APIs locales automáticamente al cargar\n  useEffect(() => {\n    if (apiConnections.length > 0) {\n      const testApisWithDelay = async () => {\n        for (let i = 0; i < apiConnections.length; i++) {\n          const apiConn = apiConnections[i];\n          if (!apiTestStatus[apiConn.id] && apiConn.activo) {\n            await testApiConnection(apiConn);\n            // Esperar 2 segundos entre cada test\n            if (i < apiConnections.length - 1) {\n              await new Promise(resolve => setTimeout(resolve, 2000));\n            }\n          }\n        }\n      };\n      \n      // Iniciar después de 3 segundos de cargar las APIs\n      const timeoutId = setTimeout(testApisWithDelay, 3000);\n      return () => clearTimeout(timeoutId);\n    }\n    // Note: apiTestStatus and testApiConnection are intentionally omitted to prevent infinite loops\n    // This effect runs once when apiConnections load, not on every status update\n    // eslint-disable-next-line react-hooks/exhaustive-deps\n  }, [apiConnections]);\n\n",
+      "path": "frontend/src/pages/Servidores.js",
+      "replacement": "  // Las comprobaciones de conectividad requieren acción explícita del usuario.\n  // La carga del menú no realiza pruebas automáticas a servidores ni APIs.\n\n",
+      "source_sha256": "be4f2e086e26b8c60c8a4b0f7b3b19381383ada7c0a830a62d0ebf1929096e35",
+      "type": "replace_text"
+    }
+  ],
+  "authorization_ref": "GO-CONEXIONES-MENU-SERVIDORES-GATE8-AUTOPING-R1",
+  "checks": [
+    {
+      "paths": [
+        "backend/tests/test_servidores_menu_rbac_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-C39828AF1263DEF4655D3263",
+  "mode": "MUTATION",
+  "objective": "Gate8: Retirar únicamente dos useEffect de comprobación automática en la carga de Servidores.js. Mantener carga de conexiones, prueba manual de SQL/API, permisos, gestión de estados y contratos. No tocar Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "CONEXIONES_COMUNICACIONES",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "CONEXIONES_COMUNICACIONES"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
