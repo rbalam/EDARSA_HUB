@@ -1,0 +1,46 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 50,
+        "paths": [
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "GIT_DIVERGENCE_BLOCKED",
+          "convergence",
+          "git_sync",
+          "publisher",
+          "dispatcher"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-59AB7E764A925AB7B7B67A56",
+  "mode": "READ_ONLY",
+  "objective": "[HANDOFF HO-SECRBAC-WORKERCONTROLP-60AB555EBA6C879C SEC_RBAC->WORKER_CONTROL_PLANE] Transferir a WK Worker 6.0 (WORKER_CONTROL_PLANE) la incidencia historica GIT_DIVERGENCE_BLOCKED del job SEM-SECURITY_RBAC-DEVELOPMENT_MUTATION_BOUNDED-7A47FB4D95949732D977 para reconciliacion READ_ONLY de evidencia, causa raiz, versiones HEAD, estado del Worker, colas y artefactos. El runtime actualmente reporta convergencia global; no inferir que la divergencia continua. No repetir la mutacion fallida, no crear job alternativo ni modificar Produccion, no alterar worktrees compartidos. Distinguir incidente historico de bloqueo actual y devolver resolucion especifica a SEC_RBAC.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
