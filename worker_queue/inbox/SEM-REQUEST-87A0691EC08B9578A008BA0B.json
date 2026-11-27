@@ -1,0 +1,52 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 20,
+        "paths": [
+          "tools/mirror_sync/worker_lifecycle_recovery.py",
+          "tools/mirror_sync/worker_cross_domain_handoff.py",
+          "backend/modules/worker_ingress/service.py",
+          "backend/modules/worker_ingress/semantic_capabilities.py",
+          "backend/tests/test_worker_universal_multichat_handoff_p2.py"
+        ],
+        "search_terms": [
+          "chain_authorization",
+          "successor_spec",
+          "scope_digest",
+          "revalidate_gate_authorization_for_mutation",
+          "revoke_gate_authorization",
+          "authorization_classes",
+          "materialize_gate_authorization"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-87A0691EC08B9578A008BA0B",
+  "mode": "READ_ONLY",
+  "objective": "Determinar capacidad existente de autorización por cadena de Gates y brechas exactas para consentimiento único de programa con vigencia, alcance SHA, validación de sucesores y revocación inmediata. Reutilizar Consent Bridge y políticas existentes; no repetir auditoría G1 de consentimiento individual ni modificar código.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
