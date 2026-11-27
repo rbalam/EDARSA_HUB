@@ -1,0 +1,942 @@
+{
+  "base_sha": "0cae185b65783be52ac93f7117ef318a178e1340",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-27T06:33:43Z",
+  "execution_base_sha": "0cae185b65783be52ac93f7117ef318a178e1340",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-A62D474D920827317746AA22",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-27T06:36:09Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.fabric_marketplace",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "dataclasses",
+              "enum",
+              "re"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "authorization_ref",
+              "certification_ref",
+              "entitlement_ref"
+            ],
+            "path": "backend/modules/fabric_marketplace/domain.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "InstallationRequest",
+              "Listing",
+              "Product",
+              "Release",
+              "Visibility",
+              "__post_init__",
+              "_required"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "control_plane",
+              "dataclasses",
+              "evidence",
+              "planner",
+              "registry",
+              "router",
+              "typing",
+              "worker_compiler"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "is_certified_success"
+            ],
+            "path": "backend/modules/agent_harness/e2e_simulation.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AgentHarnessSimulation",
+              "SimulationError",
+              "SimulationResult",
+              "run"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "hashlib",
+              "json",
+              "planner",
+              "registry",
+              "router",
+              "typing",
+              "worker_compiler"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "is_certified_success"
+            ],
+            "path": "backend/modules/agent_harness/evidence.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "EvidenceBuilder",
+              "EvidenceError",
+              "EvidenceRecord",
+              "_token",
+              "build",
+              "canonical_sha256",
+              "is_certified_success"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.worker_console",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.security",
+              "core.sql_first.db",
+              "datetime",
+              "fastapi",
+              "logging",
+              "modules.worker_console",
+              "pathlib",
+              "re",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "_enforce_tenant_and_domain_scope",
+              "get_current_user",
+              "require_worker_console_access"
+            ],
+            "path": "backend/modules/worker_console/routes.py",
+            "rbac_contracts": [
+              "Usuario_Roles",
+              "get_current_user"
+            ],
+            "routes": [
+              "/audit",
+              "/capabilities",
+              "/dashboard",
+              "/handoffs",
+              "/incidents",
+              "/job/{job_id}",
+              "/jobs",
+              "/jobs/{state}",
+              "/lifecycle/{job_id}",
+              "/result/{job_id}",
+              "/self-healing",
+              "/tablajerias/checklist",
+              "/validate"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_audit_access",
+              "_check_sql_worker_console_authority",
+              "_enforce_tenant_and_domain_scope",
+              "_find_in_state",
+              "_job_id_from_name",
+              "_list_state",
+              "_raise_sql_unavailable",
+              "_read_reconciled_result_doc",
+              "_read_txt",
+              "_tail",
+              "audit",
+              "dashboard",
+              "get_canonical_job_detail",
+              "lifecycle",
+              "list_canonical_jobs",
+              "list_capabilities",
+              "list_incidents",
+              "list_jobs_by_queue_state",
+              "require_worker_console_access",
+              "result",
+              "tablajerias_checklist",
+              "validate",
+              "worker_cross_domain_handoffs_overview",
+              "worker_self_healing_overview"
+            ],
+            "tables_referenced": [
+              "Sys_Worker_",
+              "Sys_Worker_Capabilities",
+              "Sys_Worker_Incidents",
+              "Sys_Worker_Jobs",
+              "Usuario_Acciones",
+              "Usuario_Catalogo",
+              "Usuario_Modulos",
+              "Usuario_PermisosRolModulo",
+              "Usuario_Roles",
+              "Usuario_RolesAsignacion"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.worker_ingress",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "hashlib",
+              "pathlib",
+              "re",
+              "tools.mirror_sync",
+              "tools.mirror_sync.worker_requester_rbac",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "authorization_ref"
+            ],
+            "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "PytestCertificationSuite",
+              "SemanticCapability",
+              "SemanticCapabilityError",
+              "SqlReadonlyProfile",
+              "_capability_contract_details",
+              "_coa_gate6f_status_seed_builder",
+              "_cross_domain_handoff_register_submitter",
+              "_dev_apply_virtual_change",
+              "_dev_context_owned_paths",
+              "_dev_validate_path",
+              "_development_mutation_bounded_builder",
+              "_g3_constraints",
+              "_g3_context",
+              "_g3_repository_builder",
+              "_g3_result_builder",
+              "_g3_scheduling",
+              "_gate_authorization_lifecycle_submitter",
+              "_maintenance_history_readonly_builder",
+              "_read_only_canary_builder",
+              "_repository_contract_audit_builder",
+              "_sec_rbac_gate1b_sql_builder",
+              "_sql_connections_bootstrap_readonly_builder",
+              "_sql_readonly_profile_audit_builder",
+              "_validate_pytest_suite_path",
+              "_validate_readonly_sql_query",
+              "_worker_pytest_certification_readonly_builder",
+              "_worker_repair_bounded_submitter",
+              "_worker_result_detail_builder",
+              "capability_catalog",
+              "pytest_certification_suites",
+              "register_capability",
+              "register_pytest_certification_suite",
+              "register_sql_readonly_profile",
+              "registered_capabilities",
+              "resolve_capability",
+              "sql_readonly_profiles"
+            ],
+            "tables_referenced": [
+              "Alertas_Sistema",
+              "Fiscal_DocumentosEmitidos",
+              "Fiscal_DocumentosEmitidosEstatus",
+              "Sesiones",
+              "Sys_Worker_Capabilities",
+              "Sys_Worker_Incidents",
+              "Sys_Worker_Jobs",
+              "Unidades_Negocio",
+              "Usuario_Acciones",
+              "Usuario_Catalogo",
+              "Usuario_Modulos",
+              "Usuario_PermisosRolModulo",
+              "Usuario_Roles",
+              "Usuario_RolesAsignacion"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.worker_ingress",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "hashlib",
+              "inspect",
+              "json",
+              "logging",
+              "os",
+              "pathlib",
+              "re",
+              "semantic_capabilities",
+              "subprocess",
+              "tempfile",
+              "threading",
+              "time",
+              "tools.mirror_sync",
+              "tools.mirror_sync.gate_chain_controller",
+              "tools.mirror_sync.gate_chain_reconciler",
+              "tools.mirror_sync.universal_job_result_publisher",
+              "tools.mirror_sync.worker_job_factory",
+              "tools.mirror_sync.worker_lifecycle_recovery",
+              "tools.mirror_sync.worker_result_integrity",
+              "tools.mirror_sync.worker_result_reader",
+              "tools.mirror_sync.worker_result_semantic_extract",
+              "tools.mirror_sync.worker_result_status",
+              "tools.mirror_sync.worker_runtime_fingerprint",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "assert_status_read_access",
+              "authorization_ref"
+            ],
+            "path": "backend/modules/worker_ingress/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "WorkerIngressError",
+              "__init__",
+              "_assert_idempotent_request_binding",
+              "_assert_mutation_rbac",
+              "_assert_no_sensitive_keys",
+              "_attach_publication_diagnostic",
+              "_canonical_request_fingerprint",
+              "_check_unpublished_draft_idempotency",
+              "_clean",
+              "_ev_channel",
+              "_evaluate_explicit_mutation_authorization",
+              "_extract_bounded_context",
+              "_extract_envelope_job",
+              "_extract_user_roles_and_perms",
+              "_fast_extract_result_bounded_context",
+              "_find_existing_job_state",
+              "_infer_canonical_job_domain",
+              "_is_convergence_recovery_request",
+              "_job_matches_domain",
+              "_legacy_job_id_matches_domain",
+              "_legacy_semantic_job_id",
+              "_load_cached_queue_snapshot",
+              "_load_canonical_request_index",
+              "_load_certified_domain_results",
+              "_normalize_error_code",
+              "_parse_utc_timestamp",
+              "_queue_dir_signature",
+              "_read_disk_snapshot_index",
+              "_read_existing_request_job",
+              "_read_json_if_object",
+              "_read_remote_worker_result",
+              "_read_unpublished_draft",
+              "_requester_from_authenticated_user",
+              "_require_mutation_runtime_convergence",
+              "_resolve_existing_semantic_job",
+              "_resolve_job_domain",
+              "_safe_terminal_fields",
+              "_scan_json_dir_stats",
+              "_semantic_job_id",
+              "_submit_through_canonical_publisher",
+              "_verify_authorization_scope",
+              "_write_disk_snapshot_index_best_effort",
+              "assert_status_read_access",
+              "build_canonical_job",
+              "build_semantic_diagnostic",
+              "build_semantic_job",
+              "classify_publication_diagnostic",
+              "get_job_status",
+              "preflight_semantic_objective",
+              "resolve_go_context",
+              "submit_job",
+              "submit_objective"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.integrations_center",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "communications_routes",
+              "core.rbac.middleware",
+              "core.security",
+              "fastapi",
+              "logging",
+              "typing"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "get_current_user"
+            ],
+            "path": "backend/modules/integrations_center/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/api-factory/apis",
+              "/api-factory/apis/{api_id}/versions",
+              "/api-factory/consumers",
+              "/api-factory/consumers/{consumer_id}/grants",
+              "/api-factory/overview",
+              "/catalogs",
+              "/communications",
+              "/connections",
+              "/connections/{connection_id}",
+              "/overview"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_meta",
+              "api_factory_apis",
+              "api_factory_consumer_grants",
+              "api_factory_consumers",
+              "api_factory_overview",
+              "api_factory_versions",
+              "catalogs",
+              "communications",
+              "connection_detail",
+              "connections",
+              "overview"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.__init__.py",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.cerebro",
+              "core.connection_resolver",
+              "core.corporate_filters.service",
+              "core.providers",
+              "core.unidades_service"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "get_current_user"
+            ],
+            "path": "backend/core/__init__.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.alcance_helper.py",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.access_context.sql_context",
+              "core.corporate_filters.service",
+              "core.sql_first.connection_factory",
+              "core.unidades_service",
+              "dataclasses",
+              "logging",
+              "pymssql",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "get_current_user"
+            ],
+            "path": "backend/core/alcance_helper.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ResultadoAlcance",
+              "__post_init__",
+              "_resolver_almacen",
+              "_resolver_empresa",
+              "_resolver_sucursal",
+              "_resolver_unidad",
+              "resolver_alcance_usuarios",
+              "to_dict",
+              "verificar_usuario_en_alcance"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.auth",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "os",
+              "pymssql",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "get_current_user"
+            ],
+            "path": "backend/core/auth/user_repository_sql.py",
+            "rbac_contracts": [
+              "Usuario_Roles",
+              "get_current_user"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AuthRepositorySQL",
+              "__init__",
+              "_build_user_dict",
+              "_get_all_active_empresas",
+              "_get_connection",
+              "_get_user_empresas",
+              "_get_user_rol",
+              "compare_user_mongo_vs_sql",
+              "create_user_sql",
+              "deactivate_user_sql",
+              "find_user_by_email_sql",
+              "find_user_by_id_sql",
+              "get_user_auth_context_sql",
+              "get_user_by_email_sql",
+              "get_user_by_public_uuid_sql",
+              "list_all_users_sql",
+              "update_user_sql",
+              "validate_superadmin_rule"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.centro_control",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "asyncio",
+              "core.centro_control",
+              "core.centro_control.email_notifications",
+              "core.centro_control.recipients_manager",
+              "core.centro_control.websocket",
+              "core.centro_control.whatsapp_notifications",
+              "core.connection_resolver",
+              "core.corporate_filters.service",
+              "core.health_checker",
+              "core.rbac.middleware",
+              "core.regression_checker",
+              "core.scheduler.scheduler_manager",
+              "core.security",
+              "core.sql_first.connection_factory",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "datetime",
+              "fastapi",
+              "json",
+              "logging",
+              "modules.worker_console.contract",
+              "os",
+              "pydantic",
+              "re",
+              "subprocess",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "netpay",
+              "sap",
+              "softrestaurant",
+              "twilio"
+            ],
+            "matched_terms": [
+              "get_current_user"
+            ],
+            "path": "backend/core/centro_control/routes.py",
+            "rbac_contracts": [
+              "Usuario_Roles",
+              "get_current_user"
+            ],
+            "routes": [
+              "/alertas",
+              "/alertas/acknowledge",
+              "/bitacora",
+              "/blindaje/modulos",
+              "/destinatarios",
+              "/destinatarios/resumen",
+              "/destinatarios/{recipient_id}",
+              "/email/alerta-critica",
+              "/email/config",
+              "/email/test",
+              "/estado",
+              "/fuentes",
+              "/historial",
+              "/jobs",
+              "/jobs/{job_id}/run",
+              "/matriz-resolucion",
+              "/metricas",
+              "/notificaciones/config",
+              "/notificar/alerta-critica",
+              "/notificar/test",
+              "/ping",
+              "/regresiones",
+              "/regresiones/{modulo}",
+              "/salud",
+              "/salud/resumen",
+              "/whatsapp/alerta-critica",
+              "/whatsapp/config",
+              "/whatsapp/test",
+              "/worker-handoffs",
+              "/worker-salud",
+              "/ws/status"
+            ],
+            "scheduler_contracts": [
+              "scheduler",
+              "scheduler_manager"
+            ],
+            "symbols": [
+              "AlertAcknowledgeRequest",
+              "BitacoraEntryRequest",
+              "RecipientCreateRequest",
+              "RecipientUpdateRequest",
+              "RegressionCheckRequest",
+              "SchedulerJobCreateRequest",
+              "SchedulerJobRunRequest",
+              "_allowed_ws_origins",
+              "_authenticate_ws_connection",
+              "_authorize_ws_principal",
+              "_cc_execute",
+              "_cc_fetchall",
+              "_cc_sql_connection",
+              "_crear_alerta",
+              "_ensure_scheduler_job_config_table",
+              "_enviar_email_alerta_critica",
+              "_enviar_whatsapp_alerta_critica",
+              "_extract_ws_credential",
+              "_has_explicit_ws_permission_sql",
+              "_is_ws_origin_allowed",
+              "_registrar_evento",
+              "_revoke_if_unauthorized",
+              "_run_netpay_backfill_sync",
+              "_safe_job_id",
+              "_validate_handler",
+              "actualizar_destinatario",
+              "crear_destinatario",
+              "crear_scheduler_job",
+              "ejecutar_checks_regresion",
+              "ejecutar_scheduler_job_manual",
+              "eliminar_destinatario",
+              "enviar_alerta_critica_email",
+              "enviar_alerta_critica_whatsapp",
+              "enviar_email_prueba",
+              "enviar_whatsapp_prueba",
+              "listar_destinatarios",
+              "notificar_alerta_critica",
+              "notificar_test",
+              "obtener_alertas",
+              "obtener_bitacora",
+              "obtener_config_email",
+              "obtener_config_notificaciones",
+              "obtener_config_whatsapp",
+              "obtener_estado_fuentes",
+              "obtener_estado_general",
+              "obtener_estado_jobs",
+              "obtener_handoffs_worker_autonomo",
+              "obtener_historial",
+              "obtener_matriz_resolucion",
+              "obtener_metricas_estabilidad",
+              "obtener_modulos_blindados",
+              "obtener_regresiones_modulo",
+              "obtener_resumen_ejecutivo",
+              "obtener_salud_sistema",
+              "obtener_salud_worker_autonomo",
+              "ping_centro_control",
+              "reconocer_alerta",
+              "registrar_cambio_bitacora",
+              "resumen_destinatarios",
+              "websocket_endpoint",
+              "websocket_status"
+            ],
+            "tables_referenced": [
+              "Scheduler_BitacoraJobs",
+              "Sys_Scheduler_JobConfig",
+              "Sys_Scheduler_Jobs",
+              "Usuario_Acciones",
+              "Usuario_Catalogo",
+              "Usuario_Modulos",
+              "Usuario_PermisosRolModulo",
+              "Usuario_Roles",
+              "Usuario_RolesAsignacion"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.rbac",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.rbac_helper_sql",
+              "core.security",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "fastapi",
+              "fastapi.security",
+              "functools",
+              "logging",
+              "service",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "get_current_user"
+            ],
+            "path": "backend/core/rbac/middleware.py",
+            "rbac_contracts": [
+              "Usuario_Roles",
+              "get_current_user"
+            ],
+            "routes": [
+              "/cargos/{id}/aplicar",
+              "/endpoint"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RBACAllDependency",
+              "RBACAnyDependency",
+              "RBACDependency",
+              "RBACExplicitDependency",
+              "RBACExplicitDualDependency",
+              "__call__",
+              "__init__",
+              "_get_db",
+              "get_current_user_from_token",
+              "get_current_user_with_permissions",
+              "require_all_permissions",
+              "require_any_permission",
+              "require_explicit_permission",
+              "require_explicit_permission_dual",
+              "require_permission"
+            ],
+            "tables_referenced": [
+              "Usuario_Acciones",
+              "Usuario_Catalogo",
+              "Usuario_Modulos",
+              "Usuario_PermisosRolModulo",
+              "Usuario_Roles",
+              "Usuario_RolesAsignacion"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.rbac",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.security",
+              "core.unidades_service",
+              "fastapi",
+              "fastapi.security",
+              "logging",
+              "middleware",
+              "os",
+              "schemas",
+              "service",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "get_current_user"
+            ],
+            "path": "backend/core/rbac/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/asignar",
+              "/audit",
+              "/mis-permisos",
+              "/permisos",
+              "/revocar",
+              "/roles",
+              "/roles/{rol_id}",
+              "/usuario/{user_id}/permisos",
+              "/verificar"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_db",
+              "actualizar_rol",
+              "asignar_rol",
+              "crear_rol",
+              "eliminar_rol",
+              "get_current_user",
+              "get_rbac_service",
+              "listar_permisos",
+              "listar_roles",
+              "obtener_audit_logs",
+              "obtener_mis_permisos",
+              "obtener_permisos_usuario",
+              "obtener_rol",
+              "revocar_rol",
+              "verificar_permiso"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.security.py",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "bcrypt",
+              "core.access_context.sql_context",
+              "core.auth.user_repository_sql",
+              "core.corporate_filters.service",
+              "core.mongo_stub",
+              "core.rbac_helper_sql",
+              "core.refresh_tokens",
+              "core.sql_first.connection_factory",
+              "core.unidades_service",
+              "dataclasses",
+              "datetime",
+              "fastapi",
+              "fastapi.security",
+              "jwt",
+              "logging",
+              "modules.auth.repository",
+              "os",
+              "pymssql",
+              "re",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "get_current_user"
+            ],
+            "path": "backend/core/security.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/protected"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "SQLSanitizer",
+              "SQLValidationResult",
+              "_get_all_empresas_sql",
+              "_get_user_sql_only",
+              "_normalize_jwt_identity_claims",
+              "_normalize_sql",
+              "_p5_extract_usuario_id_from_payload",
+              "_safe_user_for_log",
+              "_validate_sql_user_structure",
+              "clear_auth_cookie",
+              "compare_user_mongo_vs_sql_passive",
+              "create_access_token",
+              "create_token",
+              "dependency",
+              "filter_by_user_context",
+              "filter_servers_by_permissions",
+              "filter_sucursales_by_permissions",
+              "get_current_user",
+              "get_current_user_dual",
+              "get_current_user_dual_dependency",
+              "get_db",
+              "get_servers_for_empresas",
+              "get_user_empresas_permitidas",
+              "hash_password",
+              "init_security",
+              "log_auth_preflight_status",
+              "log_blocked_sql",
+              "quick_validate",
+              "set_auth_cookie",
+              "to_dict",
+              "user_has_empresa_access",
+              "user_has_server_access",
+              "validate",
+              "validate_for_catalog",
+              "validate_for_explorer",
+              "validate_sql_detailed",
+              "validate_sql_safe",
+              "verify_password",
+              "verify_token",
+              "verify_token_session_active"
+            ],
+            "tables_referenced": [
+              "Sesiones",
+              "Usuario_Catalogo"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 14,
+          "scanned_files": 234,
+          "skipped_sensitive": 159
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-27T06:33:43Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
