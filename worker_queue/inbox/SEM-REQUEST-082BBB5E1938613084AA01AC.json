@@ -1,0 +1,39 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "source_result": {
+          "branch": "worker/results",
+          "path": "worker_queue/results/SEM-REQUEST-A2A363486935CE5CE488ADC7.json"
+        }
+      },
+      "type": "worker_result_semantic_extract"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-082BBB5E1938613084AA01AC",
+  "mode": "READ_ONLY",
+  "objective": "Extraer semánticamente el resultado terminal ya CERTIFIED_READ_ONLY del Job de auditoría de Explorador SQL del dominio INTEGRACIONES_EXTERNAS. Sin reauditar repositorio ni ejecutar conexiones SQL externas, identificar archivos relevantes para introspección de MPRO/SoftRestaurant, cobertura verificada, incertidumbres debidas a evidencia truncada, y un único siguiente Gate estrecho para ENTRADA_COMPRA. Distinguir arquitectura disponible de validaciones de aplicación no demostradas. No modificar código, bases ni Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "INTEGRACIONES_EXTERNAS",
+    "conflict_domains": [
+      "INTEGRACIONES_EXTERNAS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
