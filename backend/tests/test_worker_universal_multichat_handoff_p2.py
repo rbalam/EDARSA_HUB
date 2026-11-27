@@ -723,3 +723,28 @@ def test_p2b_successor_negative_states_and_controlled_end_to_end_execution(tmp_p
     assert matched[0]["source_resumed"] is True
     assert matched[0]["resumed_job_id"] == resumed_jid
     assert matched[0]["production_touched"] is False
+
+
+def test_wk60_g2_unassigned_readonly_is_not_human_consent(tmp_path, monkeypatch):
+    qroot = _setup_queue(tmp_path)
+    record = {"handoff_id": "HO-G2-TECHNICAL", "source_domain": "FINANZAS",
+              "target_domain": "WORKER_CONTROL_PLANE", "handoff_mode": "READ_ONLY",
+              "auto_dispatch": False, "lifecycle_state": "QUEUED_IN_TARGET_DOMAIN",
+              "created_at_utc": "2026-01-01T00:00:00Z",
+              "dependency_satisfied": False}
+    monkeypatch.setattr(handoff_mod, "list_handoffs", lambda **kw: [record])
+    monkeypatch.setattr(handoff_mod, "save_handoff", lambda *a, **kw: None)
+    monkeypatch.setattr(handoff_mod, "classify_handoff_request", lambda *a, **kw: {
+        "classification": "TARGET_BOUNDED_CONTEXT_REQUIRED", "reason": "OWNER_REQUIRED",
+        "lifecycle_state": "QUEUED_IN_TARGET_DOMAIN", "next_allowed_action": "ASSIGN_COMPATIBLE_CAPABILITY",
+        "requires_human_intervention": False, "has_executor": False, "dispatch_eligible": False,
+        "executor_status": "UNASSIGNED_NO_EXECUTOR"})
+    first = handoff_mod.reconcile_cross_domain_handoffs(state_root=qroot, max_dispatches=0, no_executor_stall_seconds=0)
+    assert not first["isolated_errors"]
+    assert record["exception_code"] == "TECHNICAL_RESOLUTION_PLAN_REQUIRED"
+    assert record["requires_human_intervention"] is False
+    assert record["dependency_satisfied"] is False
+    assert record["auto_dispatch"] is False
+    second = handoff_mod.reconcile_cross_domain_handoffs(state_root=qroot, max_dispatches=0, no_executor_stall_seconds=0)
+    assert not second["isolated_errors"]
+    assert not second["reclassified_this_cycle"]

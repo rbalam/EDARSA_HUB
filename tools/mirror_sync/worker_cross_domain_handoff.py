@@ -4150,6 +4150,19 @@ def reconcile_cross_domain_handoffs(
             compat_caps = list(cls.get("compatible_capabilities") or [])
             next_action = cls["next_allowed_action"]
 
+            # Keep technical planning visible without asking a human to approve an absent plan.
+            technical_plan_required = (
+                _clean(record.get("target_domain")).upper() in WORKER_INFRA_DOMAINS
+                and _clean(record.get("handoff_mode") or "READ_ONLY").upper() == "READ_ONLY"
+                and not _clean(record.get("requested_capability"))
+                and cls.get("next_allowed_action") == "ASSIGN_COMPATIBLE_CAPABILITY"
+                and cls.get("requires_human_intervention") is False
+                and not has_exec
+            )
+            if technical_plan_required:
+                cls = {**cls, "exception_code": "TECHNICAL_RESOLUTION_PLAN_REQUIRED",
+                       "exception_reason": "Bounded technical plan required; no consent inferred."}
+
             # Determine whether this handoff is already in steady-state stall escalation
             # so reconciliation never oscillates between CLASSIFIED/QUEUED and ESCALATED_HUMAN_REQUIRED
             # and never rewrites the file when nothing meaningful changed.
@@ -4157,6 +4170,7 @@ def reconcile_cross_domain_handoffs(
             age_s = (now_dt - ref_dt).total_seconds() if ref_dt is not None else 0.0
             stall_applicable = (
                 not has_exec
+                and not technical_plan_required
                 and not _clean(record.get("resolution_job_id"))
                 and age_s >= float(no_executor_stall_seconds)
                 and cls["lifecycle_state"] in {"REGISTERED", "CLASSIFIED", "QUEUED_IN_TARGET_DOMAIN"}
@@ -4227,7 +4241,8 @@ def reconcile_cross_domain_handoffs(
             if not has_exec and not _clean(record.get("resolution_job_id")):
                 without_executor_ids.append(hid)
                 if (
-                    age_s >= float(no_executor_stall_seconds)
+                    not technical_plan_required
+                    and age_s >= float(no_executor_stall_seconds)
                     and _clean(record.get("lifecycle_state")).upper() in {"REGISTERED", "CLASSIFIED", "QUEUED_IN_TARGET_DOMAIN"}
                 ):
                     _ensure_history(record)
