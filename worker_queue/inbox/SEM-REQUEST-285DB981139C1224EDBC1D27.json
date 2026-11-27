@@ -1,0 +1,48 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 25,
+        "paths": [
+          "tools/mirror_sync/worker_lifecycle_recovery.py",
+          "tools/mirror_sync/git_divergence_guard.py",
+          "backend/modules/worker_ingress/service.py"
+        ],
+        "search_terms": [
+          "merge-base",
+          "is-ancestor",
+          "AUTHORIZATION_HEAD_DIVERGED",
+          "shallow",
+          "_validate_gate_paths_and_hashes"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-285DB981139C1224EDBC1D27",
+  "mode": "READ_ONLY",
+  "objective": "[HANDOFF HO-BITACORAS-WORKERCONTROLP-0DEF8D1E84BAEBA6 BITACORAS->WORKER_CONTROL_PLANE] Diagnostico acotado para WK Worker 6.0: despues de commit certificado 8081524266e74bba7189fbaa99026d21eb0dc468 de revalidacion de HEAD, el PREFLIGHT de Gate BITACORAS-SISTEMA-TAREAS-P0-RBAC-R1 (base bab667a291a9ff71b5c768af2a916b49030f3f78) devuelve AUTHORIZATION_HEAD_DIVERGED aunque GitHub compare confirma 5 commits descendientes y SIN cambios en routes.py ni repository.py. Runtime esta convergente 80815242. Hipotesis concreta: git merge-base --is-ancestor en /app falla por historial local incompleto/shallow o ref objeto no presente, o diferencia de arbol runtime. Revisar solo semantica de _validate_gate_paths_and_hashes y utilidades git para ofrecer prueba no mutante y correccion fail-closed. NO repetir auditorias ya certificadas ni autorizar mutacion, evitar R3, no cambiar Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
