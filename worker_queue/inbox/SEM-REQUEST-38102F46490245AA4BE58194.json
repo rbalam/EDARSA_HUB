@@ -1,0 +1,55 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "MongoDisabledError",
+          "mongo_disabled",
+          "StubDatabase",
+          "mongo_stub",
+          "MongoClient",
+          "AsyncIOMotorClient",
+          "MONGO_URL",
+          "SQLLockRepository",
+          "Scheduler_DistributedLocks",
+          "is_mongo_available",
+          "get_stub_database",
+          "NullLock",
+          "HERMETIC_READONLY",
+          "EDARSAHUB_SQL_HOST"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-38102F46490245AA4BE58194",
+  "mode": "READ_ONLY",
+  "objective": "Inventariar exclusivamente pruebas existentes de independencia operativa Mongo y compatibilidad Emergent en backend/tests. Reutilizar auditoría Core SEM-REQUEST-675CA32814B9777BB9291743 y handoff HO-WORKERINGRESS-WORKERCONTROLP-A98868D8903F9008; no repetir inspección Core ni registrar otro handoff. Identificar nombres de pruebas, mocks y cobertura de arranque sin Mongo, locks SQL, scheduler, autenticación, notificaciones, fail-closed y regresión. No ejecutar pruebas ni modificar archivos. Preparar selección de suite hermética fija para el propietario del registry. Distinguir inventario estático de certificación funcional.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "PLATFORM_RUNTIME",
+    "conflict_domains": [
+      "PLATFORM_RUNTIME"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
