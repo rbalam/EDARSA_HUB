@@ -1,0 +1,159 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "old_text": "      setServers(sqlConnections);\n      setApiConnections(localApis);",
+      "path": "frontend/src/pages/Servidores.js",
+      "replacement": "      setServers(sqlConnections);\n      setApiConnections(localApis);\n\n      // Evidencia histórica desde EDARSAHUB; nunca iniciar pruebas al cargar.\n      // Las pruebas manuales existentes tienen prioridad sobre el historial.\n      setPingStatus(prev => {\n        const next = { ...prev };\n        sqlConnections.forEach(conn => {\n          if (next[conn.id] || conn.health?.has_evidence !== true) return;\n          const state = String(conn.health.status || '').toUpperCase();\n          next[conn.id] = {\n            loading: false,\n            status: state === 'CONNECTED' ? 'connected' : state === 'ERROR' ? 'error' : null,\n            historical: true,\n            lastCheck: conn.health.last_test_utc || conn.health.last_check || conn.health.updated_at_utc,\n            responseTime: conn.health.latency_ms,\n          };\n        });\n        return next;\n      });\n      setApiTestStatus(prev => {\n        const next = { ...prev };\n        localApis.forEach(conn => {\n          if (next[conn.id] || conn.health?.has_evidence !== true) return;\n          const state = String(conn.health.status || '').toUpperCase();\n          next[conn.id] = {\n            loading: false,\n            status: state === 'CONNECTED' ? 'success' : state === 'ERROR' ? 'error' : null,\n            historical: true,\n            lastCheck: conn.health.last_test_utc || conn.health.last_check || conn.health.updated_at_utc,\n          };\n        });\n        return next;\n      });",
+      "source_sha256": "15d322cc790da07ddc93fbecfd39dfbf98ebaa5c3ce95cae115d8ec73bc7f355",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "title={`Conectado en ${pingStatus?.responseTime}ms`}",
+      "path": "frontend/src/pages/Servidores.js",
+      "replacement": "title={pingStatus?.historical ? `Última prueba registrada: ${pingStatus?.lastCheck || 'fecha desconocida'}` : `Conectado en ${pingStatus?.responseTime}ms`}",
+      "source_sha256": "ad1ff44b651738fa0d42adb5b0898346792f7b59a5c3f9b19a75548e689fbda8",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "Online ({pingStatus?.responseTime}ms)",
+      "path": "frontend/src/pages/Servidores.js",
+      "replacement": "{pingStatus?.historical ? 'Último: Conectado' : `Online (${pingStatus?.responseTime}ms)`}",
+      "source_sha256": "6d40d1d525d6d12367ed4d373fba75920cfad1cbb47a774a99b15165aef50271",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "        Offline\n      </Button>",
+      "path": "frontend/src/pages/Servidores.js",
+      "replacement": "        {pingStatus?.historical ? 'Último: Error' : 'Offline'}\n      </Button>",
+      "source_sha256": "6196aa9c8f1add634b1fea53bb0f1fc286ae80a46b3263c7e4514d6cac344139",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "pingStatus[server.id]?.online",
+      "path": "frontend/src/pages/Servidores.js",
+      "replacement": "pingStatus[server.id]?.status === 'connected'",
+      "source_sha256": "ceb340b872bdde30ee4816f2a6232463f034f5fd582b2410ad5ed52c3d8a7257",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "pingStatus[server.id]?.error",
+      "path": "frontend/src/pages/Servidores.js",
+      "replacement": "pingStatus[server.id]?.status === 'error'",
+      "source_sha256": "3cb55cb789b74593cc18d83bf570a4ec27a4d88c32bec043f92abed4e699b530",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "<span className=\"text-xs\">Online</span>",
+      "path": "frontend/src/pages/Servidores.js",
+      "replacement": "<span className=\"text-xs\">{pingStatus[server.id]?.historical ? 'Último: Conectado' : 'Online'}</span>",
+      "source_sha256": "f3851867cd776c53cfd24e522c44ae401dfb65fb796820fbb191bfcf4be35324",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "<span className=\"text-xs\">Offline</span>",
+      "path": "frontend/src/pages/Servidores.js",
+      "replacement": "<span className=\"text-xs\">{pingStatus[server.id]?.historical ? 'Último: Error' : 'Offline'}</span>",
+      "source_sha256": "6f00846dba40446449aff2acd2cce74a36cfc9932d58c6ba308d4fc528cfe5ae",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "<span className=\"text-xs\">Error</span>",
+      "path": "frontend/src/pages/Servidores.js",
+      "replacement": "<span className=\"text-xs\">{apiTestStatus[apiConn.id]?.historical ? 'Último: Error' : 'Error'}</span>",
+      "source_sha256": "85cd35d181abf66c099afadef1c8232988ef7a5d636322f4c7d82a8a38587d02",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "<span className=\"text-xs\">Parcial</span>",
+      "path": "frontend/src/pages/Servidores.js",
+      "replacement": "<span className=\"text-xs\">{apiTestStatus[apiConn.id]?.historical ? 'Último: Parcial' : 'Parcial'}</span>",
+      "source_sha256": "37c9b74d635b906e75f2c0034492d23d6fb8b4fbebe443ec87ef595880f6566b",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "<span className=\"text-xs\">OK</span>",
+      "path": "frontend/src/pages/Servidores.js",
+      "replacement": "<span className=\"text-xs\">{apiTestStatus[apiConn.id]?.historical ? 'Último: OK' : 'OK'}</span>",
+      "source_sha256": "6143c7c8ee7ef55449811d73832f37687b3536252af629c150d8032497a081a5",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "                        Sin Conexión\n                      </Badge>",
+      "path": "frontend/src/pages/Servidores.js",
+      "replacement": "                        {apiTestStatus[apiConn.id]?.historical ? 'Último: Sin conexión' : 'Sin Conexión'}\n                      </Badge>",
+      "source_sha256": "55a7c51caf1cf42eff42799c0c0a6dd82bdee392c7fbc91abe3b9090527f397f",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "                        Conectado\n                      </Badge>",
+      "path": "frontend/src/pages/Servidores.js",
+      "replacement": "                        {apiTestStatus[apiConn.id]?.historical ? 'Último: Conectado' : 'Conectado'}\n                      </Badge>",
+      "source_sha256": "02c8f8acadc71c779975a4ebe68f27e03dbb2583a7b6e8d213e8e23abfa0e92a",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "path": "backend/tests/test_servidores_menu_rbac_contract.py",
+      "replacement": "\ndef test_servidores_health_historico_sin_pings_automaticos():\n    source = (ROOT / \"frontend\" / \"src\" / \"pages\" / \"Servidores.js\").read_text(encoding=\"utf-8\")\n    assert \"conn.health?.has_evidence !== true\" in source\n    assert \"historical: true\" in source\n    assert \"Último: Conectado\" in source\n    assert \"pingStatus[server.id]?.online\" not in source\n    assert \"pingStatus[server.id]?.error\" not in source\n    assert \"pingServerSilent(server.id);\" not in source\n    assert \"await testApiConnection(apiConn);\" in source\n    assert \"onPing={pingServer}\" in source\n",
+      "source_sha256": "b2c96733b996d1a92f9a7fa6de65f2661adc9207ad783cdea7a48647d2d75e06",
+      "type": "append_once"
+    }
+  ],
+  "authorization_ref": "GO-CONEXIONES-MENU-SERVIDORES-GATE10-HEALTH-UI-R1",
+  "checks": [
+    {
+      "paths": [
+        "backend/tests/test_servidores_menu_rbac_contract.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_servidores_menu_rbac_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-2E2F9108B781729F189A84C6",
+  "mode": "MUTATION",
+  "objective": "Gate10: mostrar estado histórico health EDARSAHUB sin pruebas automáticas al abrir Menú de Servidores, unificar lista y tarjetas SQL y API, preservar pruebas manuales RBAC y añadir regresión. Solo desarrollo.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "CONEXIONES_COMUNICACIONES",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "CONEXIONES_COMUNICACIONES"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
