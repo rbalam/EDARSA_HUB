@@ -282,7 +282,8 @@ async def put_replication_policy(
 @router.post("")
 async def create_api(
     data: ApiConnectionCreate,
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    _admin: dict = Depends(require_explicit_permission("RBAC_ADMIN")),
 ):
     """
     Crea una nueva conexión API.
@@ -315,7 +316,8 @@ async def create_api(
 async def update_api(
     api_id: str,
     data: ApiConnectionUpdate,
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    _admin: dict = Depends(require_explicit_permission("RBAC_ADMIN")),
 ):
     """
     Actualiza una conexión API existente.
@@ -350,7 +352,11 @@ async def update_api(
 
 
 @router.delete("/{api_id}")
-async def delete_api(api_id: str, credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def delete_api(
+    api_id: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    _admin: dict = Depends(require_explicit_permission("RBAC_ADMIN")),
+):
     """
     Elimina (soft delete) una conexión API.
     DESTINO: EDARSAHUB SQL (autoritativo).
