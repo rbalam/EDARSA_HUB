@@ -1,0 +1,128 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "old_text": "// Helper: Renderiza indicador de estado del servidor",
+      "path": "frontend/src/pages/Servidores.js",
+      "replacement": "// Histórico: conservar la fecha recibida sin inferir la zona horaria.\nconst historicalCheckLabel = (status) => status?.historical\n  ? `Última prueba registrada: ${status.lastCheck ? String(status.lastCheck).replace('T', ' ') : 'fecha no disponible'}`\n  : null;\n\n// Helper: Renderiza indicador de estado del servidor",
+      "source_sha256": "397353eb076b09f38b1a8aa99de13bd14a86460474e1d87bff0eae289a4d9c2d",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "title=\"Online\" />;",
+      "path": "frontend/src/pages/Servidores.js",
+      "replacement": "title={historicalCheckLabel(pingStatus) || \"Online\"} />;",
+      "source_sha256": "9b37123047f8fa60420a58dfc35f65b36ba0fa997c4c4480d5aad80e0f7787fc",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "title=\"Offline\" />;",
+      "path": "frontend/src/pages/Servidores.js",
+      "replacement": "title={historicalCheckLabel(pingStatus) || \"Offline\"} />;",
+      "source_sha256": "50cfb23adf64bc749b68c23377d5f6e35d3270df42df91e491b668fb79eb8152",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "title={pingStatus?.historical ? `Última prueba registrada: ${pingStatus?.lastCheck || 'fecha desconocida'}` : `Conectado en ${pingStatus?.responseTime}ms`}",
+      "path": "frontend/src/pages/Servidores.js",
+      "replacement": "title={historicalCheckLabel(pingStatus) || `Conectado en ${pingStatus?.responseTime}ms`}",
+      "source_sha256": "d5deae65ea63fad649e91fcf14cc24c1108676bc5eaf038f2797c451b991c962",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "className=\"h-7 px-3 text-xs bg-red-50 border-red-300 text-red-700 hover:bg-red-100\"\n      >",
+      "path": "frontend/src/pages/Servidores.js",
+      "replacement": "className=\"h-7 px-3 text-xs bg-red-50 border-red-300 text-red-700 hover:bg-red-100\"\n        title={historicalCheckLabel(pingStatus) || 'Offline'}\n      >",
+      "source_sha256": "57dac9127bedef923fd98e1e5db5edb4d6896ee08a182f9e3565c613510b3caa",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "                          </td>\n                          {/* Nombre */}",
+      "path": "frontend/src/pages/Servidores.js",
+      "replacement": "                            {pingStatus[server.id]?.historical && (\n                              <div className=\"mt-1 text-xs text-zinc-500\">{historicalCheckLabel(pingStatus[server.id])}</div>\n                            )}\n                          </td>\n                          {/* Nombre */}",
+      "source_sha256": "ff95b83bbde0e5618e1be0a858dd4ffe06aa96bbb058ce019e9f537314aa90a5",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "                        </td>\n                        {/* Nombre */}",
+      "path": "frontend/src/pages/Servidores.js",
+      "replacement": "                            {apiTestStatus[apiConn.id]?.historical && (\n                              <div className=\"mt-1 text-xs text-zinc-500\">{historicalCheckLabel(apiTestStatus[apiConn.id])}</div>\n                            )}\n                        </td>\n                        {/* Nombre */",
+      "source_sha256": "ce1870a18e431d0fa30adf282df8c2a64d0401d1b7288acdc78b600ba7861d8b",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "                  <StatusButton \n                    pingStatus={pingStatus[server.id]} \n                    serverId={server.id} \n                    onPing={pingServer} \n                  />",
+      "path": "frontend/src/pages/Servidores.js",
+      "replacement": "                  <div>\n                    <StatusButton\n                      pingStatus={pingStatus[server.id]}\n                      serverId={server.id}\n                      onPing={pingServer}\n                    />\n                    {pingStatus[server.id]?.historical && (\n                      <div className=\"mt-1 text-xs text-zinc-500\">{historicalCheckLabel(pingStatus[server.id])}</div>\n                    )}\n                  </div>",
+      "source_sha256": "5f454da981c7dacbe84cc94bbf5e5eb6b355868ffe2f3773934fdf1cb93e0bb3",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "                </CardHeader>\n                <CardContent>\n                  <div className=\"space-y-2 text-sm\">",
+      "path": "frontend/src/pages/Servidores.js",
+      "replacement": "                    {apiTestStatus[apiConn.id]?.historical && (\n                      <div className=\"mt-1 text-xs text-zinc-500\">{historicalCheckLabel(apiTestStatus[apiConn.id])}</div>\n                    )}\n                </CardHeader>\n                <CardContent>\n                  <div className=\"space-y-2 text-sm\">",
+      "source_sha256": "fbaa7c8d0198378f034da6d943ebdc247a0f8ecf127750683d4254660a753bd5",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "    assert \"onPing={pingServer}\" in source",
+      "path": "backend/tests/test_servidores_menu_rbac_contract.py",
+      "replacement": "    assert \"onPing={pingServer}\" in source\n\n\ndef test_servidores_evidencia_historica_con_fecha_en_listas_y_tarjetas():\n    source = (ROOT / \"frontend\" / \"src\" / \"pages\" / \"Servidores.js\").read_text(encoding=\"utf-8\")\n    assert \"const historicalCheckLabel = (status)\" in source\n    assert \"Última prueba registrada:\" in source\n    assert \"fecha no disponible\" in source\n    assert \"pingStatus[server.id]?.historical && (\" in source\n    assert \"apiTestStatus[apiConn.id]?.historical && (\" in source\n    assert 'historicalCheckLabel(pingStatus) || \"Online\"' in source\n    assert \"historicalCheckLabel(pingStatus) || 'Offline'\" in source\n    assert \"pingServerSilent(server.id);\" not in source",
+      "source_sha256": "76f665ff958768f4e845e2aaa0817cb30928a826aa9985eb4e0c15e9005a97c5",
+      "type": "replace_text"
+    }
+  ],
+  "authorization_ref": "GO-CONEXIONES-SERVIDORES-GATE13-LASTCHECK-UX-R1",
+  "checks": [
+    {
+      "paths": [
+        "backend/tests/test_servidores_menu_rbac_contract.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_servidores_menu_rbac_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-D8DF0758E0A64F1F4323AB7A",
+  "mode": "MUTATION",
+  "objective": "Gate13 historico última prueba SQL/API lista y tarjetas, indicador histórico y fecha sin inferir timezone, preservar pruebas manuales y RBAC, sin TTL, SQL ni Producción. Corrección del prepublish whitespace validator del job rechazado, sin duplicados.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "CONEXIONES_COMUNICACIONES",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "CONEXIONES_COMUNICACIONES"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
