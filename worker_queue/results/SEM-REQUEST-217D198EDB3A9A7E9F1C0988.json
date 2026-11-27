@@ -1,0 +1,272 @@
+{
+  "base_sha": "49000ec2a08ee742703104db52f715903524654e",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-27T02:16:11Z",
+  "execution_base_sha": "49000ec2a08ee742703104db52f715903524654e",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-217D198EDB3A9A7E9F1C0988",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-27T02:17:22Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_registry",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "time",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cortecajaid",
+              "finanzas_cortescaja"
+            ],
+            "path": "backend/modules/finanzas/repository_cortes_caja_edarsahub.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CortesCajaRepositoryError",
+              "RepositoryCortesCajaEdarsahub",
+              "__init__",
+              "_formatear_corte",
+              "calcular_fecha_deposito_esperada",
+              "contar_cortes",
+              "get_cortes_caja_repository_sql",
+              "get_edarsahub_connection",
+              "listar_cortes_caja",
+              "listar_cortes_por_server_id",
+              "obtener_cortes_todos_servidores"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.rbac_sql.service",
+              "core.security",
+              "fastapi",
+              "modules.finanzas.incidencias_caja_access",
+              "modules.finanzas.incidencias_caja_contracts"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbacsqlservice"
+            ],
+            "path": "backend/modules/finanzas/incidencias_caja_routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/bootstrap"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "obtener_bootstrap_cajas"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "modules.finanzas.incidencias_caja_access",
+              "modules.finanzas.incidencias_caja_application",
+              "modules.finanzas.incidencias_caja_context",
+              "modules.finanzas.incidencias_caja_contracts",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "alcancecaja",
+              "motivos_contextuales"
+            ],
+            "path": "backend/modules/finanzas/incidencias_caja_orchestration.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CatalogoCajaNoVerificable",
+              "ResolutoresCajaCanonicos",
+              "preparar_caja_autenticada_v1"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.rbac_sql.service",
+              "dataclasses",
+              "modules.finanzas.incidencias_caja_context",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "alcancecaja",
+              "rbacsqlservice"
+            ],
+            "path": "backend/modules/finanzas/incidencias_caja_access.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AccesoCajaDenegado",
+              "AccesoCajaValidado",
+              "validar_acceso_creacion_caja"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "hashlib",
+              "modules.finanzas.incidencias_caja_contracts",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "alcancecaja"
+            ],
+            "path": "backend/modules/finanzas/incidencias_caja_context.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AlcanceCaja",
+              "CajasContextError",
+              "MotivoCajaCatalogo",
+              "RegistroCajaValidado",
+              "preparar_registro_caja"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.rbac_sql",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.sql_first.db"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbacsqlservice"
+            ],
+            "path": "backend/core/rbac_sql/service.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RBACSQLService",
+              "_has_superadmin_role",
+              "build_context",
+              "can_access_empresa",
+              "can_access_permission",
+              "can_access_servidor",
+              "can_access_sucursal",
+              "can_access_unidad",
+              "can_access_unit_metadata",
+              "get_effective_permissions",
+              "get_empresas",
+              "get_permission_scope_by_code",
+              "get_roles",
+              "get_scope_assignment_state",
+              "get_servidores",
+              "get_sucursales",
+              "get_unidades"
+            ],
+            "tables_referenced": [
+              "Servidores_Conexiones",
+              "Sistema_SucursalServidorMapeo",
+              "Sistema_Sucursales",
+              "Unidades_Negocio",
+              "Usuario_Acciones",
+              "Usuario_EmpresasAsignacion",
+              "Usuario_Modulos",
+              "Usuario_PermisosRolModulo",
+              "Usuario_Roles",
+              "Usuario_RolesAsignacion",
+              "Usuario_ServidoresAsignacion",
+              "Usuario_SucursalesAsignacion"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "ast",
+              "fastapi",
+              "fastapi.testclient",
+              "modules.finanzas",
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rbacsqlservice"
+            ],
+            "path": "backend/tests/test_incidencias_caja_routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "current_user",
+              "permission",
+              "test_bootstrap_http_rbac_fail_closed",
+              "test_bootstrap_requires_canonical_auth_and_rbac"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 7,
+          "scanned_files": 7,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-27T02:16:09Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
