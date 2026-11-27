@@ -1,0 +1,48 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 20,
+        "paths": [
+          "backend/modules/comercial/routes.py",
+          "backend/modules/comercial/service.py",
+          "backend/core/pool.py",
+          "backend/tests/test_comercial_rbac_blindaje.py"
+        ],
+        "search_terms": [
+          "precios_constantes",
+          "query_edarsahub_tablero",
+          "execute_hub_query",
+          "Sync_Precios_Historicos"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-4BC22CF142CD0BEE5A07828C",
+  "mode": "READ_ONLY",
+  "objective": "[HANDOFF HO-CONEXIONESCOMU-COMERCIALPOS-F6AF1477A22B932C CONEXIONES_COMUNICACIONES->COMERCIAL_POS] Transferir al dominio COMERCIAL_POS hallazgo P0 verificable en backend/modules/comercial/routes.py, endpoint /comercial/precios-constantes/{server_id}: interpolacion SQL de server_id sucursal producto_id fechas en Sync_Precios_Historicos; _query_edarsahub_tablero(query) sin parametros y captura excepciones devolviendo [] (NO_DATA falso). Validar ownership, helper parametrizado canónico y pruebas existentes, preparar reparacion atómica en Desarrollo solo tras autorización independiente. No ejecutar MUTATION ni repetir Gates previos.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL_POS",
+    "conflict_domains": [
+      "COMERCIAL_POS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
