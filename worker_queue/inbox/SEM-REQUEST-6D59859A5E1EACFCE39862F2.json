@@ -1,0 +1,52 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "frontend/src/",
+          "backend/core/"
+        ],
+        "search_terms": [
+          "FechaEspecial",
+          "FechasEspeciales",
+          "fecha_especial",
+          "fechas_especiales",
+          "fechas-especiales",
+          "fechaEspecial",
+          "fechasEspeciales",
+          "temporada",
+          "temporadas"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-6D59859A5E1EACFCE39862F2",
+  "mode": "READ_ONLY",
+  "objective": "Gate 1 focalizado: localizar exclusivamente el catálogo existente de fechas especiales y temporadas, sus referencias SQL, endpoints, pantallas y relaciones de campaña. Complementar evidencia truncada de SEM-REQUEST-D0E71686ABF155B4405B7A46 sin repetir auditoría general. No implementar.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL.MARKETING",
+    "conflict_domains": [
+      "COMERCIAL.MARKETING"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
