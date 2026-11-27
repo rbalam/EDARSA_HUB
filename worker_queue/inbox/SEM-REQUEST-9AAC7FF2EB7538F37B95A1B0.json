@@ -1,0 +1,55 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 30,
+        "paths": [
+          "backend/modules/integrations_center/service.py",
+          "backend/modules/integrations_center/repository.py",
+          "backend/modules/integrations_runtime/health.py",
+          "backend/modules/api_connections/repository.py",
+          "backend/modules/api_connections/routes.py",
+          "frontend/src/pages/Servidores.js"
+        ],
+        "search_terms": [
+          "last_test_utc",
+          "UltimaPruebaUTC",
+          "health",
+          "replication_policy",
+          "timeout",
+          "freshness",
+          "vigencia",
+          "ttl",
+          "EstadoConexion"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-9AAC7FF2EB7538F37B95A1B0",
+  "mode": "READ_ONLY",
+  "objective": "Gate11 READ_ONLY nuevo: identificar propietario canónico de vigencia/frescura de evidencia de conectividad SQL y API_LOCAL, distinguir TTL de health vs timeout de pruebas y política de replicación, sin cambios, sin LIVE ni Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "CONEXIONES_COMUNICACIONES",
+    "conflict_domains": [
+      "CONEXIONES_COMUNICACIONES"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
