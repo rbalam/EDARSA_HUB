@@ -1,0 +1,53 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/",
+          "frontend/src/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "comandero",
+          "NetPay",
+          "cerrar_cuenta",
+          "close_account",
+          "payment_confirmed",
+          "mesa_inactiva",
+          "orden_cocina",
+          "comandero_rapido",
+          "comandero_extendido",
+          "split_payment"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-2C22C752CE488CE1F0EC58E7",
+  "mode": "READ_ONLY",
+  "objective": "Gate 1 complementario al Gate 0 certificado SEM-REQUEST-9A93CBB58253E595D61F2EF8: localizar exclusivamente contratos operativos de comandero y ciclo de cuenta, pagos confirmados NetPay, cierre automático, cocina y mesas; excluir coincidencias genéricas POS y no repetir auditoría transversal ni Gates de Caja. Identificar evidencia y brechas, sin cambios.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "TPV",
+    "conflict_domains": [
+      "TPV"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
