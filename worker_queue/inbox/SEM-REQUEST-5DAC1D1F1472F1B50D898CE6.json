@@ -1,0 +1,49 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 50,
+        "paths": [
+          "backend/modules/universal_query/"
+        ],
+        "search_terms": [
+          "universal-query-test",
+          "get_current_user",
+          "substitute_parameters",
+          "sql_libre",
+          "SUPERADMIN",
+          "pymssql",
+          "rollback",
+          "db_owner"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-5DAC1D1F1472F1B50D898CE6",
+  "mode": "READ_ONLY",
+  "objective": "Auditar exclusivamente READ_ONLY el código actual del endpoint universal-query-test P1: autenticación, RBAC efectivo, parametrización pymssql, aislamiento multiempresa y perfil SQL de mínimo privilegio. Identificar evidencia existente sin repetir trabajos certificados. No modificar archivos ni Producción; no ejecutar SQL de negocio ni publicar R2 histórico.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "SEC_RBAC",
+    "conflict_domains": [
+      "SEC_RBAC"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
