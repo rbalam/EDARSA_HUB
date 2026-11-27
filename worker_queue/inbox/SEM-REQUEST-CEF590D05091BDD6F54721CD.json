@@ -1,0 +1,36 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "job_id": "SEM-REQUEST-9654C07A935F27DAF9134D53"
+      },
+      "type": "worker_result_detail_read"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-CEF590D05091BDD6F54721CD",
+  "mode": "READ_ONLY",
+  "objective": "[HANDOFF HO-CONEXIONESCOMU-WORKERCONTROLP-0951972814C7291F CONEXIONES_COMUNICACIONES->WORKER_CONTROL_PLANE] Comunicar a WK Worker 6.0 / WORKER_CONTROL_PLANE cierre verificado del incidente Gate 5 CONEXIONES_COMUNICACIONES: SEM-REQUEST-9654C07A935F27DAF9134D53 fue DRAFT con recovery_required, ahora READ_ONLY_COMPLETE CERTIFIED_READ_ONLY 100%, evidence COMPLETE, blockers 0, production_touched false. No recuperar ni republicar job; registrar resolucion y evitar trabajos duplicados. Comunicacion de estado entre dominios, sin mutaciones.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
