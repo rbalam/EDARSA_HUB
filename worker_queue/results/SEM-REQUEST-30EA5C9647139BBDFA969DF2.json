@@ -1,0 +1,237 @@
+{
+  "base_sha": "0cae185b65783be52ac93f7117ef318a178e1340",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-27T06:33:31Z",
+  "execution_base_sha": "0cae185b65783be52ac93f7117ef318a178e1340",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-30EA5C9647139BBDFA969DF2",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-27T06:34:16Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.fabric_marketplace",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "fabric_marketplace",
+              "marketplace"
+            ],
+            "path": "backend/modules/fabric_marketplace/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fabric_marketplace",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "dataclasses",
+              "enum",
+              "re"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "fabric_marketplace",
+              "marketplace"
+            ],
+            "path": "backend/modules/fabric_marketplace/domain.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "InstallationRequest",
+              "Listing",
+              "Product",
+              "Release",
+              "Visibility",
+              "__post_init__",
+              "_required"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.integrations_center",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "api_factory_contract",
+              "dataclasses",
+              "enum",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "apiconsumergrant",
+              "apipublicationstatus",
+              "consumer_can_call",
+              "publishedapidefinition",
+              "publishedapiversion"
+            ],
+            "path": "backend/modules/integrations_center/api_factory_access.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ApiConsumerGrant",
+              "ApiConsumerStatus",
+              "PublishedApiVersion",
+              "consumer_can_call",
+              "validate_api_version",
+              "validate_consumer_grant"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.integrations_center",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "enum",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "apipublicationstatus",
+              "publishedapidefinition"
+            ],
+            "path": "backend/modules/integrations_center/api_factory_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ApiAuthMode",
+              "ApiCapabilityBinding",
+              "ApiFactoryContractError",
+              "ApiPublicationStatus",
+              "PublishedApiDefinition",
+              "can_publish",
+              "publication_requires_certified_homologation",
+              "validate_api_definition"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "modules.fabric_marketplace.domain",
+              "pytest"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "fabric_marketplace",
+              "marketplace"
+            ],
+            "path": "backend/tests/test_fabric_marketplace_domain.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_installation_requires_entitlement_and_authorization",
+              "test_listing_requires_certification_reference",
+              "test_product_requires_owner",
+              "test_release_binds_artifact_and_manifest"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "modules.integrations_center.api_factory_access",
+              "modules.integrations_center.api_factory_contract",
+              "pytest"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "apiconsumergrant",
+              "apipublicationstatus",
+              "consumer_can_call",
+              "publishedapidefinition",
+              "publishedapiversion"
+            ],
+            "path": "backend/tests/test_integrations_center_api_factory_access.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_api",
+              "_grant",
+              "test_active_consumer_requires_credential_reference",
+              "test_consumer_cannot_call_non_published_api",
+              "test_consumer_scope_is_company_and_unit_fail_closed",
+              "test_mutable_published_version_is_rejected",
+              "test_published_version_must_be_immutable_and_fingerprinted",
+              "test_suspended_consumer_cannot_call"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "modules.integrations_center.api_factory_contract",
+              "pytest"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "apipublicationstatus",
+              "publishedapidefinition"
+            ],
+            "path": "backend/tests/test_integrations_center_api_factory_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_definition",
+              "test_api_cannot_publish_without_capability_binding",
+              "test_api_cannot_publish_without_certified_domain_homologation",
+              "test_api_cannot_publish_without_rbac",
+              "test_approved_api_can_publish_when_all_guards_pass",
+              "test_draft_is_not_publishable_even_when_other_guards_pass",
+              "test_valid_definition_uses_bos_capability_binding"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 7,
+          "scanned_files": 1630,
+          "skipped_sensitive": 437
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-27T06:33:30Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
