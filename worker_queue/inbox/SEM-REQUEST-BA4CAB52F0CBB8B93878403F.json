@@ -1,0 +1,53 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 70,
+        "paths": [
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "menuConfig",
+          "MenuService",
+          "menuItems",
+          "usePermissions",
+          "useMenu",
+          "dynamicMenu",
+          "customization",
+          "featureFlag",
+          "extension",
+          "favorites",
+          "routeConfig",
+          "tenantId"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-BA4CAB52F0CBB8B93878403F",
+  "mode": "READ_ONLY",
+  "objective": "Gate 3 Fabric Interna READ_ONLY: identificar puntos de extension declarativa de menus, navegacion y pantallas en frontend, composicion de componentes, rutas y permisos efectivos; distinguir preferencias personales de extensiones privadas versionadas. No alterar BOS maestro ni habilitar laboratorios externos; aislamiento Gate 2 sigue pendiente de demostracion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "FABRIC_INTERNA",
+    "conflict_domains": [
+      "FABRIC_INTERNA"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
