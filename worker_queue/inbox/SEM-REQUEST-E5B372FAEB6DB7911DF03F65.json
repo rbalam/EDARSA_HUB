@@ -1,0 +1,52 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 60,
+        "paths": [
+          "backend/modules/",
+          "backend/core/"
+        ],
+        "search_terms": [
+          "document_repository",
+          "documentos_repository",
+          "DocumentoVersion",
+          "document_version",
+          "document_search",
+          "retrieval",
+          "knowledge",
+          "gestor_documental",
+          "repositorio_documental",
+          "base_conocimiento"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-E5B372FAEB6DB7911DF03F65",
+  "mode": "READ_ONLY",
+  "objective": "Identificar gestor documental transversal existente, repositorios SQL de documentos y contratos de recuperación documental para asistente IA. Excluir repetición de auditoría manuales_operativos certificada. Buscar candidatos para incorporar manual externo versionado con RBAC y SQL Server EDARSAHUB; solo lectura.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "SOFTRESTAURANT",
+    "conflict_domains": [
+      "SOFTRESTAURANT"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
