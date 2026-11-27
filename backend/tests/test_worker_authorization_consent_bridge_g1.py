@@ -682,6 +682,45 @@ def test_negative_invalid_signature_expiration_replay_scope_tampering_and_produc
         )
 
 
+def test_scope_aware_head_drift_preserves_exact_scope(tmp_path):
+    """Descendant commits outside authorized scope are acceptable, not changed paths or divergent Git."""
+    repo, base, shas = _init_git_repo(tmp_path)
+    target = "backend/modules/demo_target.py"
+    tests = ["backend/tests/test_demo_target.py"]
+
+    (repo / "unrelated.txt").write_text("other\n", encoding="utf-8")
+    subprocess.run(["git", "-C", str(repo), "add", "unrelated.txt"], check=True)
+    subprocess.run(["git", "-C", str(repo), "commit", "-m", "unrelated"], check=True, capture_output=True)
+    result = lr._validate_gate_paths_and_hashes(
+        domain="COMERCIAL_POS", allowed_paths=[target], source_sha256=shas,
+        verification_tests=tests, base_head_sha=base, repo_root=repo,
+    )
+    assert result[1][target] == shas[target] and result[3] == base
+
+    (repo / target).write_text("VALUE = 2\n", encoding="utf-8")
+    subprocess.run(["git", "-C", str(repo), "add", target], check=True)
+    subprocess.run(["git", "-C", str(repo), "commit", "-m", "changed scope"], check=True, capture_output=True)
+    with pytest.raises(lr.GateAuthorizationError, match="AUTHORIZATION_SCOPE_CHANGED_SINCE_APPROVAL"):
+        lr._validate_gate_paths_and_hashes(
+            domain="COMERCIAL_POS", allowed_paths=[target], source_sha256=shas,
+            verification_tests=tests, base_head_sha=base, repo_root=repo,
+        )
+
+    subprocess.run(["git", "-C", str(repo), "checkout", "--orphan", "unrelated-history"], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(repo), "rm", "-rf", "."], check=True, capture_output=True)
+    for rel, content in ((target, "VALUE = 1\n"), (tests[0], "def test_ok():\n    assert True\n")):
+        fp = repo / rel
+        fp.parent.mkdir(parents=True, exist_ok=True)
+        fp.write_text(content, encoding="utf-8")
+    subprocess.run(["git", "-C", str(repo), "add", "."], check=True)
+    subprocess.run(["git", "-C", str(repo), "commit", "-m", "unrelated history"], check=True, capture_output=True)
+    with pytest.raises(lr.GateAuthorizationError, match="AUTHORIZATION_HEAD_DIVERGED"):
+        lr._validate_gate_paths_and_hashes(
+            domain="COMERCIAL_POS", allowed_paths=[target], source_sha256=shas,
+            verification_tests=tests, base_head_sha=base, repo_root=repo,
+        )
+
+
 def test_concurrency_and_idempotency_across_request_approval_and_materialization(tmp_path, monkeypatch):
     """Multi-threaded concurrency & idempotency: zero corruption, single request/approval/materialization."""
     repo, head_sha, shas = _init_git_repo(tmp_path)

@@ -3755,15 +3755,24 @@ def _validate_gate_paths_and_hashes(
     if (repo_root / ".git").exists():
         proc = subprocess.run(
             ["git", "-C", str(repo_root), "rev-parse", "HEAD"],
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=10,
+            capture_output=True, text=True, check=False, timeout=10,
         )
-        if proc.returncode == 0:
-            live_head = proc.stdout.strip().lower()
-            if live_head and live_head != clean_head:
+        live_head = proc.stdout.strip().lower() if proc.returncode == 0 else ""
+        if not re.fullmatch(r"[0-9a-f]{40}", live_head):
+            raise GateAuthorizationError("AUTHORIZATION_HEAD_UNVERIFIABLE")
+        if live_head != clean_head:
+            ancestor = subprocess.run(
+                ["git", "-C", str(repo_root), "merge-base", "--is-ancestor", clean_head, live_head],
+                capture_output=True, text=True, check=False, timeout=10,
+            )
+            if ancestor.returncode != 0:
                 raise GateAuthorizationError(f"AUTHORIZATION_HEAD_DIVERGED:{clean_head}!={live_head}")
+            unchanged_scope = subprocess.run(
+                ["git", "-C", str(repo_root), "diff", "--quiet", clean_head, live_head, "--", *clean_paths],
+                capture_output=True, text=True, check=False, timeout=10,
+            )
+            if unchanged_scope.returncode != 0:
+                raise GateAuthorizationError("AUTHORIZATION_SCOPE_CHANGED_SINCE_APPROVAL")
 
     supplied_sha = {
         str(k).strip().lstrip("./"): str(v).strip().lower()
