@@ -1,0 +1,55 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/api_connections/",
+          "backend/modules/integrations_center/",
+          "backend/modules/integrations_runtime/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "consumer_can_call",
+          "validate_consumer_grant",
+          "validate_api_connection_access",
+          "_scope_sucursales",
+          "_reject_secret_fields",
+          "_build_safe_url",
+          "_mask_headers",
+          "resolve_api_local_sync_config",
+          "materialize_external_sucursal_scope_atomic",
+          "SucursalScopeConflict",
+          "ExternalIdentifierConflict"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-547D5DA45EA24A617E431D87",
+  "mode": "READ_ONLY",
+  "objective": "Gate 3 Fabric Externa: auditar evidencia de controles de aislamiento entre empresas y sucursales, permisos de consumidores, gestión de secretos, autorización de conexiones, validación de destinos y protección de sincronización; localizar pruebas negativas de acceso cruzado y riesgos de exposición sin modificar código ni producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "FABRIC_EXTERNA",
+    "conflict_domains": [
+      "FABRIC_EXTERNA"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
