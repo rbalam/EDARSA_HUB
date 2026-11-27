@@ -1,0 +1,48 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 75,
+        "paths": [
+          "tools/mirror_sync/worker_cross_domain_handoff.py",
+          "backend/modules/worker_ingress/semantic_capabilities.py",
+          "tools/mirror_sync/worker_control_plane.py"
+        ],
+        "search_terms": [
+          "GATE_AUTHORIZATION_LIFECYCLE",
+          "NO_COMPATIBLE_CAPABILITY",
+          "auto_dispatch",
+          "handoff",
+          "assign"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-4268F84F034E3D0937E44CCC",
+  "mode": "READ_ONLY",
+  "objective": "Diagnostico READ_ONLY del flujo canonico de handoffs interdominio en Worker V4: localizar por que AUTH_RBAC a WORKER_CONTROL_PLANE con requested_capability GATE_AUTHORIZATION_LIFECYCLE queda NO_COMPATIBLE_CAPABILITY_NOT_REUSABLE, y como asignar capacidad compatible sin violar seguridad. Inspeccionar contrato y resolver si existe ruta de read-only evaluacion de permisos o retorno al origen. No reparar, no modificar, no duplicar el handoff existente HO-AUTHRBAC-WORKERCONTROLP-D12CC865F6A5C457, no Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
