@@ -1,0 +1,57 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 85,
+        "paths": [
+          "backend/modules/integrations_runtime/health.py",
+          "backend/modules/integrations_center/repository.py",
+          "backend/modules/integrations_center/service.py",
+          "frontend/src/pages/Servidores.js",
+          "backend/tests/test_servidores_menu_rbac_contract.py",
+          "backend/modules/api_connections/repository.py"
+        ],
+        "search_terms": [
+          "UltimaPruebaUTC",
+          "UltimoCheck",
+          "FechaActualizacionUTC",
+          "last_test_utc",
+          "lastCheck",
+          "historicalCheckLabel",
+          "datetime",
+          "timezone",
+          "utcnow",
+          "datetime2",
+          "EstadoConexion"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-A0AAD7D1A83A1EDB7A97EC78",
+  "mode": "READ_ONLY",
+  "objective": "Gate17 READ_ONLY NUEVO: auditar exclusivamente semántica temporal de evidencia de conectividad antes de definir contrato de vigencia. Verificar en escritura de health, repositorio SQL, proyección API y frontend si UltimaPruebaUTC/UltimoCheck se generan en UTC, tipos datetime/datetime2 naive, parseo y timezone; identificar fallo seguro de timestamp ausente, invalid, futuro o sin zona, y proponer contrato determinista con umbral configurable sin inventar TTL. No repetir auditorías de ownership/CRUD de Gates14-16 ni mutar archivos, datos, conexiones o Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "CONEXIONES_COMUNICACIONES",
+    "conflict_domains": [
+      "CONEXIONES_COMUNICACIONES"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
