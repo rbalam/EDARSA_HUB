@@ -4,32 +4,38 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "bd73924f9f4f1691d9224daa122263ba8033061e",
-  "generated_at_utc": "2026-11-28T06:15:37Z",
+  "generated_at_utc": "2026-11-28T06:16:57Z",
   "history": {
-    "done_total_local": 2399,
+    "done_total_local": 2400,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1415,
-    "results_total_local": 3573
+    "results_total_local": 3574
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 472,
+      "age_seconds": 552,
       "job_id": "SEM-REQUEST-22641B2EBC78FCEBC56C5F79",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 589,
+      "age_seconds": 669,
       "job_id": "SEM-REQUEST-4AA0C8F495F96927DE647D34",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 676,
+      "age_seconds": 757,
       "job_id": "SEM-REQUEST-A7368154E614882F2BA9DAFF",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 62,
+      "job_id": "SEM-REQUEST-B9E70A5A4E3C8564995DB0D9",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -42,15 +48,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 3,
+  "queue_result_ready_recent": 4,
   "queue_running": 0,
   "remote_development_sha": "bd73924f9f4f1691d9224daa122263ba8033061e",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-28T06:15:28Z",
-    "last_receive_utc": "2026-11-28T06:15:23Z",
-    "last_terminal_utc": "2026-11-28T06:07:44Z",
+    "last_cycle_utc": "2026-11-28T06:16:52Z",
+    "last_receive_utc": "2026-11-28T06:16:47Z",
+    "last_terminal_utc": "2026-11-28T06:15:55Z",
     "pid": "1440160",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "031b766ef2639ed5817d54086c30d1b40d6b14b1",
