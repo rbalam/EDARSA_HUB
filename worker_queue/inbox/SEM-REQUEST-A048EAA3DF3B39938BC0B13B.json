@@ -1,0 +1,63 @@
+{
+  "actions": [
+    {
+      "anchor": "register_pytest_certification_suite(\n    PytestCertificationSuite(\n        bounded_context=\"CENTRO_CONTROL_SECURITY\",\n        paths=(\n            \"backend/tests/test_centro_control_websocket_auth_rbac_p1.py\",\n            \"backend/tests/test_centro_control_p2b_sql_persistence_contract.py\",\n        ),\n        isolation=\"HERMETIC_READONLY\",\n    )\n)",
+      "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+      "replacement": "\nregister_pytest_certification_suite(\n    PytestCertificationSuite(\n        bounded_context=\"SEC_RBAC\",\n        paths=(\n            \"backend/tests/test_bos_usuarios_rbac_implementation_r1.py\",\n            \"backend/tests/test_catalogos_workflow_privileged_routes_rbac.py\",\n        ),\n        isolation=\"HERMETIC_READONLY\",\n    )\n)\n",
+      "source_sha256": "887b790b594fb8201a27a0004691cbda040910c7543777c60657f7525b9163e5",
+      "type": "insert_after"
+    },
+    {
+      "expected_occurrences": 1,
+      "path": "backend/tests/test_worker_pytest_certification_readonly.py",
+      "replacement": "\n\ndef test_sec_rbac_hermetic_readonly_fixed_suite():\n    result = expand(bounded_context=\"SEC_RBAC\")\n    assert result[\"actions\"] == []\n    assert result[\"checks\"] == [{\n        \"type\": \"pytest\",\n        \"paths\": [\n            \"backend/tests/test_bos_usuarios_rbac_implementation_r1.py\",\n            \"backend/tests/test_catalogos_workflow_privileged_routes_rbac.py\",\n        ],\n        \"isolation\": \"HERMETIC_READONLY\",\n    }]\n    assert result[\"scheduling\"][\"bounded_context\"] == \"SEC_RBAC\"\n\n\n@pytest.mark.parametrize(\"unsafe\", [\n    {\"paths\": [\"backend/tests/test_auth_session_revocation_p1_2.py\"]},\n    {\"actions\": []},\n    {\"checks\": []},\n    {\"production_allowed\": True},\n])\ndef test_sec_rbac_rejects_caller_controlled_tests(unsafe):\n    with pytest.raises(SemanticCapabilityError):\n        expand(bounded_context=\"SEC_RBAC\", constraints=unsafe)\n",
+      "source_sha256": "dfa74e3ec3000108e2b8fa8fbc971744a54d556ca8ce9d527a292fc3938e63da",
+      "type": "append_once"
+    }
+  ],
+  "authorization_ref": "GO-SEC-RBAC-SAFARI-PYTEST-SUITE-GATE1-DEV-R1-20261128",
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/worker_ingress/semantic_capabilities.py",
+        "backend/tests/test_worker_pytest_certification_readonly.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_pytest_certification_readonly.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-A048EAA3DF3B39938BC0B13B",
+  "mode": "MUTATION",
+  "objective": "Implement authorized SEC_RBAC HERMETIC_READONLY suite in existing canonical Worker pytest registry with exact two-file bounded change and regression contract tests; reuse RBAC identity SQL mock and catalog permission tests; no real SQL/network or Production.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "SEC_RBAC",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "SEC_RBAC"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
