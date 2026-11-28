@@ -1,0 +1,44 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 25,
+        "paths": [
+          "tools/mirror_sync/"
+        ],
+        "search_terms": [
+          "CAJAS_INCIDENCIAS_SCHEMA_METADATA",
+          "sql_readonly_profiles",
+          "sys.tables"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-7FC6496A4A6E0ACD342E7FF6",
+  "mode": "READ_ONLY",
+  "objective": "[HANDOFF HO-COMERCIALPOS-WORKERCONTROLP-3335F0676ED27169 COMERCIAL_POS->WORKER_CONTROL_PLANE] CAJAS-V1-GATE12: delegar a WORKER_CONTROL_PLANE auditoria diferencial del perfil SQL canonico de incidencias, porque el ultimo resultado certificado contenia cuatro tablas generales, mientras el catalogo actual describe cinco tablas de incidencias. Determinar discrepancia de version/cobertura y entregar ruta para verificar presencia real de tablas de expedientes, indices UNIQUE e FK mediante HRLectura sin repetir el job SQL ya certificado ni modificar codigo/SQL.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
