@@ -1,0 +1,59 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 35,
+        "paths": [
+          "backend/core/confidencialidad/",
+          "backend/core/rbac/middleware.py",
+          "backend/core/rbac_sql/service.py",
+          "backend/core/access_context/sql_context.py",
+          "backend/core/centro_control/recipients_manager.py",
+          "backend/core/communications/notifications/service.py",
+          "backend/tests/test_anonymizer_service.py"
+        ],
+        "search_terms": [
+          "get_role_code",
+          "confidencialidad",
+          "NivelConfidencialidad",
+          "require_explicit_permission",
+          "can_access_empresa",
+          "can_access_unidad",
+          "ALERTAS_RECIPIENTS_ROLE",
+          "Sistema_AlertasDestinatarios",
+          "get_email_recipients",
+          "recipient",
+          "denuncia",
+          "conflicto_interes"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-C39B3658F48C06B9EDCACEE1",
+  "mode": "READ_ONLY",
+  "objective": "Gate 2 READ_ONLY seguridad de expedientes confidenciales RH: validar reutilizacion y limites del anonimizador comercial (rol sin permiso explicito), resolucion de destinatarios de alertas generales (riesgo divulgacion), RBAC SQL scopes por empresa/unidad y prohibicion acceso a denunciantes o testigos no autorizados. Auditar exclusivamente contratos de codigo existentes, NO investigar personas reales, NO registrar denuncia, NO SQL LIVE, NO modificaciones ni produccion. Definir controles fail-closed, expediente segregado, recusacion conflicto de intereses, metadata-minima en notificaciones y pruebas de autorizacion negativas.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "RH",
+    "conflict_domains": [
+      "RH"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
