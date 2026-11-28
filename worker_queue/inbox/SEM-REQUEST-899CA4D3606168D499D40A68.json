@@ -1,0 +1,59 @@
+{
+  "actions": [
+    {
+      "content": "\"\"\"Fail-closed, pure access policy for RH confidential integrity cases.\n\nInputs are verified facts supplied by canonical SQL RBAC and case ownership;\nthis policy never queries SQL, stores records, or sends notifications.\n\"\"\"\nfrom dataclasses import dataclass\nfrom enum import Enum\nfrom typing import FrozenSet\nfrom uuid import UUID\n\n\nclass CaseAction(str, Enum):\n    VIEW = \"INTEGRIDAD_CASO_VER\"\n    INVESTIGATE = \"INTEGRIDAD_CASO_INVESTIGAR\"\n    VIEW_EVIDENCE = \"INTEGRIDAD_EVIDENCIA_VER\"\n    MANAGE_ACCESS = \"INTEGRIDAD_CASO_GESTIONAR_ACCESOS\"\n\n\n@dataclass(frozen=True)\nclass CaseAccessContext:\n    actor_id: int\n    case_id: UUID\n    empresa_id: int\n    unidad_id: UUID | None\n    identity_verified: bool = False\n    actor_active: bool = False\n    case_active: bool = False\n    case_confidential: bool = False\n    empresa_scope_verified: bool = False\n    unidad_scope_verified: bool = False\n    assignment_verified: bool = False\n    assignment_active: bool = False\n    conflict_check_verified: bool = False\n    has_conflict: bool = True\n    sql_permissions_verified: bool = False\n    explicit_permissions: FrozenSet[str] = frozenset()\n    access_revoked: bool = True\n\n\n@dataclass(frozen=True)\nclass CaseAccessDecision:\n    allowed: bool\n    reason_code: str\n\n\ndef authorize_integrity_case(ctx: CaseAccessContext, action: CaseAction) -> CaseAccessDecision:\n    \"\"\"Requires effective SQL grant, current case assignment and no conflict.\n\n    The future caller must resolve each verification independently, fail closed\n    for stale/unknown results, and enforce the decision before reading SQL.\n    \"\"\"\n    if not isinstance(ctx, CaseAccessContext) or not isinstance(action, CaseAction):\n        return CaseAccessDecision(False, \"INVALID_CONTEXT_OR_ACTION\")\n    if (type(ctx.actor_id) is not int or ctx.actor_id <= 0 or\n        not isinstance(ctx.case_id, UUID) or ctx.case_id.int == 0 or\n        type(ctx.empresa_id) is not int or ctx.empresa_id <= 0 or\n        (ctx.unidad_id is not None and not isinstance(ctx.unidad_id, UUID))):\n        return CaseAccessDecision(False, \"INVALID_CANONICAL_IDENTITY\")\n    verified = (\n        ctx.identity_verified, ctx.actor_active, ctx.case_active,\n        ctx.case_confidential, ctx.empresa_scope_verified,\n        ctx.unidad_scope_verified, ctx.assignment_verified,\n        ctx.assignment_active, ctx.conflict_check_verified,\n        ctx.sql_permissions_verified,\n    )\n    if any(value is not True for value in verified):\n        return CaseAccessDecision(False, \"REQUIRED_VERIFICATION_MISSING\")\n    if ctx.has_conflict is not False or ctx.access_revoked is not False:\n        return CaseAccessDecision(False, \"CONFLICT_OR_REVOKED\")\n    if not isinstance(ctx.explicit_permissions, frozenset):\n        return CaseAccessDecision(False, \"INVALID_PERMISSIONS\")\n    if action.value not in ctx.explicit_permissions:\n        return CaseAccessDecision(False, \"EXPLICIT_PERMISSION_DENIED\")\n    return CaseAccessDecision(True, \"ACCESS_GRANTED\")\n",
+      "path": "backend/modules/rh/integridad_access_policy.py",
+      "type": "write_file"
+    },
+    {
+      "content": "\"\"\"Offline security regression for confidential RH case authorization.\"\"\"\nfrom dataclasses import replace\nfrom uuid import UUID\nimport pytest\nfrom modules.rh.integridad_access_policy import CaseAction, CaseAccessContext, authorize_integrity_case\n\n\ndef allowed(**changes):\n    base = CaseAccessContext(\n        actor_id=7, case_id=UUID(\"11111111-1111-4111-8111-111111111111\"),\n        empresa_id=3, unidad_id=UUID(\"22222222-2222-4222-8222-222222222222\"),\n        identity_verified=True, actor_active=True, case_active=True,\n        case_confidential=True, empresa_scope_verified=True,\n        unidad_scope_verified=True, assignment_verified=True,\n        assignment_active=True, conflict_check_verified=True,\n        has_conflict=False, sql_permissions_verified=True,\n        explicit_permissions=frozenset({CaseAction.VIEW.value}),\n        access_revoked=False,\n    )\n    return replace(base, **changes)\n\n\ndef test_default_denies():\n    ctx = CaseAccessContext(7, UUID(\"11111111-1111-4111-8111-111111111111\"), 3, None)\n    assert not authorize_integrity_case(ctx, CaseAction.VIEW).allowed\n\n\ndef test_valid_explicit_case_assignment_allows_only_requested_action():\n    assert authorize_integrity_case(allowed(), CaseAction.VIEW).allowed\n    assert not authorize_integrity_case(allowed(), CaseAction.VIEW_EVIDENCE).allowed\n    assert not authorize_integrity_case(allowed(), CaseAction.INVESTIGATE).allowed\n\n\n@pytest.mark.parametrize(\"field\", [\n    \"identity_verified\", \"actor_active\", \"case_active\", \"case_confidential\",\n    \"empresa_scope_verified\", \"unidad_scope_verified\", \"assignment_verified\",\n    \"assignment_active\", \"conflict_check_verified\", \"sql_permissions_verified\"\n])\ndef test_missing_verification_denies(field):\n    assert not authorize_integrity_case(allowed(**{field: False}), CaseAction.VIEW).allowed\n\n\n@pytest.mark.parametrize(\"changes\", [\n    {\"has_conflict\": True}, {\"access_revoked\": True},\n    {\"assignment_active\": False}, {\"empresa_scope_verified\": False},\n    {\"unidad_scope_verified\": False}, {\"sql_permissions_verified\": False},\n])\ndef test_conflict_revoke_and_cross_scope_denies(changes):\n    assert not authorize_integrity_case(allowed(**changes), CaseAction.VIEW).allowed\n\n\n@pytest.mark.parametrize(\"role\", [\"SUPERADMIN\", \"ADMINISTRADOR\", \"RH_ADMIN\"])\ndef test_no_implicit_role_bypass(role):\n    ctx = allowed(explicit_permissions=frozenset({role}))\n    assert not authorize_integrity_case(ctx, CaseAction.VIEW).allowed\n\n\ndef test_invalid_identity_or_action_denied():\n    assert not authorize_integrity_case(allowed(actor_id=0), CaseAction.VIEW).allowed\n    assert not authorize_integrity_case(allowed(case_id=UUID(int=0)), CaseAction.VIEW).allowed\n    assert not authorize_integrity_case(allowed(), \"INTEGRIDAD_CASO_VER\").allowed\n\n\ndef test_decision_does_not_contain_case_personal_data():\n    result = authorize_integrity_case(allowed(), CaseAction.VIEW)\n    assert set(vars(result)) == {\"allowed\", \"reason_code\"}\n",
+      "path": "backend/tests/test_rh_integridad_access_policy.py",
+      "type": "write_file"
+    }
+  ],
+  "authorization_ref": "GO-RH-INTEGRIDAD-DENUNCIAS-GATE8B-POLICY-DEV-R1-20261128",
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/rh/integridad_access_policy.py",
+        "backend/tests/test_rh_integridad_access_policy.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_rh_integridad_access_policy.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-899CA4D3606168D499D40A68",
+  "mode": "MUTATION",
+  "objective": "Gate8B policy-only fail-closed RH confidential case access and offline regression tests, two explicitly authorized new files, Development only, no PII/DB/API/notifier/Prod.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "RH",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "RH"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
