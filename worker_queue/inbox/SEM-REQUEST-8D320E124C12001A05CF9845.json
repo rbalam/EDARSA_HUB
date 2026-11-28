@@ -1,0 +1,54 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 60,
+        "paths": [
+          "backend/modules/agent_harness/",
+          "backend/core/ai_gateway_policy_adapter.py",
+          "backend/core/agent_execution_gate.py",
+          "backend/core/agent_runtime_activation.py",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "AGY",
+          "agy",
+          "ModelRouteRequest",
+          "authorize_model_route",
+          "authorize_ai_inference_execution",
+          "RuntimeActivationMode",
+          "BudgetEnvelope",
+          "canary",
+          "ProviderAdapter"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-8D320E124C12001A05CF9845",
+  "mode": "READ_ONLY",
+  "objective": "Gate 4: determinar puntos exactos de extensión del adaptador AGY sobre Agent Harness, AI Gateway y Execution Gate existentes; identificar contratos, ownership, pruebas, límites de presupuesto y RBAC, aislamiento, canary y rollback, sin repetir inventario G3 ni modificar archivos. Identificar evidencia faltante para una futura mutación autorizada.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "UNIVERSAL_AI_INTEGRATION",
+    "conflict_domains": [
+      "UNIVERSAL_AI_INTEGRATION"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
