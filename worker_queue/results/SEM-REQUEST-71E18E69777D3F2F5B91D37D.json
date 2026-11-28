@@ -1,0 +1,235 @@
+{
+  "base_sha": "cf5250556818e2044aa3b7fefd58a1bf004505a9",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-28T08:38:17Z",
+  "execution_base_sha": "cf5250556818e2044aa3b7fefd58a1bf004505a9",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-71E18E69777D3F2F5B91D37D",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-28T08:43:41Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.integrations_center",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.sql_first.connection_factory",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "servidorid",
+              "sistema_capacidades",
+              "sistema_identificadoresexternos"
+            ],
+            "path": "backend/modules/integrations_center/repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_id_key",
+              "_rows",
+              "get_catalogs",
+              "get_communications_summary",
+              "get_connection_enrichment",
+              "get_latest_health_map",
+              "get_sync_summary",
+              "get_universal_infra_summary"
+            ],
+            "tables_referenced": [
+              "Operativo_Notificaciones_Log",
+              "Servidores_ConexionEstado",
+              "Servidores_Conexiones",
+              "Sistema_Capacidades",
+              "Sistema_IdentificadoresExternos",
+              "Sistema_NotificacionesConfig",
+              "Sistema_Sync_Capacidades",
+              "Sistema_Sync_Catalogo",
+              "Sistema_Tipos",
+              "Sistema_VersionesSistemas",
+              "Sync_Control_Ejecuciones",
+              "Sync_Control_Evidencias",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.api_connections",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.connections.edarsahub_writer_connection",
+              "core.sql_first.db",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "servidorid",
+              "sistema_empresasservidores"
+            ],
+            "path": "backend/modules/api_connections/assignment_repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_uuid_text",
+              "deactivate_api_operational_assignment",
+              "list_api_operational_assignments",
+              "upsert_api_operational_assignment"
+            ],
+            "tables_referenced": [
+              "Servidores_Conexiones",
+              "Sistema_Empresas",
+              "Sistema_EmpresasServidores"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.integrations_runtime",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.server_registry",
+              "dataclasses",
+              "read_only_sql",
+              "requests",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "endpoint"
+            ],
+            "path": "backend/modules/integrations_runtime/api_local_sync.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ApiLocalSyncConfig",
+              "ApiLocalSyncError",
+              "classify_api_local_http_error",
+              "execute_api_local_readonly",
+              "resolve_api_local_sync_config"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.integrations_runtime",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "sistema_identificadoresexternos"
+            ],
+            "path": "backend/modules/integrations_runtime/external_ids.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ExternalIdentifierConflict",
+              "_normalized_scope",
+              "_uuid",
+              "ensure_external_identifier"
+            ],
+            "tables_referenced": [
+              "Sistema_IdentificadoresExternos"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.integrations_runtime",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.connections.edarsahub_writer_connection",
+              "datetime",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "servidorid"
+            ],
+            "path": "backend/modules/integrations_runtime/health.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_uuid_text",
+              "persist_connection_health"
+            ],
+            "tables_referenced": [
+              "Servidores_ConexionEstado"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.integrations_runtime",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "servidorid"
+            ],
+            "path": "backend/modules/integrations_runtime/sucursal_scope.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "SucursalScopeConflict",
+              "_canonical_origin_id",
+              "_canonical_uuid",
+              "_require_server",
+              "_require_sucursal",
+              "ensure_sucursal_server_mapping"
+            ],
+            "tables_referenced": [
+              "Servidores_Conexiones",
+              "Sistema_SucursalServidorMapeo",
+              "Sistema_Sucursales"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 6,
+          "scanned_files": 19,
+          "skipped_sensitive": 15
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-28T08:38:17Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
