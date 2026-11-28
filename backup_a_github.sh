@@ -5,11 +5,11 @@
 # y hace push a la rama, pasando el guardrail EDARSA_ALLOW_PUSH.
 # Uso:   bash /app/backup_a_github.sh
 # =============================================================================
-set -uo pipefail
+set -euo pipefail
 cd /app || { echo "No existe /app"; exit 1; }
-
-# Autorización humana explícita para pasar el agent-guard (anti-push de agentes)
-export EDARSA_ALLOW_PUSH=1
+SAFETY_GUARD="/app/tools/mirror_sync/shared_app_safety_guard.sh"
+test -r "$SAFETY_GUARD" || { echo "GIT_GUARD_MISSING"; exit 90; }
+. "$SAFETY_GUARD"
 git config advice.addIgnoredFile false 2>/dev/null || true
 
 echo "== 1) Reparar intérprete de hooks (/app/.venv/bin/python) si falta =="
@@ -26,35 +26,34 @@ fi
 
 BR="$(git branch --show-current)"
 echo "== 2) Rama: $BR =="
+test "$BR" = "Edarsahub_Desarrollo" || { echo "GIT_DIVERGENCE_BLOCKED=WRONG_BRANCH"; exit 10; }
+WRITER_JOB_ID="manual-backup-$$"; WRITER_OWNER="backup-a-github"
+edarsahub_acquire_git_writer_lock "$WRITER_JOB_ID" "$WRITER_OWNER" >/dev/null || { echo "GIT_LOCK_BUSY"; exit 91; }
+cleanup_writer_lock() { edarsahub_release_git_writer_lock "$WRITER_JOB_ID" "$WRITER_OWNER" >/dev/null || { echo "GIT_WRITER_LOCK_RELEASE=FAIL"; exit 92; }; }
+trap cleanup_writer_lock EXIT
+if ! git remote get-url origin >/dev/null 2>&1; then git remote add origin https://github.com/rbalam/EDARSA_HUB.git; fi
+git fetch origin "$BR"
+read -r AHEAD BEFORE_BEHIND <<EOF
+$(git rev-list --left-right --count "HEAD...origin/$BR")
+EOF
+if [ "$BEFORE_BEHIND" -gt 0 ]; then echo "GIT_DIVERGENCE_BLOCKED=REMOTE_HAS_UNINTEGRATED_COMMITS"; exit 20; fi
 
 echo "== 3) Commit de cambios pendientes (si los hay) =="
 if [ -n "$(git status --porcelain)" ]; then
   git add -A
-  git commit -m "chore: respaldo manual del pod ($(date -u '+%Y-%m-%dT%H:%M:%SZ'))" \
-    || echo "   (nada que commitear o commit bloqueado por hook - revisa arriba)"
+  if ! git commit -m "chore: respaldo manual del pod ($(date -u '+%Y-%m-%dT%H:%M:%SZ'))"; then echo "GIT_COMMIT_FAILED"; exit 30; fi
 else
   echo "   working tree limpio, nada que commitear"
 fi
 
 echo "== 4) Estado vs GitHub =="
-# Asegurar que el remoto 'origin' exista (el botón lo quita al terminar)
-if ! git remote get-url origin >/dev/null 2>&1; then
-  git remote add origin https://github.com/rbalam/EDARSA_HUB.git
-  echo "   origin re-agregado"
-fi
-git fetch --quiet origin 2>/dev/null || true
-git rev-list --left-right --count "origin/$BR...HEAD" 2>/dev/null \
-  | awk '{print "   behind(GitHub tiene, pod no)="$1"  ahead(pod tiene, GitHub no)="$2}'
+git fetch --quiet origin "$BR"
+git rev-list --left-right --count "HEAD...origin/$BR" | awk '{print "   ahead(pod tiene, GitHub no)="$1"  behind(GitHub tiene, pod no)="$2}'
 
 echo "== 5) PUSH a GitHub (con guardrail habilitado) =="
-EDARSA_ALLOW_PUSH=1 git push origin "$BR"
-RC=$?
-
-echo
-if [ $RC -eq 0 ]; then
-  echo "✅ PUSH EXITOSO. Respaldo en GitHub completado."
-  git rev-list --left-right --count "origin/$BR...HEAD" 2>/dev/null \
-    | awk '{print "   ahead ahora = "$2" (debe ser 0)"}'
-else
-  echo "❌ PUSH FALLÓ (código $RC). Copia el mensaje de arriba y pégalo en el chat."
-fi
+if EDARSA_ALLOW_PUSH=1 EDARSA_PUSH_JOB_ID="$WRITER_JOB_ID" EDARSA_PUSH_OWNER="$WRITER_OWNER" git push origin "HEAD:refs/heads/$BR"; then
+  git fetch --quiet origin "$BR"
+  COUNTS="$(git rev-list --left-right --count "HEAD...origin/$BR")"
+  test "$COUNTS" = $'0\t0' || { echo "GIT_PUSH_FAILED=POSTCHECK_TOPOLOGY:$COUNTS"; exit 41; }
+  echo "PUSH=PASS"; echo "REMOTE_HEAD_MATCH=YES"; echo "PUBLISH_STATUS=COMPLETE"
+else RC=$?; echo "GIT_PUSH_FAILED=$RC"; exit "$RC"; fi

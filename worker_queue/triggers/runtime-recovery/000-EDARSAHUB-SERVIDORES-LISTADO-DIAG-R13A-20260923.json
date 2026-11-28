@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Wake canonical Universal Worker to consume preferred SERVIDORES diagnostic job 000-EDARSAHUB-SERVIDORES-LISTADO-DIAG-R13A-20260923. Preserve active work, register this job as next preferred, and do not touch Production.",
+  "existing_job_id": "000-EDARSAHUB-SERVIDORES-LISTADO-DIAG-R13A-20260923",
+  "production_touched": false
+}

@@ -21,9 +21,11 @@ FECHA: Junio 2026
 from core.sql_first.connection_factory import get_edarsahub_pymssql_connection
 from fastapi import APIRouter, Depends, HTTPException
 import re
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from core.security import get_current_user
-from core.rbac_helper_sql import es_admin
+from core.auth.sql_user_identity import enrich_current_user_with_sql_id
+from core.rbac_helper_sql import es_admin, es_superadmin
+from core.rbac.middleware import require_explicit_permission
 from core.config.edarsahub_sql import get_edarsahub_connection
 from modules.admin_sql import rbac_pilot_service
 import logging
@@ -40,6 +42,62 @@ def require_admin(user: Dict[str, Any]) -> None:
     """Lanza excepción si el usuario no es admin."""
     if not is_admin(user):
         raise HTTPException(status_code=403, detail="No autorizado - Se requiere rol de administrador")
+
+
+def _has_explicit_users_menu_permission(user: Dict[str, Any]) -> bool:
+    """Verifica fail-closed si el usuario posee permiso SQL explícito en Usuario_PermisosRolModulo para Usuarios."""
+    actor_id = user.get("usuario_id") or user.get("UsuarioID")
+    actor_email = str(user.get("email") or "").strip()
+    if actor_id is None and not actor_email:
+        return False
+    try:
+        rows = execute_query(
+            """
+            SELECT TOP 1 1 AS Permitido
+            FROM dbo.Usuario_Catalogo u
+            INNER JOIN (
+                SELECT UsuarioID, RolID
+                FROM dbo.Usuario_RolesContexto
+                WHERE ISNULL(Activo, 1) = 1
+                UNION
+                SELECT UsuarioID, RolID
+                FROM dbo.Usuario_RolesAsignacion
+                WHERE ISNULL(Activo, 1) = 1
+            ) ra
+                ON ra.UsuarioID = u.UsuarioID
+            INNER JOIN dbo.Usuario_Roles r
+                ON r.RolID = ra.RolID AND ISNULL(r.Activo, 1) = 1
+            INNER JOIN dbo.Usuario_PermisosRolModulo prm
+                ON prm.RolID = r.RolID
+               AND ISNULL(prm.Activo, 1) = 1
+               AND prm.Permitido = 1
+            INNER JOIN dbo.Usuario_Modulos m
+                ON m.ModuloID = prm.ModuloID AND ISNULL(m.Activo, 1) = 1
+            INNER JOIN dbo.Usuario_Acciones a
+                ON a.AccionID = prm.AccionID AND ISNULL(a.Activo, 1) = 1
+            WHERE ISNULL(u.Activo, 1) = 1
+              AND (%s IS NOT NULL AND u.UsuarioID = %s OR LOWER(u.Email) = LOWER(%s))
+              AND (
+                    UPPER(CONCAT(m.CodigoModulo, '_', a.CodigoAccion)) IN (
+                        'USUARIOS_VER', 'SISTEMA_USUARIOS_VER', 'USUARIOS_EDITAR', 'RBAC_ADMIN'
+                    )
+                 OR UPPER(m.CodigoModulo) IN ('USUARIOS', 'SISTEMA_USUARIOS', 'RBAC_ADMIN')
+              )
+            """,
+            (actor_id, actor_id, actor_email),
+        )
+        return bool(rows)
+    except Exception:
+        return False
+
+
+def require_users_menu_access(user: Dict[str, Any]) -> Dict[str, Any]:
+    """Valida autorización para el menú Usuarios (admin canónico o permiso SQL explícito)."""
+    enriched = enrich_current_user_with_sql_id(dict(user or {}))
+    if is_admin(enriched) or _has_explicit_users_menu_permission(enriched):
+        return enriched
+    require_admin(enriched)
+    return enriched
 
 
 def execute_query(sql: str, params: tuple = ()) -> List[Dict[str, Any]]:
@@ -79,22 +137,29 @@ def execute_write(sql: str, params: tuple = (), fetch: bool = False) -> List[Dic
 @router.get("/users")
 async def get_users(
     incluir_inactivos: bool = False,
+    empresa_id: Optional[int] = None,
+    unidad_negocio_id: Optional[str] = None,
+    sucursal_id: Optional[int] = None,
     current_user: dict = Depends(get_current_user),
 ):
     """
     Lista todos los usuarios del sistema desde EDARSAHUB SQL.
 
     Incluye:
-    - Datos básicos del usuario
+    - Datos básicos del usuario con identidad SQL canónica (usuario_id, public_uuid)
     - Rol principal asignado (deduplicado: 1 fila por usuario)
-    - Servidores asignados
-    - Sucursales asignadas
+    - Roles contextuales desde dbo.Usuario_RolesContexto
+    - Servidores, empresas y sucursales asignadas
+    - Aislamiento por empresa, unidad de negocio y sucursal
 
     Args:
         incluir_inactivos: si True, también devuelve usuarios con Activo=0
                            (para poder reactivarlos desde la pantalla Usuarios).
     """
-    require_admin(current_user)
+    actor = require_users_menu_access(current_user)
+    actor_id_raw = actor.get("usuario_id") or actor.get("UsuarioID")
+    actor_id_str = str(actor_id_raw) if actor_id_raw is not None else ""
+    actor_is_global = es_superadmin(actor)
 
     # Filtro de estado: por defecto solo activos (comportamiento legacy).
     where_estado = "" if incluir_inactivos else "WHERE ISNULL(u.Activo, 1) = 1"
@@ -154,6 +219,38 @@ async def get_users(
     WHERE ISNULL(Activo, 1) = 1
     """)
 
+    # Obtener roles contextuales desde dbo.Usuario_RolesContexto y empresas desde dbo.Usuario_EmpresasAsignacion
+    try:
+        roles_ctx_rows = execute_query("""
+        SELECT
+            CAST(urc.UsuarioID AS NVARCHAR(100)) AS UsuarioID,
+            urc.UsuarioRolContextoID,
+            urc.RolID,
+            r.CodigoRol,
+            r.NombreRol,
+            urc.EmpresaID,
+            urc.UnidadNegocioID,
+            urc.SucursalID,
+            ISNULL(urc.EsRolPrimario, 0) AS EsRolPrimario,
+            ISNULL(urc.Activo, 1) AS Activo
+        FROM dbo.Usuario_RolesContexto urc
+        LEFT JOIN dbo.Usuario_Roles r ON r.RolID = urc.RolID
+        WHERE ISNULL(urc.Activo, 1) = 1
+        """)
+    except Exception:
+        roles_ctx_rows = []
+
+    try:
+        empresas_rows = execute_query("""
+        SELECT
+            CAST(UsuarioID AS NVARCHAR(100)) AS UsuarioID,
+            EmpresaID
+        FROM dbo.Usuario_EmpresasAsignacion
+        WHERE ISNULL(Activo, 1) = 1
+        """)
+    except Exception:
+        empresas_rows = []
+
     # Mapear servidores por usuario
     map_serv = {}
     for s in servidores:
@@ -174,10 +271,71 @@ async def get_users(
             if codigo not in map_suc[uid][sid]:
                 map_suc[uid][sid].append(codigo)
 
-    # Enriquecer usuarios con asignaciones
+    map_roles_ctx: Dict[str, List[Dict[str, Any]]] = {}
+    map_empresas: Dict[str, set] = {}
+    map_unidades: Dict[str, set] = {}
+    map_sucursales_ctx: Dict[str, set] = {}
+    for rc in roles_ctx_rows or []:
+        uid = str(rc.get("UsuarioID", "") or "")
+        if not uid:
+            continue
+        map_roles_ctx.setdefault(uid, []).append({
+            "usuario_rol_contexto_id": rc.get("UsuarioRolContextoID"),
+            "rol_id": rc.get("RolID"),
+            "codigo_rol": rc.get("CodigoRol"),
+            "nombre_rol": rc.get("NombreRol"),
+            "empresa_id": rc.get("EmpresaID"),
+            "unidad_negocio_id": rc.get("UnidadNegocioID"),
+            "sucursal_id": rc.get("SucursalID"),
+            "es_rol_primario": bool(rc.get("EsRolPrimario", False)),
+            "activo": bool(rc.get("Activo", True)),
+        })
+        if rc.get("EmpresaID") is not None:
+            map_empresas.setdefault(uid, set()).add(int(rc["EmpresaID"]))
+        if rc.get("UnidadNegocioID"):
+            map_unidades.setdefault(uid, set()).add(str(rc["UnidadNegocioID"]).strip().upper())
+        if rc.get("SucursalID") is not None:
+            map_sucursales_ctx.setdefault(uid, set()).add(int(rc["SucursalID"]))
+
+    for er in empresas_rows or []:
+        uid = str(er.get("UsuarioID", "") or "")
+        if uid and er.get("EmpresaID") is not None:
+            map_empresas.setdefault(uid, set()).add(int(er["EmpresaID"]))
+
+    actor_empresas = map_empresas.get(actor_id_str, set()) if actor_id_str else set()
+    actor_unidades = map_unidades.get(actor_id_str, set()) if actor_id_str else set()
+    actor_sucursales = map_sucursales_ctx.get(actor_id_str, set()) if actor_id_str else set()
+
+    if not actor_is_global:
+        if empresa_id is not None and actor_empresas and int(empresa_id) not in actor_empresas:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Aislamiento corporativo: sin acceso a EmpresaID={empresa_id}",
+            )
+        if unidad_negocio_id is not None and actor_unidades:
+            if str(unidad_negocio_id).strip().upper() not in actor_unidades:
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"Aislamiento por unidad de negocio: sin acceso a UnidadNegocioID={unidad_negocio_id}",
+                )
+        if sucursal_id is not None and actor_sucursales and int(sucursal_id) not in actor_sucursales:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Aislamiento por sucursal: sin acceso a SucursalID={sucursal_id}",
+            )
+
+    has_actor_scope = not actor_is_global and bool(actor_empresas or actor_unidades or actor_sucursales)
+
+    # Enriquecer usuarios con asignaciones e identidad canónica
     rbac_map = rbac_pilot_service.get_rbac_map()
+    result_users: List[Dict[str, Any]] = []
     for u in users:
         uid = str(u.get("UsuarioID", ""))
+        u["usuario_id"] = int(uid) if uid.isdigit() else None
+        raw_uuid = u.get("PublicUUID")
+        u["public_uuid"] = str(raw_uuid).strip() if raw_uuid is not None and str(raw_uuid).strip() else None
+        u["roles_contexto"] = map_roles_ctx.get(uid, [])
+        u["empresas_ids"] = sorted(map_empresas.get(uid, set()))
         # Normalizar estado: el frontend lee `active` (booleano). Antes solo
         # existía `activo` → todos se mostraban "Inactivo". Exponemos ambos.
         u["active"] = bool(u.get("activo"))
@@ -195,71 +353,143 @@ async def get_users(
         u["sec_roles"] = rbac.get("sec_roles", [])
         u["sec_permisos"] = rbac.get("sec_permisos", [])
 
-    return users
+        u_empresas = map_empresas.get(uid, set())
+        u_unidades = map_unidades.get(uid, set())
+        u_sucursales = map_sucursales_ctx.get(uid, set())
+
+        if has_actor_scope and uid != actor_id_str:
+            if actor_empresas and u_empresas and not (actor_empresas & u_empresas):
+                continue
+            if actor_unidades and u_unidades and not (actor_unidades & u_unidades):
+                continue
+            if actor_sucursales and u_sucursales and not (actor_sucursales & u_sucursales):
+                continue
+
+        if empresa_id is not None and int(empresa_id) not in u_empresas:
+            continue
+        if unidad_negocio_id is not None and str(unidad_negocio_id).strip().upper() not in u_unidades:
+            continue
+        if sucursal_id is not None and int(sucursal_id) not in u_sucursales:
+            continue
+
+        result_users.append(u)
+
+    return result_users
 
 
 @router.patch("/users/{user_id}/toggle-activo")
-async def toggle_user_activo(user_id: str, current_user: dict = Depends(get_current_user)):
-    """
-    Activa/Inactiva un usuario (Usuario_Catalogo.Activo).
-
-    - Al INACTIVAR, además se revocan todas sus sesiones activas
-      (no podrá seguir usando el sistema; el refresh token deja de servir).
-    - No se permite que un admin se inactive a sí mismo.
-    """
+async def toggle_user_activo(
+    user_id: str,
+    current_user: dict = Depends(get_current_user),
+    _rbac_admin: dict = Depends(require_explicit_permission("RBAC_ADMIN")),
+):
+    """Toggle a user atomically, enforcing canonical SQL corporate scope."""
     require_admin(current_user)
+    actor_email = str(current_user.get("email") or "").strip()
+    if not actor_email:
+        raise HTTPException(status_code=403, detail="Identidad SQL requerida")
 
-    # Obtener estado y PublicUUID actuales
-    rows = execute_query(
-        "SELECT CAST(UsuarioID AS NVARCHAR(100)) AS UsuarioID, PublicUUID, "
-        "ISNULL(Activo, 1) AS activo, Email FROM Usuario_Catalogo WHERE UsuarioID = %s",
-        (user_id,),
-    )
-    if not rows:
-        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
+    try:
+        cur = conn.cursor(as_dict=True)
+        cur.execute("""
+            SELECT TOP 1 UsuarioID
+            FROM dbo.Usuario_Catalogo
+            WHERE LOWER(Email) = LOWER(%s) AND Activo = 1
+        """, (actor_email,))
+        actor_row = cur.fetchone()
+        if not actor_row:
+            raise HTTPException(status_code=403, detail="Actor SQL no autorizado")
+        actor_id = actor_row["UsuarioID"]
 
-    u = rows[0]
-    actual = bool(u.get("activo"))
-    nuevo = 0 if actual else 1
+        cur.execute("""
+            SELECT TOP 1 UsuarioID, PublicUUID, ISNULL(Activo, 1) AS Activo, Email
+            FROM dbo.Usuario_Catalogo WITH (UPDLOCK, HOLDLOCK)
+            WHERE UsuarioID = TRY_CONVERT(INT, %s)
+               OR LOWER(CAST(PublicUUID AS NVARCHAR(36))) = LOWER(%s)
+        """, (user_id, user_id))
+        target = cur.fetchone()
+        if not target:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        target_id = target["UsuarioID"]
+        if str(actor_id) == str(target_id):
+            raise HTTPException(status_code=403, detail="No se permite modificar el propio estado")
 
-    # Evitar auto-inactivación
-    if nuevo == 0:
-        me = str(current_user.get("id") or current_user.get("_id") or "")
-        if str(u.get("UsuarioID")) == me or str(u.get("PublicUUID")) == me:
-            raise HTTPException(status_code=400, detail="No puedes inactivar tu propio usuario")
+        cur.execute("""
+            SELECT TOP 1 1 AS Autorizado
+            FROM dbo.Usuario_RolesAsignacion ra
+            JOIN dbo.Usuario_Roles r ON r.RolID = ra.RolID
+            WHERE ra.UsuarioID = %s AND ra.Activo = 1 AND r.Activo = 1
+              AND r.CodigoRol IN ('SUPERADMIN', 'SUPERADMINISTRADOR')
+        """, (actor_id,))
+        actor_global = bool(cur.fetchone())
 
-    # Actualizar estado
-    execute_write(
-        "UPDATE Usuario_Catalogo SET Activo = %s WHERE UsuarioID = %s",
-        (nuevo, user_id),
-    )
+        # A scoped ADMIN cannot change a SUPERADMIN, even when companies overlap.
+        if not actor_global:
+            cur.execute("""
+                SELECT TOP 1 1 AS Protegido
+                FROM dbo.Usuario_RolesAsignacion ra
+                JOIN dbo.Usuario_Roles r ON r.RolID = ra.RolID
+                WHERE ra.UsuarioID = %s AND ra.Activo = 1 AND r.Activo = 1
+                  AND r.CodigoRol IN ('SUPERADMIN', 'SUPERADMINISTRADOR')
+            """, (target_id,))
+            if cur.fetchone():
+                raise HTTPException(status_code=403, detail="Usuario de autoridad superior")
 
-    sesiones_revocadas = 0
-    if nuevo == 0:
-        # Revocar sesiones activas (la sesión guarda UsuarioID = PublicUUID;
-        # se incluye también el id numérico por compatibilidad con sesiones antiguas).
-        public_uuid = str(u.get("PublicUUID") or "")
-        try:
-            res = execute_write(
-                "UPDATE Sesiones SET EstaActiva = 0, FechaRevocacion = GETUTCDATE(), "
-                "MotivoRevocacion = 'user_deactivated', FechaModificacion = GETUTCDATE() "
-                "OUTPUT INSERTED.SesionID "
-                "WHERE EstaActiva = 1 AND UsuarioID IN (%s, %s)",
-                (public_uuid, str(user_id)),
-                fetch=True,
-            )
-            sesiones_revocadas = len(res or [])
-        except Exception as e:
-            logging.warning(f"[ADMIN_SQL] No se pudieron revocar sesiones de {user_id}: {e}")
+            # Require at least one active company on the target, and EVERY
+            # target company must be explicitly assigned to the actor.
+            cur.execute("""
+                SELECT COUNT(DISTINCT EmpresaID) AS Total
+                FROM dbo.Usuario_EmpresasAsignacion
+                WHERE UsuarioID = %s AND Activo = 1
+            """, (target_id,))
+            total = int((cur.fetchone() or {}).get("Total") or 0)
+            if total == 0:
+                raise HTTPException(status_code=403, detail="Usuario sin alcance corporativo verificable")
+            cur.execute("""
+                SELECT COUNT(DISTINCT target.EmpresaID) AS FueraAlcance
+                FROM dbo.Usuario_EmpresasAsignacion target
+                WHERE target.UsuarioID = %s AND target.Activo = 1
+                  AND NOT EXISTS (
+                    SELECT 1 FROM dbo.Usuario_EmpresasAsignacion actor
+                    WHERE actor.UsuarioID = %s AND actor.Activo = 1
+                      AND actor.EmpresaID = target.EmpresaID
+                  )
+            """, (target_id, actor_id))
+            if int((cur.fetchone() or {}).get("FueraAlcance") or 0):
+                raise HTTPException(status_code=403, detail="Usuario fuera del alcance corporativo")
 
-    return {
-        "success": True,
-        "id": str(user_id),
-        "email": u.get("Email"),
-        "activo": bool(nuevo),
-        "active": bool(nuevo),
-        "sesiones_revocadas": sesiones_revocadas,
-    }
+        nuevo = 0 if bool(target["Activo"]) else 1
+        cur.execute(
+            "UPDATE dbo.Usuario_Catalogo SET Activo = %s WHERE UsuarioID = %s",
+            (nuevo, target_id),
+        )
+        sesiones_revocadas = 0
+        if nuevo == 0:
+            cur.execute("""
+                UPDATE dbo.Sesiones
+                SET EstaActiva = 0, FechaRevocacion = GETUTCDATE(),
+                    MotivoRevocacion = 'user_deactivated',
+                    FechaModificacion = GETUTCDATE()
+                OUTPUT INSERTED.SesionID
+                WHERE EstaActiva = 1 AND UsuarioID IN (%s, %s)
+            """, (str(target.get("PublicUUID") or ""), str(target_id)))
+            sesiones_revocadas = len(cur.fetchall() or [])
+        conn.commit()
+        return {
+            "success": True, "id": str(target_id), "email": target["Email"],
+            "activo": bool(nuevo), "active": bool(nuevo),
+            "sesiones_revocadas": sesiones_revocadas,
+        }
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception:
+        conn.rollback()
+        logging.exception("[ADMIN_SQL] toggle-activo SQL failed; rolled back")
+        raise HTTPException(status_code=500, detail="Error transaccional al modificar usuario")
+    finally:
+        conn.close()
 
 
 @router.get("/roles")
@@ -569,7 +799,7 @@ async def get_catalogos_disponibles(current_user: dict = Depends(get_current_use
 
 
 @router.post("/permisos-catalogos")
-async def save_permisos_catalogos(payload: dict, current_user: dict = Depends(get_current_user)):
+async def save_permisos_catalogos(payload: dict, current_user: dict = Depends(get_current_user), _rbac_admin: dict = Depends(require_explicit_permission("RBAC_ADMIN"))):
     """
     Guarda permisos de catálogos en fuentes canónicas SQL.
     - Usuario_PermisosCatalogosFlujo: flags globales del flujo.
@@ -608,6 +838,30 @@ async def save_permisos_catalogos(payload: dict, current_user: dict = Depends(ge
             raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
         usuario_id = usuario["UsuarioID"]
+
+        # FAIL CLOSED: los registros escritos abajo tienen EmpresaID NULL
+        # (alcance global). No se permite a un administrador de alcance
+        # limitado crear o modificar concesiones globales.
+        actor_email = str(current_user.get("email") or "").strip()
+        if not actor_email:
+            raise HTTPException(status_code=403, detail="Identidad SQL del actor requerida")
+
+        cur.execute("""
+            SELECT TOP 1 1 AS Autorizado
+            FROM dbo.Usuario_Catalogo actor
+            INNER JOIN dbo.Usuario_RolesAsignacion ra
+                ON ra.UsuarioID = actor.UsuarioID AND ra.Activo = 1
+            INNER JOIN dbo.Usuario_Roles rol
+                ON rol.RolID = ra.RolID AND rol.Activo = 1
+            WHERE actor.Activo = 1
+              AND LOWER(actor.Email) = LOWER(%s)
+              AND rol.CodigoRol IN ('SUPERADMIN', 'SUPERADMINISTRADOR')
+        """, (actor_email,))
+        if not cur.fetchone():
+            raise HTTPException(
+                status_code=403,
+                detail="Permisos globales de catálogos requieren SUPERADMIN SQL",
+            )
 
         cur.execute("""
             UPDATE dbo.Usuario_PermisosCatalogosFlujo
@@ -735,12 +989,13 @@ async def save_permisos_catalogos(payload: dict, current_user: dict = Depends(ge
         conn.close()
 
 @router.put("/roles/{role_id}")
-async def update_role_sql(role_id: str, role_data: dict, current_user: dict = Depends(get_current_user)):
+async def update_role_sql(role_id: str, role_data: dict, current_user: dict = Depends(get_current_user), _rbac_admin: dict = Depends(require_explicit_permission("RBAC_ADMIN"))):
     """
     Actualiza rol y permisos en EDARSAHUB SQL.
     Fuente única: Usuario_Roles + Usuario_PermisosRolModulo.
     """
     require_admin(current_user)
+    _require_global_role_admin(current_user)
 
     nombre = role_data.get("nombre")
     descripcion = role_data.get("descripcion")
@@ -840,9 +1095,46 @@ async def update_role_sql(role_id: str, role_data: dict, current_user: dict = De
         conn.close()
 
 
+def _require_global_role_admin(current_user: dict) -> None:
+    """Fail closed: Usuario_Roles/Usuario_PermisosRolModulo are global tables.
+
+    RBAC_ADMIN is separately enforced by each route's dependency.
+    Scoped ADMIN must use a future company-scoped assignment endpoint.
+    """
+    actor_email = str(current_user.get("email") or "").strip()
+    if not actor_email:
+        raise HTTPException(status_code=403, detail="Identidad SQL del actor requerida")
+    conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
+    try:
+        cur = conn.cursor(as_dict=True)
+        cur.execute("""
+            SELECT TOP 1 1 AS Autorizado
+            FROM dbo.Usuario_Catalogo actor
+            JOIN dbo.Usuario_RolesAsignacion ra
+              ON ra.UsuarioID = actor.UsuarioID AND ra.Activo = 1
+            JOIN dbo.Usuario_Roles rol
+              ON rol.RolID = ra.RolID AND rol.Activo = 1
+            WHERE actor.Activo = 1
+              AND LOWER(actor.Email) = LOWER(%s)
+              AND rol.CodigoRol IN ('SUPERADMIN', 'SUPERADMINISTRADOR')
+        """, (actor_email,))
+        if not cur.fetchone():
+            raise HTTPException(
+                status_code=403,
+                detail="Mutaciones de roles globales requieren SUPERADMIN SQL",
+            )
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=503, detail="No se pudo validar autoridad SQL")
+    finally:
+        conn.close()
+
+
 @router.post("/roles")
-async def create_role_sql(role_data: dict, current_user: dict = Depends(get_current_user)):
+async def create_role_sql(role_data: dict, current_user: dict = Depends(get_current_user), _rbac_admin: dict = Depends(require_explicit_permission("RBAC_ADMIN"))):
     require_admin(current_user)
+    _require_global_role_admin(current_user)
 
     nombre = role_data.get("nombre")
     descripcion = role_data.get("descripcion") or nombre or ""
@@ -872,8 +1164,9 @@ async def create_role_sql(role_data: dict, current_user: dict = Depends(get_curr
 
 
 @router.delete("/roles/{role_id}")
-async def delete_role_sql(role_id: str, current_user: dict = Depends(get_current_user)):
+async def delete_role_sql(role_id: str, current_user: dict = Depends(get_current_user), _rbac_admin: dict = Depends(require_explicit_permission("RBAC_ADMIN"))):
     require_admin(current_user)
+    _require_global_role_admin(current_user)
     execute_write("""
         UPDATE dbo.Usuario_Roles
         SET Activo = 0, FechaModificacion = GETDATE()

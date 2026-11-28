@@ -1,37 +1,33 @@
 from pathlib import Path
 
 
-JOB = Path(
-    "/app/backend/core/scheduler/jobs/"
-    "sync_comercial_v2_job.py"
-)
+ROOT = Path(__file__).resolve().parents[2]
+JOB = ROOT / "backend" / "core" / "scheduler" / "jobs" / "sync_comercial_v2_job.py"
 
 
 def _source():
     return JOB.read_text(encoding="utf-8")
 
 
-def test_scheduler_imports_canonical_detail_service():
+def test_scheduler_imports_same_selective_backfill_used_by_manual_iscam_sync():
     text = _source()
 
-    assert (
-        "sync_detalle_producto_canonico_dia"
-        in text
-    )
+    assert "from scripts.backfill_detalle_producto_pendientes import ejecutar_backfill" in text
+    assert "ejecutar_backfill(" in text
 
 
-def test_scheduler_uses_runtime_v2_for_detail():
+def test_scheduler_detail_backfill_is_scoped_to_one_unit_and_one_day():
     text = _source()
 
-    assert "_load_runtime_rows" in text
-    assert "_runtime_for" in text
+    assert "fecha_inicio=dia" in text
+    assert "fecha_fin=dia + timedelta(days=1)" in text
+    assert "unidades=[unidad_codigo]" in text
 
 
-def test_scheduler_uses_canonical_pos_configuration():
+def test_scheduler_skips_already_reconciled_detail_without_treating_it_as_failure():
     text = _source()
 
-    assert "get_unidades_negocio_pos" in text
-    assert "get_pos_config_for_unidad" in text
+    assert '"YA_CONCILIADO"' in text
 
 
 def test_detail_runs_only_after_successful_header_sync():
@@ -75,11 +71,14 @@ def test_no_hardcoded_unit_codes_added():
         assert value not in text
 
 
-def test_no_detail_subprocess_execution():
+def test_detail_phase_does_not_spawn_a_subprocess():
     text = _source()
+    detail_block = text.split("    def _sync_detalle_post_header(", 1)[1].split(
+        "    def _sync_pagos_post_header(", 1
+    )[0]
 
-    assert "subprocess" not in text
-    assert "os.system(" not in text
+    assert "subprocess" not in detail_block
+    assert "os.system(" not in detail_block
 
 
 def test_no_mongo_dependency_added():

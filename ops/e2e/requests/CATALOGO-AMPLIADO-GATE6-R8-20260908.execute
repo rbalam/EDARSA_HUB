@@ -1,0 +1,5 @@
+job=CATALOGO-AMPLIADO-GATE6-E2E-CERT-R8-20260908
+target=development
+production_allowed=false
+cleanup=required
+harness=backend/tests/test_catalogo_ampliado_gate6_e2e_real.py

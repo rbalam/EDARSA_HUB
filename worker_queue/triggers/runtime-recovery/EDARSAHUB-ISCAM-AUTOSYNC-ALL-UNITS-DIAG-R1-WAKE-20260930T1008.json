@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "existing_job_id": "EDARSAHUB-ISCAM-AUTOSYNC-ALL-UNITS-DIAG-R1-CARLOS-20260930T1007",
+  "reason": "Wake canonical Universal Worker to consume the newly published READ_ONLY diagnostic job for ISCAM automatic closed-sales detail synchronization. Prefer this job now, preserve existing queue identities, do not clone or modify other jobs, do not touch Production.",
+  "production_touched": false
+}

@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "existing_job_id": "EDARSAHUB-ISCAM-AUTOSYNC-BOTTLENECK-DIAG-R1-CARLOS-20260930T1214",
+  "reason": "Wake canonical Universal Worker and prefer the READ_ONLY bottleneck diagnostic for sync_comercial_v2 after R4. Preserve queue identities; no Production.",
+  "production_touched": false
+}

@@ -17,6 +17,12 @@ SYNC = (
       "sync_comercial_edarsahub.py"
 )
 
+MPRO_CLOSED_API = (
+    ROOT
+    / "backend/modules/comercial_v2/"
+      "mpro_closed_api.py"
+)
+
 JOB = (
     ROOT
     / "backend/core/scheduler/jobs/"
@@ -76,6 +82,8 @@ def test_ventas_abiertas_escribe_codigo_legacy():
         "WHERE unidad_negocio_id = '{unidad_codigo}'"
         in block
     )
+    assert "FROM dbo.Comercial_Ventas_Dia_Abiertas_v2" in block
+    assert "UPDATE dbo.Comercial_Ventas_Dia_Abiertas_v2 SET" in block
     assert (
         "WHERE unidad_negocio_id = "
         "'{ventas.unidad_negocio_pk}'"
@@ -85,7 +93,7 @@ def test_ventas_abiertas_escribe_codigo_legacy():
     assert re.search(
         r"""
         INSERT\s+INTO\s+
-        Comercial_Ventas_Dia_Abiertas_v2
+        dbo\.Comercial_Ventas_Dia_Abiertas_v2
         .*?
         VALUES\s*\(
         \s*'\{new_id\}',
@@ -269,8 +277,13 @@ def test_queries_comerciales_usan_fecha_sql_112():
     assert old_start not in text
     assert old_end not in text
 
-    assert text.count(new_start) >= 2
-    assert text.count(new_end) >= 2
+    assert text.count(new_start) >= 1
+    assert text.count(new_end) >= 1
+
+    mpro_text = MPRO_CLOSED_API.read_text(encoding="utf-8")
+    assert 'strftime("%Y%m%d")' in mpro_text
+    assert "CONVERT(datetime, '{inicio}', 112)" in mpro_text
+    assert "CONVERT(datetime, '{fin}', 112)" in mpro_text
 
 
 # V1.0-VENTAS-DIA-SIN-PROPINA-DATE112

@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Retry canonical Universal Worker runtime convergence for existing EDARSAHUB-SERVICES-GATE3B-PHYSICAL-SCHEMA-DDL-DOSSIER-R1 after replacing destructive reset-based convergence in worker_runtime_wake with canonical git_divergence_guard refresh. Do not create a new Gate3B functional job. Require authoritative wake 200/202 and ALIGNED or FF_APPLIED before re-reading Gate3B. Preserve fail-closed rules and do not touch Production.",
+  "existing_job_id": "EDARSAHUB-SERVICES-GATE3B-PHYSICAL-SCHEMA-DDL-DOSSIER-R1",
+  "production_touched": false
+}

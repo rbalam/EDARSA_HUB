@@ -1,0 +1,111 @@
+name: RRR Gate 3 Development Migration
+
+on:
+  push:
+    branches: [Edarsahub_Desarrollo]
+    paths: [ops/migrations/requests/RRR-GATE3-DDL-V3-20260908.execute]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rrr-gate3-development-migration
+  cancel-in-progress: false
+
+jobs:
+  migrate-development:
+    runs-on: ubuntu-latest
+    environment: development
+    timeout-minutes: 25
+    env:
+      EDARSAHUB_SQL_HOST: '54.39.104.176'
+      EDARSAHUB_SQL_PORT: '1433'
+      EDARSAHUB_SQL_DATABASE: 'EDARSAHUB'
+      MIGRATION_SCRIPT: docs/RRR/sql/RRR_GATE2_MINIMUM_DDL_V3.sql
+      EXPECTED_BLOB_SHA: 'fc184b211d8bd311c098d09c22e84e86a59b1937'
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: '${{ github.sha }}'}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Install SQL runtime
+        run: python -m pip install pymssql pydantic python-dotenv email-validator
+      - name: Immutable blob and no-DML preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_REF}" = 'refs/heads/Edarsahub_Desarrollo'
+          test "$(git hash-object "${MIGRATION_SCRIPT}")" = "${EXPECTED_BLOB_SHA}"
+          ! grep -Eiq '^[[:space:]]*(INSERT[[:space:]]+INTO|UPDATE[[:space:]]|DELETE[[:space:]]+FROM|MERGE[[:space:]]|TRUNCATE[[:space:]])' "${MIGRATION_SCRIPT}"
+      - name: Immediate SQL preflight
+        env:
+          EDARSAHUB_SQL_USER: HRLectura
+          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+        shell: bash
+        run: |
+          python - <<'PY' | tee "$RUNNER_TEMP/rrr_preflight.json"
+          import json, os, pymssql
+          tables=['RRR_Reglas','RRR_ReglasVersiones','RRR_Eventos','RRR_Beneficios','RRR_LedgerMovimientos','RRR_ScoreHistorial','RRR_RankingHistorial']
+          c=pymssql.connect(server=os.environ['EDARSAHUB_SQL_HOST'],port=int(os.environ['EDARSAHUB_SQL_PORT']),database=os.environ['EDARSAHUB_SQL_DATABASE'],user=os.environ['EDARSAHUB_SQL_USER'],password=os.environ['EDARSAHUB_SQL_PASSWORD'],timeout=60,login_timeout=15)
+          q=c.cursor(as_dict=True)
+          q.execute("SELECT DB_NAME() database_name,SUSER_SNAME() login_name,USER_NAME() user_name,COALESCE(HAS_PERMS_BY_NAME(DB_NAME(),'DATABASE','CREATE TABLE'),0) can_create_table,COALESCE(HAS_PERMS_BY_NAME('dbo','SCHEMA','ALTER'),0) can_alter_dbo")
+          ident=q.fetchone(); p=','.join(['%s']*len(tables)); q.execute(f"SELECT name FROM sys.tables WHERE schema_id=SCHEMA_ID('dbo') AND name IN ({p}) ORDER BY name",tuple(tables)); existing=[r['name'] for r in q.fetchall()]
+          print(json.dumps({'identity':ident,'existing_tables':existing},default=str,sort_keys=True)); q.close(); c.close()
+          if ident['database_name']!='EDARSAHUB' or ident['login_name']!='HRLectura' or ident['user_name']!='HRLectura': raise SystemExit('IDENTITY_MISMATCH')
+          if int(ident['can_create_table'])!=1 or int(ident['can_alter_dbo'])!=1: raise SystemExit('DDL_PERMISSION_MISSING')
+          if existing: raise SystemExit('TARGET_ALREADY_EXISTS')
+          PY
+      - name: Execute certified DDL transactionally
+        env:
+          EDARSAHUB_SQL_USER: HRLectura
+          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+          EDARSAHUB_ALLOW_MIGRATIONS: 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE/backend" python backend/tools/edarsahub_sql_runner.py --mode migrate --script "${MIGRATION_SCRIPT}" | tee "$RUNNER_TEMP/rrr_migrate.txt"
+      - name: Post-DDL certification
+        env:
+          EDARSAHUB_SQL_USER: HRLectura
+          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+        shell: bash
+        run: |
+          python - <<'PY' | tee "$RUNNER_TEMP/rrr_postcheck.json"
+          import json, os, pymssql
+          tables=['RRR_Reglas','RRR_ReglasVersiones','RRR_Eventos','RRR_Beneficios','RRR_LedgerMovimientos','RRR_ScoreHistorial','RRR_RankingHistorial']
+          required_constraints={
+          'PK_RRR_Reglas','UQ_RRR_Reglas_Codigo','FK_RRR_Reglas_UsuarioCreacion',
+          'PK_RRR_ReglasVersiones','FK_RRR_ReglasVersiones_Regla','FK_RRR_ReglasVersiones_UsuarioCreacion','UQ_RRR_ReglasVersiones_ReglaVersion',
+          'PK_RRR_Eventos','UQ_RRR_Eventos_Source','FK_RRR_Eventos_Cliente','FK_RRR_Eventos_Empresa','FK_RRR_Eventos_UnidadNegocio','FK_RRR_Eventos_Venta',
+          'PK_RRR_Beneficios','UQ_RRR_Beneficios_Codigo','FK_RRR_Beneficios_UsuarioCreacion',
+          'PK_RRR_LedgerMovimientos','FK_RRR_Ledger_Cliente','FK_RRR_Ledger_Evento','FK_RRR_Ledger_ReglaVersion','FK_RRR_Ledger_Beneficio','FK_RRR_Ledger_Reversal','FK_RRR_Ledger_UsuarioCreacion','UQ_RRR_Ledger_Idempotency','CK_RRR_Ledger_Tipo',
+          'PK_RRR_ScoreHistorial','FK_RRR_Score_Cliente',
+          'PK_RRR_RankingHistorial','FK_RRR_Ranking_Cliente','FK_RRR_Ranking_Score'}
+          c=pymssql.connect(server=os.environ['EDARSAHUB_SQL_HOST'],port=int(os.environ['EDARSAHUB_SQL_PORT']),database=os.environ['EDARSAHUB_SQL_DATABASE'],user=os.environ['EDARSAHUB_SQL_USER'],password=os.environ['EDARSAHUB_SQL_PASSWORD'],timeout=60,login_timeout=15); q=c.cursor(as_dict=True); p=','.join(['%s']*len(tables))
+          q.execute(f"SELECT name FROM sys.tables WHERE schema_id=SCHEMA_ID('dbo') AND name IN ({p}) ORDER BY name",tuple(tables)); got=[r['name'] for r in q.fetchall()]
+          q.execute(f"SELECT COUNT(*) n FROM sys.key_constraints kc JOIN sys.tables t ON t.object_id=kc.parent_object_id WHERE t.name IN ({p}) AND kc.type='PK'",tuple(tables)); pk=int(q.fetchone()['n'])
+          q.execute(f"SELECT o.name FROM sys.objects o JOIN sys.tables t ON t.object_id=o.parent_object_id WHERE t.name IN ({p}) AND o.type IN ('PK','UQ','F','C')",tuple(tables)); constraints={r['name'] for r in q.fetchall()}
+          counts={}
+          for t in tables: q.execute(f'SELECT COUNT_BIG(*) n FROM dbo.[{t}]'); counts[t]=int(q.fetchone()['n'])
+          payload={'tables':got,'pk_count':pk,'constraints_present':sorted(required_constraints & constraints),'row_counts':counts,'blob':os.environ['EXPECTED_BLOB_SHA'],'production_touched':False}; print(json.dumps(payload,sort_keys=True)); q.close(); c.close()
+          if set(got)!=set(tables): raise SystemExit('MISSING_TABLES')
+          if pk!=7: raise SystemExit('PK_COUNT')
+          missing=required_constraints-constraints
+          if missing: raise SystemExit('MISSING_CONSTRAINTS:'+','.join(sorted(missing)))
+          if any(counts.values()): raise SystemExit('UNEXPECTED_DATA')
+          PY
+      - name: Evidence
+        if: always()
+        run: |
+          mkdir -p "$RUNNER_TEMP/rrr-evidence"
+          cp "$RUNNER_TEMP/rrr_preflight.json" "$RUNNER_TEMP/rrr-evidence/preflight.json" 2>/dev/null || true
+          cp "$RUNNER_TEMP/rrr_migrate.txt" "$RUNNER_TEMP/rrr-evidence/migrate.txt" 2>/dev/null || true
+          cp "$RUNNER_TEMP/rrr_postcheck.json" "$RUNNER_TEMP/rrr-evidence/postcheck.json" 2>/dev/null || true
+          printf '%s\n' "run=${GITHUB_RUN_ID}" "commit=${GITHUB_SHA}" "blob=${EXPECTED_BLOB_SHA}" > "$RUNNER_TEMP/rrr-evidence/manifest.txt"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rrr-gate3-development-migration-${{ github.run_id }}
+          path: ${{ runner.temp }}/rrr-evidence
+          if-no-files-found: error
+          retention-days: 30

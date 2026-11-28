@@ -2,6 +2,7 @@ from core.auth.sql_user_identity import enrich_current_user_with_sql_id
 from fastapi import APIRouter, Depends, HTTPException
 from typing import Dict
 from core.security import get_current_user
+from core.rbac.middleware import require_explicit_permission
 from modules.catalogos_workflow_sql.repository import CatalogosWorkflowSQLRepository
 
 router = APIRouter(prefix="/api", tags=["Catalogos Workflow Compat"])
@@ -16,12 +17,12 @@ async def compat_get_catalogos_disponibles(current_user: Dict = Depends(get_curr
     return repo.get_catalogos_disponibles()
 
 @router.put("/sistema/catalogos/{catalogo_id}/niveles")
-async def compat_put_catalogo_niveles(catalogo_id: str, body: Dict, current_user: Dict = Depends(get_current_user)):
+async def compat_put_catalogo_niveles(catalogo_id: str, body: Dict, current_user: Dict = Depends(get_current_user), _rbac_admin: Dict = Depends(require_explicit_permission("RBAC_ADMIN"))):
     repo.upsert_niveles_catalogo(catalogo_id, body, current_user)
     return {"ok": True, "message": "Niveles guardados en SQL (compat)"}
 
 @router.get("/sistema/catalogos/permisos/{user_id}")
-async def compat_get_permisos_catalogo(user_id: int, current_user: Dict = Depends(get_current_user)):
+async def compat_get_permisos_catalogo(user_id: int, current_user: Dict = Depends(get_current_user), _rbac_admin: Dict = Depends(require_explicit_permission("RBAC_ADMIN"))):
     return repo.get_permisos_catalogo_usuario(user_id)
 
 @router.get("/sistema/mis-permisos-catalogos")
@@ -31,7 +32,7 @@ async def compat_get_mis_permisos_catalogos(current_user: Dict = Depends(get_cur
     return repo.get_mis_permisos_catalogos(user_id)
 
 @router.post("/sistema/permisos-catalogos")
-async def compat_post_permisos_catalogo(body: Dict, current_user: Dict = Depends(get_current_user)):
+async def compat_post_permisos_catalogo(body: Dict, current_user: Dict = Depends(get_current_user), _rbac_admin: Dict = Depends(require_explicit_permission("RBAC_ADMIN"))):
     repo.upsert_permisos_catalogo(body, current_user)
     return {"ok": True, "message": "Permisos guardados en SQL (compat)"}
 

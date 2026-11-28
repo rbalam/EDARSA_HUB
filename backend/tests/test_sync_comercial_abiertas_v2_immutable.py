@@ -2,10 +2,10 @@ import hashlib
 from pathlib import Path
 
 
-EXPECTED_BLOB_SHA1 = "e97b55a06b0adb5b447904c7643b99844f00aae7"
+EXPECTED_BLOB_SHA1 = "47e7e005cf3c382c546ffc017a28a5c6d87796bc"
 
 
-def test_production_sync_comercial_abiertas_v2_is_byte_for_byte_protected():
+def test_sync_comercial_abiertas_v2_is_byte_for_byte_protected():
     path = (
         Path(__file__).resolve().parents[1]
         / "core"
@@ -18,6 +18,7 @@ def test_production_sync_comercial_abiertas_v2_is_byte_for_byte_protected():
     actual = hashlib.sha1(git_blob).hexdigest()
 
     assert actual == EXPECTED_BLOB_SHA1, (
-        "sync_comercial_abiertas_v2_job.py de Produccion esta protegido por "
-        "contrato y no puede modificarse durante el desacoplamiento."
+        "sync_comercial_abiertas_v2_job.py esta protegido por contrato y no "
+        "puede modificarse dentro de trabajos de Sincronizacion Historica ni "
+        "de desacoplamiento del runtime."
     )

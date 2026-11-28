@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "existing_job_id": "MEJORA-TABEJE-VENTAS-DIA-SYNC-CANONICO-R16D-CARLOS-20261001T2135Z",
+  "reason": "Mejora-TABEJE: wake canonical Universal Worker and retry the same R16D after retryable SLOT_ALREADY_CLAIMED infrastructure block. Preserve active work; do not touch Production.",
+  "production_touched": false
+}

@@ -35,7 +35,7 @@ FASE 5A DEL REFACTOR CANÓNICO (Mayo 2026):
 import os
 import logging
 import requests
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from typing import Dict, Optional, Any
 
 # ============================================================================
@@ -61,13 +61,75 @@ except ImportError as e:
 # NOTA: Este diccionario se mantiene SOLO como fallback de emergencia.
 # La fuente autoritativa es Sistema_EmpresasServidores via EmpresaResolver.
 
+
+
+def _default_replication_policy() -> Dict[str, Any]:
+    from core.cerebro import HORA_REPLICA_DEFAULT, TIMEZONE_MEXICO
+
+    return {
+        "enabled": True,
+        "cutoff_time": f"{int(HORA_REPLICA_DEFAULT):02d}:00",
+        "timezone": TIMEZONE_MEXICO,
+    }
+
+
+def _normalize_runtime_replication_policy(
+    policy: Optional[Dict[str, Any]],
+) -> Dict[str, Any]:
+    from zoneinfo import ZoneInfo
+
+    defaults = _default_replication_policy()
+    raw = dict(policy or {})
+    enabled = bool(raw.get("enabled", defaults["enabled"]))
+    cutoff_time = str(raw.get("cutoff_time") or defaults["cutoff_time"]).strip()
+    timezone_name = str(raw.get("timezone") or defaults["timezone"]).strip()
+
+    try:
+        datetime.strptime(cutoff_time, "%H:%M")
+    except ValueError:
+        cutoff_time = defaults["cutoff_time"]
+
+    try:
+        ZoneInfo(timezone_name)
+    except Exception:
+        timezone_name = defaults["timezone"]
+
+    return {
+        "enabled": enabled,
+        "cutoff_time": cutoff_time,
+        "timezone": timezone_name,
+    }
+
+
+def _replication_cutoff_reached(
+    policy: Optional[Dict[str, Any]],
+    now_utc: Optional[datetime] = None,
+) -> bool:
+    from zoneinfo import ZoneInfo
+
+    normalized = _normalize_runtime_replication_policy(policy)
+    if not normalized["enabled"]:
+        return False
+
+    current_utc = now_utc or datetime.now(timezone.utc)
+    if current_utc.tzinfo is None:
+        current_utc = current_utc.replace(tzinfo=timezone.utc)
+
+    local_now = current_utc.astimezone(ZoneInfo(normalized["timezone"]))
+    cutoff = datetime.strptime(
+        normalized["cutoff_time"],
+        "%H:%M",
+    ).time()
+
+    return local_now.time().replace(tzinfo=None) >= cutoff
+
 APIS_MPRO_LOCALES_LEGACY = {
     "origen": {
         "nombre": "ORIGEN LOCAL",
         "url": os.environ.get("API_MPRO_ORIGEN_URL"),
         "api_key": os.environ.get("API_MPRO_KEY"),
         "empresa_id": 1,  # ORIGEN
-        "hora_replica": 4,
+        "replication_policy": _default_replication_policy(),
         "activo": True
     },
     "130_qro": {
@@ -75,7 +137,7 @@ APIS_MPRO_LOCALES_LEGACY = {
         "url": os.environ.get("API_MPRO_QRO_URL"),
         "api_key": os.environ.get("API_MPRO_KEY"),
         "empresa_id": 2,  # 130QRO
-        "hora_replica": 4,
+        "replication_policy": _default_replication_policy(),
         "activo": True
     }
 }
@@ -143,9 +205,23 @@ def _obtener_api_local_por_empresa_id(empresa_id: int) -> Optional[Dict[str, Any
                 "numero_sucursal": connection.numero_sucursal_sistema,
                 "codigo_sucursal": connection.codigo_sucursal_sistema,
                 "nombre_sucursal": connection.nombre_sucursal_sistema,
-                "hora_replica": 4,  # Configurable en el futuro
                 "activo": connection.activo
             }
+
+            try:
+                from modules.api_connections.repository import (
+                    get_api_replication_policy,
+                )
+                api_config["replication_policy"] = get_api_replication_policy(
+                    str(connection.servidor_id)
+                )
+            except Exception as policy_exc:
+                logging.warning(
+                    "API Local EmpresaID=%s: política de réplica no disponible (%s)",
+                    empresa_id,
+                    type(policy_exc).__name__,
+                )
+                api_config["replication_policy"] = _default_replication_policy()
             
             # Obtener URL desde variables de entorno según la empresa
             if empresa.codigo_empresa == 'ORIGEN':
@@ -236,23 +312,40 @@ def obtener_ventas_dia_api_local(api_config: dict, forzar_consulta: bool = False
     Returns:
         dict con ventas, cheques, pax
     """
-    # Usar zona horaria de México (UTC-6) para determinar si ya pasó la hora de réplica
-    mexico_tz = timezone(timedelta(hours=-6))
-    ahora_mexico = datetime.now(timezone.utc).astimezone(mexico_tz)
-    hora_actual = ahora_mexico.hour
-    hora_replica = api_config.get("hora_replica", 4)
-    
-    logging.info(f"API Local {api_config['nombre']}: Hora México = {ahora_mexico.strftime('%H:%M')}, Hora réplica = {hora_replica}:00, forzar={forzar_consulta}")
-    
-    # Si ya pasó la hora de réplica EN MÉXICO Y no es modo forzado, los datos ya están en la nube
-    if hora_actual >= hora_replica and not forzar_consulta:
-        logging.info(f"API Local {api_config['nombre']}: Hora actual ({hora_actual}) >= hora réplica ({hora_replica}), omitiendo (datos ya replicados)")
-        return {"ventas": 0, "cheques": 0, "pax": 0, "omitido": True, "razon": "post_replica"}
+    replication_policy = _normalize_runtime_replication_policy(
+        api_config.get("replication_policy")
+    )
+    cutoff_reached = _replication_cutoff_reached(replication_policy)
+
+    logging.info(
+        "API Local %s: política réplica enabled=%s cutoff=%s timezone=%s forzar=%s",
+        api_config["nombre"],
+        replication_policy["enabled"],
+        replication_policy["cutoff_time"],
+        replication_policy["timezone"],
+        forzar_consulta,
+    )
+
+    if cutoff_reached and not forzar_consulta:
+        logging.info(
+            "API Local %s: corte de réplica alcanzado; omitiendo datos locales",
+            api_config["nombre"],
+        )
+        return {
+            "ventas": 0,
+            "cheques": 0,
+            "pax": 0,
+            "omitido": True,
+            "razon": "post_replica",
+        }
     
     if forzar_consulta:
         logging.info(f"API Local {api_config['nombre']}: FORZANDO consulta (modo Ventas del Día)")
     else:
-        logging.info(f"API Local {api_config['nombre']}: Consultando ventas del día (hora {hora_actual} < {hora_replica})")
+        logging.info(
+            "API Local %s: consultando ventas del día antes del corte configurado",
+            api_config["nombre"],
+        )
     
     # Query para obtener ventas del día actual
     # IMPORTANTE: Usar formato 112 (YYYYMMDD) que es independiente de configuración regional
@@ -326,9 +419,13 @@ def sumar_ventas_api_local_a_sucursal(
     Returns:
         dict con ventas_adicionales, cheques_adicionales, pax_adicionales
     """
-    # Usar zona horaria de México para determinar "hoy"
-    mexico_tz = timezone(timedelta(hours=-6))
-    ahora_mexico = datetime.now(timezone.utc).astimezone(mexico_tz)
+    # Fecha operativa usando zona IANA canónica.
+    from zoneinfo import ZoneInfo
+    from core.cerebro import TIMEZONE_MEXICO
+
+    ahora_mexico = datetime.now(
+        ZoneInfo(TIMEZONE_MEXICO)
+    )
     hoy = ahora_mexico.strftime("%Y-%m-%d")
     mes_actual = ahora_mexico.month
     anio_actual = ahora_mexico.year

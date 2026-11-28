@@ -21,20 +21,19 @@ def _config():
 
 def test_query_matches_official_softrestaurant_turn_contract():
     query = sync_module.build_softrestaurant_ventas_cerradas_query(
-        {"empresa_id": "EST"},
+        {"unidad_codigo": "ESTELAR"},
         date(2026, 8, 31),
         date(2026, 8, 31),
     )
 
-    assert "INNER JOIN turnos AS t" in query
-    assert "t.idturno = ch.idturno" in query
-    assert "t.cierre IS NOT NULL" in query
-    assert "ch.cierre IS NOT NULL" not in query
-    assert "ch.idempresa = 'EST'" in query
-    assert "t.idempresa = 'EST'" in query
-    assert "t.apertura" in query
-    assert "ISNULL(ch.nopersonas, 0) AS num_personas" in query
-    assert "1 AS num_cheques" in query
+    assert "INNER JOIN turnos AS tr" in query
+    assert "tr.idturno = ch.idturno" in query
+    assert "DATEADD(hour, -9, tr.apertura)" in query
+    assert "ch.cancelado = 0" in query
+    assert "cierre IS NOT NULL" not in query
+    assert "idempresa" not in query
+    assert "SUM(ch.nopersonas) AS num_personas" in query
+    assert "COUNT(DISTINCT ch.folio) AS num_cheques" in query
 
 
 def test_grouping_preserves_count_rows_for_official_report(monkeypatch):

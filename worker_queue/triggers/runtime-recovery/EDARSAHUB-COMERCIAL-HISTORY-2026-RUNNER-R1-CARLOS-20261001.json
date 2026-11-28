@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Wake canonical Universal Worker and prefer the Commercial history 2026 runner orchestration job after visual Preview validation of ORIGEN SB-0049409. Preserve active work; do not touch Production.",
+  "existing_job_id": "EDARSAHUB-COMERCIAL-HISTORY-2026-RUNNER-R1-CARLOS-20261001",
+  "production_touched": false
+}

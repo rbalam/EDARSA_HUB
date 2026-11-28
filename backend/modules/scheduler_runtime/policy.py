@@ -1,4 +1,9 @@
-"""Runtime ownership policy for the EDARSAHUB scheduler."""
+"""Runtime ownership policy for the EDARSAHUB scheduler.
+
+This module separates web runtimes from the process that owns periodic
+production jobs.  It is intentionally environment-only and does not import
+business sync implementations.
+"""
 
 from __future__ import annotations
 
@@ -8,6 +13,9 @@ from typing import Dict
 
 ROLE_ENV = "EDARSA_RUNTIME_ROLE"
 ROLE_REQUIRED_ENV = "EDARSA_RUNTIME_ROLE_REQUIRED"
+PREVIEW_COMMERCIAL_INTERNAL_OWNER_ENV = (
+    "EDARSA_PREVIEW_COMMERCIAL_INTERNAL_OWNER_ENABLED"
+)
 
 LEGACY_EMBEDDED = "LEGACY_EMBEDDED"
 PREVIEW_WEB = "PREVIEW_WEB"
@@ -62,8 +70,10 @@ def runtime_role() -> str:
     raw = str(os.environ.get(ROLE_ENV) or "").strip().upper()
     if not raw:
         return LEGACY_EMBEDDED
+
     if raw not in VALID_ROLES:
         raise RuntimeError(f"INVALID_EDARSA_RUNTIME_ROLE:{raw}")
+
     return raw
 
 
@@ -78,18 +88,48 @@ def runtime_policy_snapshot() -> Dict[str, object]:
         "role_required": required,
         "role_explicit": explicitly_configured,
         "scheduler_enabled": scheduler_enabled(),
+        "preview_commercial_internal_owner_enabled": (
+            should_start_preview_commercial_internal_owner()
+        ),
         "legacy_fallback_active": (
             role == LEGACY_EMBEDDED and not explicitly_configured
         ),
     }
 
 
+def should_start_preview_commercial_internal_owner() -> bool:
+    """Whether PREVIEW_WEB may own the two commercial wake loops.
+
+    External ownership is the default after cutover. The internal Preview
+    owner remains available only as an explicit rollback switch.
+    """
+    try:
+        return (
+            runtime_environment() == "PREVIEW"
+            and runtime_role() == PREVIEW_WEB
+            and _truthy(
+                PREVIEW_COMMERCIAL_INTERNAL_OWNER_ENV,
+                "false",
+            )
+        )
+    except RuntimeError:
+        return False
+
+
 def should_start_embedded_scheduler() -> bool:
-    """Return whether the FastAPI web process may own APScheduler."""
+    """Return whether the FastAPI web process may own the scheduler.
+
+    During the staged migration, absence of an explicit role preserves legacy
+    behavior unless EDARSA_RUNTIME_ROLE_REQUIRED=1.  Once the cutover is
+    complete both Preview and Production web runtimes must set an explicit web
+    role, which makes this function fail closed.
+    """
     if not scheduler_enabled():
         return False
+
     if runtime_role_required() and not str(os.environ.get(ROLE_ENV) or "").strip():
         return False
+
     return runtime_role() == LEGACY_EMBEDDED
 
 
@@ -99,14 +139,17 @@ def require_standalone_production_scheduler() -> Dict[str, object]:
 
     if not snapshot["scheduler_enabled"]:
         raise RuntimeError("PRODUCTION_SCHEDULER_DISABLED")
+
     if snapshot["environment"] != "PRODUCTION":
         raise RuntimeError(
             "PRODUCTION_SCHEDULER_REQUIRES_PRODUCTION_ENVIRONMENT"
         )
+
     if snapshot["role"] != PRODUCTION_SCHEDULER:
         raise RuntimeError(
             "PRODUCTION_SCHEDULER_REQUIRES_EXPLICIT_RUNTIME_ROLE"
         )
+
     if not snapshot["role_explicit"]:
         raise RuntimeError("PRODUCTION_SCHEDULER_ROLE_NOT_EXPLICIT")
 

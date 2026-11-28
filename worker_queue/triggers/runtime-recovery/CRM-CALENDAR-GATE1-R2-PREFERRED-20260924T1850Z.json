@@ -1,0 +1,7 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "CRM Calendario - priorizar el job READ_ONLY ya publicado EDARSAHUB-CRM-CALENDAR-CANONICAL-EVENTS-GATE1-R2 cuando termine cualquier trabajo activo actual. No interrumpir propietario activo, no crear R3, no duplicar ni modificar el job funcional, no tocar Produccion, SQL de escritura, formulas, RBAC, dispatcher, supervisor ni watchdog.",
+  "existing_job_id": "EDARSAHUB-CRM-CALENDAR-CANONICAL-EVENTS-GATE1-R2",
+  "preferred_job_id": "EDARSAHUB-CRM-CALENDAR-CANONICAL-EVENTS-GATE1-R2",
+  "production_touched": false
+}

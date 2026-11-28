@@ -1,0 +1,10 @@
+{
+  "schema": "edarsahub.agent-reach-live-canary-request.v1",
+  "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5I-CANONICAL-PYTHON-DEPS-R1-20260914",
+  "requested_by": "universal-worker",
+  "environment": "DEVELOPMENT",
+  "risk": "R1",
+  "data_classification": "PUBLIC",
+  "external_calls_budget": 1,
+  "production_allowed": false
+}

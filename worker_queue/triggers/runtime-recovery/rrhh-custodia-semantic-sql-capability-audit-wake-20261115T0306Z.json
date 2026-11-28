@@ -1,0 +1,7 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "existing_job_id": "SEM-RRHH_CUSTODIA-REPOSITORY_CONTRACT_AUDIT_BOUNDE-B3E857AFF4935ED24466",
+  "preferred_job_id": "SEM-RRHH_CUSTODIA-REPOSITORY_CONTRACT_AUDIT_BOUNDE-B3E857AFF4935ED24466",
+  "reason": "RRHH Custodia: wake canonical Universal Worker to consume the already-submitted READ_ONLY repository audit for semantic SQL capability design. Preserve original job_id and payload; do not clone, do not interrupt active work, fail closed on unsafe runtime state, and do not touch Production.",
+  "production_touched": false
+}

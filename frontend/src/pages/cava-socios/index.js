@@ -10,3 +10,4 @@ export { default as SocioDetail } from './SocioDetail';
 export { default as SocioForm } from './SocioForm';
 export { default as InventarioCava } from './InventarioCava';
 export { default as ConsumosCava } from './ConsumosCava';
+export { default as BlindAuditCava } from './BlindAuditCava';

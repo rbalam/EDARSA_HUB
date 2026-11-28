@@ -11,6 +11,7 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../lib/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,6 +34,7 @@ import {
   RefreshCw, CheckCircle2, XCircle, AlertTriangle, Loader2, Database, Server,
   Play, History, Layers, Link2, Lock, Clock,
 } from 'lucide-react';
+import ComercialRangeResyncCard from './ComercialRangeResyncCard';
 
 const formatDateTime = (isoString) => {
   if (!isoString) return '-';
@@ -60,7 +62,24 @@ const formatInteger = (value) => {
   return Number.isFinite(number) ? Math.trunc(number).toLocaleString('es-MX') : '-';
 };
 
+const splitDailyDateRange = (start, end) => {
+  const first = new Date(`${start}T00:00:00Z`);
+  const last = new Date(`${end}T00:00:00Z`);
+  if (Number.isNaN(first.getTime()) || Number.isNaN(last.getTime()) || first > last) {
+    return [[start, end]];
+  }
+  const days = [];
+  const current = new Date(first);
+  while (current <= last) {
+    const day = current.toISOString().slice(0, 10);
+    days.push([day, day]);
+    current.setUTCDate(current.getUTCDate() + 1);
+  }
+  return days;
+};
+
 export default function ResyncPanel() {
+  const navigate = useNavigate();
   const [options, setOptions] = useState({ tipos_sync: [], unidades: [], grupos: [] });
   const [loadingOptions, setLoadingOptions] = useState(true);
 
@@ -195,31 +214,79 @@ export default function ResyncPanel() {
     setResolveDialog({ open: false, isDryRun, loading: false });
     setExecuting(true);
     setBatchResults([]);
-    setProgress({ current: 0, total: finalItems.length });
 
     const results = [];
     const fi = fechaInicio || new Date().toISOString().slice(0, 10);
     const ff = fechaFin || new Date().toISOString().slice(0, 10);
 
-    for (let i = 0; i < finalItems.length; i++) {
-      const it = finalItems[i];
+    const executionPlan = finalItems.flatMap((it) => {
       const executionCodigo = it.codigo === 'finanzas_netpay' ? getNetpayExecutionCode() : it.codigo;
-      setProgress({ current: i + 1, total: finalItems.length });
+      if (executionCodigo !== 'comercial_ventas_cerradas') {
+        return [{ it, executionCodigo, fechaInicioItem: fi, fechaFinItem: ff }];
+      }
+      return splitDailyDateRange(fi, ff).map(([dayStart, dayEnd]) => ({
+        it,
+        executionCodigo,
+        fechaInicioItem: dayStart,
+        fechaFinItem: dayEnd,
+      }));
+    });
+
+    setProgress({ current: 0, total: executionPlan.length });
+
+    for (let i = 0; i < executionPlan.length; i++) {
+      const { it, executionCodigo, fechaInicioItem, fechaFinItem } = executionPlan[i];
+      setProgress({ current: i + 1, total: executionPlan.length });
       try {
         const resp = await api.post('/admin/scheduler/resync/execute', {
           tipo_sync: executionCodigo,
           unidad_negocio_id: unidadId,
-          fecha_inicio: fi,
-          fecha_fin: ff,
+          fecha_inicio: fechaInicioItem,
+          fecha_fin: fechaFinItem,
           motivo,
           dry_run: isDryRun,
-        });
-        results.push({ tipo: { ...it, codigo: executionCodigo }, data: resp.data });
-      } catch (error) {
+        }, { timeout: 120000 });
         results.push({
-          tipo: it,
-          data: { success: false, modo: isDryRun ? 'DRY_RUN' : 'REAL',
-                  error_message: error.response?.data?.detail || 'Error de ejecución' },
+          tipo: {
+            ...it,
+            codigo: executionCodigo,
+            nombre: executionCodigo === 'comercial_ventas_cerradas'
+              ? `${it.nombre} · ${fechaInicioItem}`
+              : it.nombre,
+          },
+          data: {
+            ...resp.data,
+            fecha_inicio: resp.data?.fecha_inicio || fechaInicioItem,
+            fecha_fin: resp.data?.fecha_fin || fechaFinItem,
+          },
+        });
+      } catch (error) {
+        const errorData = error.response?.data || {};
+        const resultadoError = errorData?.resultado || {};
+        const isTimeout = error.code === 'ECONNABORTED' || String(error.message || '').toLowerCase().includes('timeout');
+        const errorMessage = isTimeout
+          ? `TIMEOUT_CLIENTE: la re-sincronización del día ${fechaInicioItem} superó 120 segundos.`
+          : errorData?.error_message
+            || resultadoError?.error_message
+            || errorData?.detail
+            || error.message
+            || `Error de ejecución para ${fechaInicioItem}`;
+        results.push({
+          tipo: {
+            ...it,
+            codigo: executionCodigo,
+            nombre: executionCodigo === 'comercial_ventas_cerradas'
+              ? `${it.nombre} · ${fechaInicioItem}`
+              : it.nombre,
+          },
+          data: {
+            success: false,
+            modo: isDryRun ? 'DRY_RUN' : 'REAL',
+            stage: isTimeout ? 'TIMEOUT_CLIENTE' : (errorData?.stage || resultadoError?.stage || 'EJECUCION'),
+            error_message: errorMessage,
+            fecha_inicio: fechaInicioItem,
+            fecha_fin: fechaFinItem,
+          },
         });
       }
       setBatchResults([...results]);
@@ -240,15 +307,30 @@ export default function ResyncPanel() {
 
   return (
     <div className="space-y-6" data-testid="resync-panel">
+      <ComercialRangeResyncCard options={options} onFinished={fetchHistory} />
       <Card data-testid="resync-form-card">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <RefreshCw className="w-5 h-5" /> Re-sincronización Manual
-          </CardTitle>
-          <CardDescription>
-            Selecciona una o varias sincronizaciones (individual o por grupo).
-            <strong className="text-amber-600 ml-1">Ejecuta DRY RUN primero.</strong>
-          </CardDescription>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <RefreshCw className="w-5 h-5" /> Re-sincronización Manual
+              </CardTitle>
+              <CardDescription>
+                Selecciona una o varias sincronizaciones (individual o por grupo).
+                <strong className="text-amber-600 ml-1">Ejecuta DRY RUN primero.</strong>
+              </CardDescription>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate('/sync-historical')}
+              className="shrink-0 border-blue-200 text-blue-700 hover:bg-blue-50"
+              data-testid="open-sync-historical-from-resync"
+            >
+              <Database className="w-4 h-4 mr-2" />
+              Sincronización Histórica
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-5">
           {/* Catálogo agrupado */}
@@ -439,6 +521,11 @@ export default function ResyncPanel() {
                             </span>
                           )}
                         </div>
+                        {(r.data.warning_message || resultado.warning_message) && (
+                          <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                            Advertencia {resultado.stage || r.data.stage || 'DETALLE_ISCAM'}: {r.data.warning_message || resultado.warning_message}
+                          </p>
+                        )}
 
                         {r.data.modo === 'DRY_RUN' && (
                           <div className="space-y-2" data-testid={`dry-run-detail-${r.tipo.codigo}`}>

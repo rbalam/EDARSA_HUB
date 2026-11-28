@@ -38,7 +38,6 @@ FINALIZER="$DIR/finalize_local_snapshot.sh"
 REPORTER="$DIR/mirror_sync_result_reporter.py"
 AUDIT_EXPORTER="$DIR/mirror_sync_audit_exporter.py"
 UNIVERSAL_WORKER="$DIR/universal_job_worker.sh"
-CONTROL_PLANE="$DIR/worker_control_plane.py"
 
 STATE_DIR="$ROOT/.git/mirror-sync"
 PREVIEW_BACKEND_TREE_STATE="$STATE_DIR/preview_backend_tree_sha"
@@ -54,7 +53,6 @@ MIRROR_FINALIZE_TIMEOUT_SECONDS="${MIRROR_FINALIZE_TIMEOUT_SECONDS:-180}"
 REPORTING_TIMEOUT_SECONDS="${MIRROR_REPORTING_TIMEOUT_SECONDS:-90}"
 RUNNING=1
 UNIVERSAL_PID=""
-CONTROL_PID=""
 
 log(){ printf '%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
 shutdown_worker(){ RUNNING=0; log "WORKER_SIGNAL_RECEIVED=YES"; }
@@ -166,16 +164,8 @@ start_universal_worker(){
     return 1
 }
 
-start_control_plane(){
-    [ -r "$CONTROL_PLANE" ] || { log "CONTROL_PLANE_AVAILABLE=NO"; return 1; }
-    "$PYTHON_BIN" "$CONTROL_PLANE" & CONTROL_PID=$!
-    mkdir -p "$UNIVERSAL_STATE"; printf '%s\n' "$CONTROL_PID" > "$UNIVERSAL_STATE/control_plane_pid"
-    log "CONTROL_PLANE_STARTED=YES"; log "CONTROL_PLANE_PID=$CONTROL_PID"
-}
-
 stop_child(){ local PID="${1:-}"; [ -n "$PID" ] || return 0; if kill -0 "$PID" 2>/dev/null; then kill -TERM "$PID" 2>/dev/null || true; for _ in $(seq 1 20); do kill -0 "$PID" 2>/dev/null || break; sleep 0.25; done; kill -KILL "$PID" 2>/dev/null || true; wait "$PID" 2>/dev/null || true; fi; }
 stop_universal_worker(){ stop_child "$UNIVERSAL_PID"; UNIVERSAL_PID=""; }
-stop_control_plane(){ stop_child "$CONTROL_PID"; CONTROL_PID=""; }
 
 ensure_universal_worker(){
     local existing=""
@@ -189,7 +179,6 @@ ensure_universal_worker(){
     log "UNIVERSAL_JOB_WORKER_START_BY_MIRROR=FORBIDDEN"
     return 0
 }
-ensure_control_plane(){ if [ -z "${CONTROL_PID:-}" ] || ! kill -0 "$CONTROL_PID" 2>/dev/null; then [ -z "${CONTROL_PID:-}" ] || wait "$CONTROL_PID" 2>/dev/null || true; log "CONTROL_PLANE_NOT_RUNNING=YES"; start_control_plane || true; fi; }
 
 run_cycle(){
     local CHECK_OUT CHECK_RC PUBLISH_OUT PUBLISH_RC SNAPSHOT FINALIZE_RC
@@ -228,7 +217,6 @@ case "$LOOP_SECONDS" in ''|*[!0-9]*) echo "ABORT=INVALID_LOOP_SECONDS"; exit 2;;
 
 log "MIRROR_WORKER_STARTED=YES"; log "RUNTIME_GENERATION=$RUNTIME_GENERATION"; log "LOOP_SECONDS=$LOOP_SECONDS"
 maybe_reload_preview_backend
-start_control_plane || true
 start_universal_worker || true
-while [ "$RUNNING" -eq 1 ]; do ensure_control_plane; ensure_universal_worker; run_cycle; maybe_reload_preview_backend; ensure_control_plane; ensure_universal_worker; run_reporting_pipeline; [ "$RUNNING" -ne 0 ] || break; sleep "$LOOP_SECONDS" & wait $! || true; done
-stop_universal_worker; stop_control_plane; log "MIRROR_WORKER_STOPPED=YES"; exit 0
+while [ "$RUNNING" -eq 1 ]; do ensure_universal_worker; run_cycle; maybe_reload_preview_backend; ensure_universal_worker; run_reporting_pipeline; [ "$RUNNING" -ne 0 ] || break; sleep "$LOOP_SECONDS" & wait $! || true; done
+stop_universal_worker; log "MIRROR_WORKER_STOPPED=YES"; exit 0

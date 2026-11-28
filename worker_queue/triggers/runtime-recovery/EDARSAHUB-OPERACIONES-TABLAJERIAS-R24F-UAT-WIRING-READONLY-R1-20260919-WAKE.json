@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "existing_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-UAT-WIRING-READONLY-R1-20260919",
+  "reason": "Wake canonical Universal Worker for Tablajeria R24F UAT wiring READ_ONLY R1. No Production, no SQL mutation, no product mutation.",
+  "production_touched": false
+}

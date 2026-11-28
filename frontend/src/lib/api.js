@@ -245,15 +245,14 @@ api.interceptors.response.use(
                            url.includes('/auth/refresh') ||
                            url.includes('/auth/logout');
 
-    // Parche de estabilidad: Evitar cierre de sesión por errores 500/502.
-    // No debe convertir reportes en arreglos vacíos: eso oculta fallas reales
-    // como "Reporte generado: 0 registros" cuando el backend devolvió error.
+    // Mantener la sesión ante 500/502, pero propagar el error real.
+    // Nunca fabricar una respuesta vacía: eso convierte fallas de backend
+    // en falsos "0 registros" y evita que los consumidores activen fallback.
     if (status === 500 || status === 502) {
-      console.warn("[API] Fallo de red detectado (500/502), manteniendo sesión...");
-      if (url.includes('/reports/')) {
-        return Promise.reject(error);
-      }
-      return Promise.resolve({ data: [] });
+      console.warn(
+        "[API] Fallo de backend/red (500/502), manteniendo sesión y propagando error..."
+      );
+      return Promise.reject(error);
     }
 
     if (status === 401 && !isAuthEndpoint && !originalRequest._retry) {

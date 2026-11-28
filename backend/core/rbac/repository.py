@@ -76,13 +76,14 @@ class RBACRepository:
         Nota: En SQL, los permisos se derivan de Usuario_Modulos × Usuario_Acciones.
         Para crear un nuevo permiso, agregar el módulo y/o acción correspondiente.
         """
-        logger.warning("[RBAC] create_permiso: En SQL los permisos son derivados. "
-                      "Agregar módulo/acción en Usuario_Modulos/Usuario_Acciones.")
-        # Retornar el permiso como si se hubiera creado
-        permiso["id"] = permiso.get("id") or str(uuid.uuid4())
-        permiso["created_at"] = datetime.now(timezone.utc).isoformat()
-        permiso["activo"] = True
-        return permiso
+        logger.error(
+            "[RBAC] create_permiso DENEGADO: los permisos se derivan de "
+            "Usuario_Modulos y Usuario_Acciones; esta operación no persiste en SQL."
+        )
+        raise NotImplementedError(
+            "CREATE_PERMISO_NO_PERSISTENCE: no se creó ningún permiso. "
+            "Utilice el flujo canónico autorizado de módulos y acciones RBAC."
+        )
     
     def seed_permisos(self, permisos: List[Dict]) -> int:
         """Siembra permisos del sistema si no existen."""

@@ -10,9 +10,15 @@ test -r "$MIRROR_SYNC_GUARD" || {
 }
 
 . "$MIRROR_SYNC_GUARD"
+SAFETY_GUARD="/app/tools/mirror_sync/shared_app_safety_guard.sh"
+test -r "$SAFETY_GUARD" || { echo "ABORT=SHARED_APP_SAFETY_GUARD_MISSING"; exit 90; }
+. "$SAFETY_GUARD"
 
 mirror_sync_require_enabled || exit $?
 mirror_sync_acquire_global_lock || exit $?
+WRITER_JOB_ID="mirror-finalize-$$"
+WRITER_OWNER="mirror-finalize"
+WRITER_LOCK_ACQUIRED=0
 
 ROOT="/app"
 REMOTE="origin"
@@ -132,10 +138,25 @@ test "$STAGED_COUNT" -eq 0 || {
 echo
 echo "===== 4. REBUILD CURRENT WORKTREE SNAPSHOT IN ISOLATED INDEX ====="
 
+SYSTEM_DEPS_PATH=".emergent/system_deps.txt"
+if ! git diff --quiet -- "$SYSTEM_DEPS_PATH"; then
+    if edarsahub_expected_platform_system_deps_drift; then
+        echo "PLATFORM_MANAGED_SYSTEM_DEPS_DRIFT=EXCLUDED_FROM_SNAPSHOT"
+    else
+        echo "ABORT=UNEXPECTED_PLATFORM_MANAGED_SYSTEM_DEPS_DRIFT"
+        echo "WRITE_OPERATION_EXECUTED=NO"
+        echo "PRODUCTION_TOUCHED=NO"
+        exit 31
+    fi
+fi
+
 TMP_INDEX="$(mktemp)"
 
 cleanup() {
     rm -f "$TMP_INDEX"
+    if [ "$WRITER_LOCK_ACQUIRED" -eq 1 ]; then
+        edarsahub_release_git_writer_lock "$WRITER_JOB_ID" "$WRITER_OWNER" >/dev/null || echo "GIT_WRITER_LOCK_RELEASE=FAIL"
+    fi
 }
 
 trap cleanup EXIT
@@ -144,7 +165,7 @@ export GIT_INDEX_FILE="$TMP_INDEX"
 
 git read-tree "$LOCAL_HEAD"
 
-git add -u
+git add -u -- . ':(exclude).emergent/system_deps.txt'
 
 for PATHNAME in \
     backend \
@@ -286,8 +307,10 @@ test "$BACKUP_SHA" = "$LOCAL_HEAD" || {
 }
 
 echo
-echo "===== 8. FINAL CONCURRENCY RECHECK ====="
+echo "===== 8. CANONICAL DEVELOPMENT WRITER LOCK + FINAL CONCURRENCY RECHECK ====="
 
+edarsahub_acquire_git_writer_lock "$WRITER_JOB_ID" "$WRITER_OWNER" >/dev/null || { echo "ABORT=GIT_LOCK_BUSY"; exit 45; }
+WRITER_LOCK_ACQUIRED=1
 git fetch "$REMOTE" "$DEV_BRANCH" "$MIRROR_BRANCH"
 
 LOCAL_RECHECK="$(git rev-parse HEAD)"
@@ -331,12 +354,7 @@ echo "INDEX_LOCK_BEFORE_PROMOTION=ABSENT"
 echo
 echo "===== 10. PROMOTE SNAPSHOT TO DEVELOPMENT ====="
 
-export EDARSA_ALLOW_PUSH=1
-
-git push "$REMOTE" \
-    "$SNAPSHOT:refs/heads/$DEV_BRANCH"
-
-unset EDARSA_ALLOW_PUSH
+EDARSA_ALLOW_PUSH=1 EDARSA_PUSH_JOB_ID="$WRITER_JOB_ID" EDARSA_PUSH_OWNER="$WRITER_OWNER" git push "$REMOTE" "$SNAPSHOT:refs/heads/$DEV_BRANCH"
 
 git fetch "$REMOTE" "$DEV_BRANCH" "$MIRROR_BRANCH"
 
@@ -397,7 +415,7 @@ echo "INDEX_ALIGNMENT=COMPLETE"
 echo
 echo "===== 14. VERIFY TRACKED STATE ====="
 
-TRACKED_AFTER="$(git diff --name-only | wc -l)"
+TRACKED_AFTER="$(edarsahub_effective_unstaged_names | sed '/^$/d' | wc -l)"
 STAGED_AFTER="$(git diff --cached --name-only | wc -l)"
 
 echo "TRACKED_AFTER=$TRACKED_AFTER"

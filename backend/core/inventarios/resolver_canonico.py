@@ -30,6 +30,7 @@ from typing import Optional, Dict, Any, List, Tuple
 
 from core.sql_first.db import get_sql_connection
 from core.server_registry import get_server_by_unidad_codigo
+from core.corporate_identity_resolver import normalize_system_type
 
 logger = logging.getLogger(__name__)
 
@@ -160,9 +161,10 @@ def precargar_productos_mapeo(unidad_codigo: str, sistema_origen: str) -> int:
     server_id = _server_id_de_unidad(unidad_codigo)
     if not server_id or not _tabla_existe(BRIDGE_TABLE):
         return 0
-    sistema = str(sistema_origen or "").upper()
+    sistema = normalize_system_type(sistema_origen)
     rows = _fetchall(
-        f"SELECT CodigoFuente, ProductoID FROM {BRIDGE_TABLE} WHERE ServerID=%s AND SystemType=%s AND Activo=1",
+        f"SELECT CodigoFuente, ProductoID FROM {BRIDGE_TABLE} "
+        "WHERE ServerID=%s AND UPPER(SystemType)=UPPER(%s) AND Activo=1",
         (str(server_id), sistema),
     )
     n = 0
@@ -194,7 +196,7 @@ def resolver_producto_id(unidad_codigo: str, sistema_origen: str, codigo_origen:
     if not codigo:
         return ResultadoResolucion.pendiente("PENDIENTE_SIN_MAPEO")
 
-    sistema = str(sistema_origen or "").upper()
+    sistema = normalize_system_type(sistema_origen)
     ckey = (str(server_id), sistema, codigo)
     cached = _producto_cache.get(ckey)
     if cached is not None:
@@ -202,7 +204,7 @@ def resolver_producto_id(unidad_codigo: str, sistema_origen: str, codigo_origen:
 
     rows = _fetchall(
         f"""SELECT TOP 1 ProductoID FROM {BRIDGE_TABLE}
-            WHERE ServerID = %s AND SystemType = %s AND CodigoFuente = %s AND Activo = 1""",
+            WHERE ServerID = %s AND UPPER(SystemType) = UPPER(%s) AND CodigoFuente = %s AND Activo = 1""",
         (str(server_id), sistema, codigo),
     )
     if rows and rows[0][0] is not None:

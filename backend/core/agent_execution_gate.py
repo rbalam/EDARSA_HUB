@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Iterable
 
-from core.agent_capability_policy import PolicyContext, PolicyRequest
+from core.agent_capability_policy import PolicyContext, PolicyDecision, PolicyRequest, evaluate_policy
 from core.agent_reach_policy_adapter import AgentReachDecision, authorize_agent_reach
 from core.ai_gateway_policy_adapter import (
     ModelCandidate, ModelRouteDecision, ModelRouteRequest, authorize_model_route
@@ -14,7 +14,7 @@ from core.ai_gateway_policy_adapter import (
 class ExecutionGateDecision:
     allowed: bool
     reasons: tuple[str, ...]
-    downstream: AgentReachDecision | ModelRouteDecision | None
+    downstream: AgentReachDecision | ModelRouteDecision | PolicyDecision | None
 
 
 def _requester_reasons(requester_authorization: Any) -> tuple[str, ...]:
@@ -24,6 +24,18 @@ def _requester_reasons(requester_authorization: Any) -> tuple[str, ...]:
         reason = str(requester_authorization.get('reason') or 'REQUESTER_RBAC_DENIED').strip()
         return (reason or 'REQUESTER_RBAC_DENIED',)
     return ()
+
+
+def authorize_internal_capability_execution(
+    requester_authorization: Any,
+    request: PolicyRequest,
+    context: PolicyContext,
+) -> ExecutionGateDecision:
+    reasons = _requester_reasons(requester_authorization)
+    if reasons:
+        return ExecutionGateDecision(False, reasons, None)
+    downstream = evaluate_policy(request, context)
+    return ExecutionGateDecision(downstream.allowed, downstream.reasons, downstream)
 
 
 def authorize_external_research_execution(

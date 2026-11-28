@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Wake canonical Universal Worker to consume the already-published READ_ONLY job CAVAS-GATE12J-PERSONA-LINK-FUNCTIONAL-FLOW-DISCOVERY-READONLY-R1-20260918 from worker_queue/inbox. Do not create, clone, rename, modify or re-emit the functional job. Preserve original job_id and request. If terminal result already exists, do not execute again; converge safely. Do not touch Production. Do not modify SQL data/schema, secrets, RBAC, dispatcher, supervisor configuration or functional code.",
+  "existing_job_id": "CAVAS-GATE12J-PERSONA-LINK-FUNCTIONAL-FLOW-DISCOVERY-READONLY-R1-20260918",
+  "production_touched": false
+}

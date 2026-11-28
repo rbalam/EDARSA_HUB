@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "existing_job_id": "EDARSAHUB-COMERCIAL-RANGE-MULTIUNIT-UI-R2-CARLOS-20261001",
+  "reason": "Wake canonical Universal Worker and prefer retry R2 for Commercial range multi-unit UI. Preserve active work; do not touch Production.",
+  "production_touched": false
+}

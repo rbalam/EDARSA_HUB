@@ -25,6 +25,7 @@ from .locks import get_lock_manager
 from .job_logger import get_job_logger
 from .jobs.sla_job import create_sla_job
 from .jobs.notifications_job import create_notifications_job
+from .jobs.catalogo_ampliado_alertas_job import execute_catalogo_ampliado_alertas
 from .jobs.auditorias_job import create_auditorias_job
 from .jobs.pedidos_detector_job import create_pedidos_detector_job
 from .jobs.inventarios_detector_job import create_inventarios_detector_job
@@ -193,6 +194,34 @@ class SchedulerManager:
         
         job = create_notifications_job(self.db, job_config)
         await job.run()
+
+    async def _run_catalogo_ampliado_alertas_job(self):
+        job_config = self.config.jobs.get("catalogo_ampliado_alertas")
+        if not job_config or not job_config.enabled:
+            return
+        lock_manager = get_lock_manager(self.db)
+        lock = lock_manager.get_lock("catalogo_ampliado_alertas")
+        if not await lock.acquire(timeout_seconds=job_config.timeout_seconds):
+            logger.warning("[CATALOGO_AMPLIADO_ALERTAS] ejecucion omitida por lock activo")
+            return
+        job_logger = get_job_logger()
+        log_entry = await job_logger.start_execution("catalogo_ampliado_alertas")
+        try:
+            result = await execute_catalogo_ampliado_alertas(job_config.batch_size)
+            await job_logger.finish_execution(
+                log_entry=log_entry,
+                status="success",
+                processed_count=result.get("processed", 0),
+                success_count=result.get("processed", 0),
+                message=f"planned={result.get('planned', 0)} processed={result.get('processed', 0)}",
+                extra_metadata={"external_delivery_authorized": False},
+            )
+            return result
+        except Exception:
+            await job_logger.finish_execution(log_entry=log_entry, status="failed", error_detail="Error interno del servidor")
+            raise
+        finally:
+            await lock.release()
     
     async def _run_auditorias_job(self):
         """Wrapper async para ejecutar job de auditorías programadas."""
@@ -220,6 +249,23 @@ class SchedulerManager:
         
         job = create_inventarios_detector_job(self.db, job_config)
         await job.run()
+
+    async def retry_inventario_error_by_id(self, record_id: int) -> Dict[str, Any]:
+        """Recuperación administrativa de un único ERROR usando el job canónico."""
+        import os
+
+        if os.environ.get("SCHEDULER_INVENTARIOS_EMAIL_ENABLED", "false").lower() == "true":
+            return {
+                "status": "error",
+                "message": "Desactive SCHEDULER_INVENTARIOS_EMAIL_ENABLED antes del canario de recuperación",
+            }
+
+        job_config = self.config.jobs.get("inventarios_detector")
+        if not job_config or not job_config.enabled:
+            return {"status": "error", "message": "inventarios_detector está deshabilitado"}
+
+        job = create_inventarios_detector_job(self.db, job_config)
+        return await job.retry_error_by_id(record_id)
     
     async def _run_sync_short_comercial_job(self):
         """
@@ -393,16 +439,22 @@ class SchedulerManager:
         finally:
             await lock.release()
     
-    async def _run_sync_compras_job(self):
-        """Wrapper async para sincronización canónica de Compras."""
+    async def _run_sync_compras_job(self) -> Dict[str, Any]:
+        """Wrapper async para sincronización canónica de Compras.
+
+        Devuelve el resultado real del job para que callers externos y
+        diagnósticos no confundan una ejecución bloqueada con éxito.
+        """
         logger.warning("[SYNC_COMPRAS] Ejecución solicitada por scheduler")
         job_config = self.config.jobs.get("sync_compras")
         if not job_config or not job_config.enabled:
             logger.debug("[SYNC_COMPRAS] Deshabilitado por configuración")
-            return
+            return {
+                "status": "DISABLED",
+                "reason": "scheduler_config",
+            }
 
         try:
-            import asyncio
             result = await run_sync_compras_job()
             logger.warning(
                 "[SYNC_COMPRAS] Finalizado: status=%s procesados=%s errores=%s",
@@ -410,8 +462,13 @@ class SchedulerManager:
                 result.get("total_processed"),
                 result.get("total_errors"),
             )
+            return result
         except Exception as e:
             logger.error(f"[SYNC_COMPRAS] Error: {e}")
+            return {
+                "status": "FAILED",
+                "reason": "wrapper_exception",
+            }
 
     async def _run_sync_cxp_facturas_job(self):
         """Wrapper async: sincroniza Cuentas por Pagar hacia dbo.Finanzas_CxP_Sync (canónico)."""
@@ -528,12 +585,28 @@ class SchedulerManager:
             logger.warning("[SYNC_COMERCIAL_V2] No se pudo obtener lock - ya hay una ejecución en progreso")
             return
         
+        # Mantener el lock vivo durante ciclos largos, igual que la ejecución manual.
+        await lock.start_heartbeat_loop(
+            interval_seconds=30,
+            extend_seconds=600,
+        )
+
         job_logger = get_job_logger()
         log_entry = await job_logger.start_execution("sync_comercial_v2")
         
         try:
             logger.info("[SYNC_COMERCIAL_V2] Iniciando sincronización incremental de KPIs comerciales V2")
-            result = await execute_sync_comercial_v2(self.db)
+
+            # El sincronizador realiza I/O POS/SQL sincrono. Si corre directo
+            # dentro del AsyncIOScheduler bloquea el event loop del backend y
+            # puede disparar reinicios antes de completar las cinco unidades.
+            # Ejecutarlo en un thread dedicado mantiene health, scheduler y
+            # heartbeat del lock responsivos durante todo el ciclo.
+            result = await asyncio.to_thread(
+                lambda: asyncio.run(
+                    execute_sync_comercial_v2(isolated_headers=True)
+                )
+            )
             
             # Finalizar log con éxito
             await job_logger.finish_execution(
@@ -543,11 +616,18 @@ class SchedulerManager:
                 ),
                 processed_count=result.get("total_insertados", 0) + result.get("total_actualizados", 0) + result.get("total_omitidos", 0),
                 success_count=result.get("unidades_exitosas", 0),
+                failed_count=(
+                    int(result.get("unidades_fallidas", 0) or 0)
+                    + int(result.get("detalle_producto_fallidos", 0) or 0)
+                ),
                 skipped_count=result.get("total_omitidos", 0),
                 message=f"Unidades: {result.get('unidades_exitosas', 0)}/{result.get('unidades_procesadas', 0)}, "
                         f"Insertados: {result.get('total_insertados', 0)}, "
                         f"Actualizados: {result.get('total_actualizados', 0)}, "
-                        f"Omitidos: {result.get('total_omitidos', 0)}",
+                        f"Omitidos: {result.get('total_omitidos', 0)}, "
+                        f"Detalle OK: {result.get('detalle_producto_exitosos', 0)}, "
+                        f"Detalle fallido: {result.get('detalle_producto_fallidos', 0)}, "
+                        f"Detalle omitido: {result.get('detalle_producto_omitidos', 0)}",
                 extra_metadata={"result_summary": result}
             )
             
@@ -1220,6 +1300,21 @@ class SchedulerManager:
             )
             self._jobs["notifications_dispatcher"] = notif_config
             logger.info(f"Job Notificaciones registrado: intervalo={notif_config.interval_seconds}s")
+
+        catalogo_alertas_config = self.config.jobs.get("catalogo_ampliado_alertas")
+        if catalogo_alertas_config and catalogo_alertas_config.enabled:
+            trigger = IntervalTrigger(seconds=catalogo_alertas_config.interval_seconds)
+            self._scheduler.add_job(
+                self._run_catalogo_ampliado_alertas_job,
+                trigger=trigger,
+                id="catalogo_ampliado_alertas",
+                name="Catalogo Ampliado - Alertas",
+                replace_existing=True,
+                max_instances=1,
+                coalesce=True,
+            )
+            self._jobs["catalogo_ampliado_alertas"] = catalogo_alertas_config
+            logger.info(f"Job Catalogo Ampliado Alertas registrado: intervalo={catalogo_alertas_config.interval_seconds}s")
         
         # Job Auditorías Programadas
         audit_config = self.config.jobs.get("auditorias_scheduler")
@@ -1721,28 +1816,47 @@ class SchedulerManager:
                 bos_direction_config.interval_seconds,
             )
     
-    async def start(self):
-        """Inicia el scheduler."""
+    async def start(self, exclude_job_ids=None):
+        """Inicia el scheduler con opcion de excluir owners externos."""
         if not self.config.enabled:
             logger.warning("Scheduler deshabilitado por configuración")
             return
-        
+
         if self._running:
             logger.warning("Scheduler ya está corriendo")
             return
-        
+
         # Asegurar índices
         lock_manager = get_lock_manager(self.db)
         await lock_manager.ensure_indexes()
-        
+
         job_logger = get_job_logger()
         await job_logger.ensure_indexes()
-        
+
         # Limpiar locks expirados
         await lock_manager.cleanup_expired()
-        
-        # Registrar jobs
+
+        # Registrar jobs usando el catalogo canonico existente.
         self.register_jobs()
+
+        excluded = {
+            str(job_id).strip()
+            for job_id in (exclude_job_ids or set())
+            if str(job_id).strip()
+        }
+
+        for job_id in sorted(excluded):
+            if self._scheduler.get_job(job_id) is not None:
+                self._scheduler.remove_job(job_id)
+            self._jobs.pop(job_id, None)
+
+        self._excluded_job_ids = excluded
+
+        if excluded:
+            logger.warning(
+                "Scheduler runtime acotado: jobs con owner externo excluidos=%s",
+                sorted(excluded),
+            )
 
         # Restaurar pausas administrativas persistentes antes de iniciar.
         # Fail-closed: si SQL no puede entregar el estado persistente,
@@ -1823,7 +1937,10 @@ class SchedulerManager:
             "enabled": self.config.enabled,
             "timezone": self.config.timezone,
             "jobs": jobs_status,
-            "jobs_count": len(jobs_status)
+            "jobs_count": len(jobs_status),
+            "excluded_external_owner_jobs": sorted(
+                getattr(self, "_excluded_job_ids", set())
+            ),
         }
     
     def get_job_info(self, job_id: str) -> Optional[Dict]:
@@ -1853,6 +1970,9 @@ class SchedulerManager:
         elif job_id == "notifications_dispatcher":
             await self._run_notifications_job()
             return {"status": "executed", "job_id": job_id}
+        elif job_id == "catalogo_ampliado_alertas":
+            await self._run_catalogo_ampliado_alertas_job()
+            return {"status": "executed", "job_id": job_id}
         elif job_id == "auditorias_scheduler":
             await self._run_auditorias_job()
             return {"status": "executed", "job_id": job_id}
@@ -1875,8 +1995,17 @@ class SchedulerManager:
             await self._run_sync_propinas_tpv_incremental_job()
             return {"status": "executed", "job_id": job_id}
         elif job_id == "sync_compras":
-            await self._run_sync_compras_job()
-            return {"status": "executed", "job_id": job_id}
+            result = await self._run_sync_compras_job()
+            if not isinstance(result, dict):
+                return {
+                    "status": "error",
+                    "job_id": job_id,
+                    "message": "SYNC_COMPRAS_RESULT_INVALID",
+                }
+            return {
+                "job_id": job_id,
+                **result,
+            }
         elif job_id == "sync_cxp_facturas":
             await self._run_sync_cxp_facturas_job()
             return {"status": "executed", "job_id": job_id}
@@ -2034,14 +2163,10 @@ def get_scheduler_manager(db=None) -> SchedulerManager:
     return _scheduler_manager
 
 
-async def start_scheduler(db) -> SchedulerManager:
-    """
-    Inicia el scheduler.
-    
-    Acepta db=None para modo SQL-only.
-    """
+async def start_scheduler(db, exclude_job_ids=None) -> SchedulerManager:
+    """Inicia el scheduler y permite excluir jobs con owner externo."""
     manager = get_scheduler_manager(db)
-    await manager.start()
+    await manager.start(exclude_job_ids=exclude_job_ids)
     return manager
 
 

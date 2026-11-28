@@ -1,4 +1,5 @@
 import os
+import json
 from core.unidades_service import UnidadesService
 from core.corporate_filters.service import CorporateFilterService
 """
@@ -32,6 +33,7 @@ import logging
 from core.db import execute_sql_query
 from core.sql_first.db import get_sql_connection
 from core.kpis_canonicos.service import runtime_dia_operativo_actual_predicate
+from modules.comercial_v2.ticket_contract import visible_sale_from_pos_total
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +70,32 @@ def _execute_readonly_query(query: str) -> List[Dict]:
 
 def _sql_quote(value) -> str:
     return "'" + str(value).replace("'", "''") + "'"
+
+
+def _range_requires_current_day_exclusion(
+    fecha_fin: date,
+    *,
+    today: Optional[date] = None,
+) -> bool:
+    """Decide si un rango puede contener la operación vigente.
+
+    Un rango que termina antes del día civil actual de México es histórico y
+    nunca debe perder su último día por la presencia de snapshots abiertos
+    rezagados. La exclusión del día operativo solo aplica a rangos que alcanzan
+    hoy o el futuro.
+
+    Esto separa dos contratos que antes estaban acoplados:
+    - fuente cerrada persistida;
+    - exclusión de la operación vigente.
+    """
+    if today is None:
+        try:
+            from core.utils.operational_window import get_mexico_now
+            today = get_mexico_now().date()
+        except Exception:
+            today = datetime.now().date()
+
+    return fecha_fin >= today
 
 
 def _unidad_filter_runtime(unidades_permitidas: Optional[List[str]]) -> Optional[str]:
@@ -273,7 +301,10 @@ def get_kpis_diarios_agregados(
     if unidad_filter:
         where_clauses.append(unidad_filter)
 
-    if excluir_dia_operativo_actual:
+    if (
+        excluir_dia_operativo_actual
+        and _range_requires_current_day_exclusion(fecha_fin)
+    ):
         where_clauses.append(
             runtime_dia_operativo_actual_predicate("k", "excluir")
         )
@@ -339,7 +370,10 @@ def get_kpis_por_unidad(
     if unidad_filter:
         where_clauses.append(unidad_filter)
 
-    if excluir_dia_operativo_actual:
+    if (
+        excluir_dia_operativo_actual
+        and _range_requires_current_day_exclusion(fecha_fin)
+    ):
         where_clauses.append(
             runtime_dia_operativo_actual_predicate("k", "excluir")
         )
@@ -425,6 +459,131 @@ def get_kpis_mensuales(
 # FUNCIONES DE LECTURA - VENTAS DIA ABIERTAS
 # =============================================================================
 
+
+def _overlay_softrestaurant_intraday_from_detail_json(row: Dict[str, Any]) -> Dict[str, Any]:
+    """Reconcilia el detalle abierto SR sin borrar la porcion cerrada.
+
+    detalle_abiertas_json proviene de tempcheques y se usa unicamente
+    para reconstruir la porcion abierta de la operacion. El encabezado del
+    sincronizador ya separa venta TOTAL, propina y ventas cerradas.
+
+    Reglas:
+    - total_ticket proviene de la columna TOTAL del POS y es la venta visible.
+    - propina se conserva separada y nunca se suma ni se resta de total_ticket.
+    - Nunca se ponen a cero ventas_cerradas_dia ni sus KPIs asociados.
+    - total_estimado_dia = abiertas + cerradas.
+    """
+    sistema = str(row.get("sistema_origen") or "").strip().upper()
+    raw = row.get("detalle_abiertas_json")
+    if "SOFT" not in sistema or not raw:
+        return row
+
+    try:
+        items = json.loads(raw) if isinstance(raw, str) else raw
+    except (TypeError, ValueError):
+        return row
+
+    if not isinstance(items, list):
+        return row
+
+    tickets: Dict[str, Dict[str, Any]] = {}
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+
+        identity = str(
+            item.get("folio_origen")
+            or item.get("folio")
+            or ""
+        ).strip()
+        if not identity:
+            continue
+
+        current = tickets.setdefault(
+            identity,
+            {"total": 0.0, "pax": 0, "propina": 0.0},
+        )
+
+        try:
+            current["total"] = max(
+                float(current["total"] or 0),
+                float(item.get("total_ticket") or 0),
+            )
+        except (TypeError, ValueError):
+            pass
+
+        try:
+            current["pax"] = max(
+                int(current["pax"] or 0),
+                int(float(item.get("pax") or 0)),
+            )
+        except (TypeError, ValueError):
+            pass
+
+        try:
+            current["propina"] = max(
+                float(current["propina"] or 0),
+                float(item.get("propina") or 0),
+            )
+        except (TypeError, ValueError):
+            pass
+
+    if not tickets:
+        return row
+
+    ventas_abiertas = round(
+        sum(
+            visible_sale_from_pos_total(ticket["total"])
+            for ticket in tickets.values()
+        ),
+        2,
+    )
+    pax_abiertos = sum(ticket["pax"] for ticket in tickets.values())
+    propinas_abiertas = round(
+        sum(ticket["propina"] for ticket in tickets.values()),
+        2,
+    )
+    tickets_abiertos = len(tickets)
+
+    ventas_cerradas_legacy = float(
+        row.get("ventas_cerradas_dia") or 0
+    )
+    tickets_cerrados = int(row.get("tickets_cerrados_dia") or 0)
+    pax_cerrados = int(row.get("pax_cerrados_dia") or 0)
+    propinas_cerradas = float(row.get("propinas_cerradas_dia") or 0)
+
+    # Compatibilidad con el writer protegido sync_comercial_abiertas_v2:
+    # hoy persiste la porcion cerrada SR como total - propina. El contrato
+    # visible es cheques.total, por lo que la lectura canonica recompone
+    # exclusivamente esa porcion legacy sumando la propina separada.
+    ventas_cerradas = round(
+        ventas_cerradas_legacy + propinas_cerradas,
+        2,
+    )
+
+    row["ventas_abiertas"] = ventas_abiertas
+    row["tickets_abiertos"] = tickets_abiertos
+    row["pax_abiertos"] = pax_abiertos
+    row["propinas_abiertas"] = propinas_abiertas
+
+    row["ventas_cerradas_dia"] = ventas_cerradas
+    row["tickets_cerrados_dia"] = tickets_cerrados
+    row["pax_cerrados_dia"] = pax_cerrados
+    row["propinas_cerradas_dia"] = propinas_cerradas
+
+    row["total_estimado_dia"] = round(
+        ventas_abiertas + ventas_cerradas,
+        2,
+    )
+    row["propinas_total"] = round(
+        propinas_abiertas + propinas_cerradas,
+        2,
+    )
+    row["_ventas_dia_source"] = (
+        "DETALLE_ABIERTAS_JSON_MAS_CERRADAS_TOTAL_POS_COMPAT"
+    )
+    return row
+
 def get_ventas_dia_abiertas(
     fecha: date,
     unidades_permitidas: Optional[List[str]] = None
@@ -473,6 +632,7 @@ def get_ventas_dia_abiertas(
             a.propinas_abiertas,
             a.propinas_cerradas_dia,
             a.propinas_total,
+            a.detalle_abiertas_json,
             a.fuente_original,
             a.sync_run_id,
             a.fecha_ultima_actualizacion,
@@ -504,6 +664,7 @@ def get_ventas_dia_abiertas(
         propinas_abiertas,
         propinas_cerradas_dia,
         propinas_total,
+        detalle_abiertas_json,
         fuente_original,
         sync_run_id,
         fecha_ultima_actualizacion
@@ -515,6 +676,8 @@ def get_ventas_dia_abiertas(
     rows = _execute_readonly_query(query)
 
     for row in rows:
+        _overlay_softrestaurant_intraday_from_detail_json(row)
+
         codigo = str(
             row.get("unidad_negocio_codigo")
             or row.get("unidad_negocio_pk")

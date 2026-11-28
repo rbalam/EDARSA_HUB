@@ -45,3 +45,39 @@ Comprobar consumidor, retries, locks e idempotencia.
 
 ## Estados abiertos
 Un resultado desconocido nunca debe convertirse implícitamente en éxito.
+
+## Propagar overrides Git useHttpPath en publishers
+Si git credential reject borra credenciales con path y queda entrada host-only, los publishers deben propagar credential.<url>.useHttpPath=false sin tocar credenciales.
+
+## Dos venvs Python en MCP vs Backend
+Backend y Worker usan /root/.venv; edarsahub-worker-mcp y Gate2B usan /app/.runtime/worker_mcp/venv (mcp 2.x con ToolAnnotations snake_case).
+
+## Aislamiento de stubs en pruebas de gateway MCP
+Nunca mutar atributos de gateway_router sin restaurar en finally; stubs async deben reflejar Discovery V2 y scopes worker:status/worker:submit.
+
+## Claims huerfanos queue-publisher-* bloquean worker_queue_publication
+reconcile_agent_guard_orphans debe reconocer tanto prefijo worker-* como queue-publisher-* y remover solo worktrees limpios para evitar bloqueos transversales entre dominios.
+
+## Indice en memoria invalidado por firma de directorios en resolve_go_context
+resolve_go_context no debe re-parsear miles de archivos JSON en cada llamada; usar snapshot cache invalidado por mtime/conteo de directorios evita timeouts HTTP 504 en MCP multichat.
+
+## Familia de incidentes de errores internos del conector MCP
+Errores internos del conector MCP (504 timeout, 502/503 upstream, JSON-RPC -32603, protocolo) se registran sin secretos en mcp_connector_incidents.jsonl, se clasifican en la taxonomia canonica y se aislan por herramienta/dominio sin detener todo el proyecto.
+
+## Autoconvergencia permanente del runtime sin intervencion externa
+universal_job_worker.sh debe registrar HEAD:tools/mirror_sync en runtime/active_worker_code_tree_sha al iniciar, worker_control_plane.py debe auto-converger Worker/Mirror/Backend/MCP cuando el arbol de codigo cambia sin jobs activos, y edarsahub_bootstrap_watchdog.py debe incluir worker_lifecycle_recovery.py, git_divergence_guard.py, worker_repair_auto_loop.py y worker_runtime_fingerprint.py en CONTROL_PLANE_IDENTITY_PATHS.
+
+## Indice incremental persistente en disco para cold-cache MCP
+Un cache solo en memoria sigue provocando latencia alta tras reinicios de backend o MCP cuando existen miles de resultados historicos (~230 MB); persistir runtime/go_context_snapshot_index.v1.json validado por (mtime_ns, size) y evitar parsear resultados sin bounded_context reduce cold-cache en mas de 10x sin servir datos obsoletos.
+
+## Incidente transversal: interrupcion de sesion del agente y recuperacion via checkpoints persistentes
+Cuando una sesion de agente se interrumpe antes de integrar cambios preparados (por ejemplo al detenerse un intento de push directo a Edarsahub_Desarrollo), la recuperacion debe preservar el estado sin reset/stash/checkout destructivos, registrar el incidente transversal en maintenance/session_interruption_incidents.jsonl, evaluar elegibilidad fail-closed contra el checkpoint persistente y la autorizacion materializada vigente (evaluate_interrupted_objective_recovery), y entregar el cambio exclusivamente via gate_chain_publisher.submit() para ejecucion y certificacion en Universal Worker V4.
+
+## Coordinacion multichat y handoff autonomo entre dominios sin escalacion de privilegios
+Para eliminar al usuario como intermediario manual entre chats de dominios distintos sin crear infraestructura paralela ni ampliar las 6 herramientas MCP autorizadas, el registro de necesidades transversales vive como capacidad declarativa (`CROSS_DOMAIN_HANDOFF_REGISTER`) en el Capability Registry existente con persistencia canonica unica en `.git/universal-worker-queue/maintenance/handoffs/`. Una solicitud entre dominios nunca concede permisos al dominio receptor (`grants_target_permissions=False`), el desarrollo funcional nunca se traslada a Worker, toda publicacion pasa exclusivamente por `gate_chain_publisher.submit()`, y las resoluciones certificadas se devuelven automaticamente en `get_go_context` y Centro de Control (`/api/centro-control/worker-handoffs`).
+
+## Handoff autonomo sin fallback SUPERADMIN ni espera indefinida sin ejecutor
+Nunca fabricar identidades sinteticas (`role=SUPERADMIN`, `permissions=["*"]`, `worker@edarsahub.local`) al despachar un handoff desde el Control Plane: `_build_dispatch_job_for_handoff()` y `dispatch_handoff_resolution()` deben resolver identidad canonica y permisos efectivos desde SQL RBAC (`AuthRepository`, `RBACSQLService`, `worker_requester_rbac`, `resolve_identity_scopes`), revalidar autorizaciones vigentes al momento de despachar y fallar cerrado ante identidad o autorizacion no verificable. Ademas, ninguna solicitud sin ejecutor ni capacidad compatible debe quedar indefinidamente en `WAIT` / `WAIT_FOR_IN_FLIGHT_JOB`: resolver capacidades compatibles contra Capability Registry, registrar excepcion concreta (`NO_COMPATIBLE_CAPABILITY` / `HANDOFF_NO_EXECUTOR_STALLED`), permitir enriquecer handoffs pendientes preservando identidad/historial/`request_key`/`dependency_id` sin duplicarlos, y vincular la resolucion certificada al handoff original.
+
+## Autorizacion autonoma verificable, validacion semantica y sucesores acotados (P2)
+Para eliminar la dependencia manual en la materializacion de autorizaciones sin abrir privilegios globales ni ampliar las 6 herramientas MCP, `GATE_AUTHORIZATION_LIFECYCLE` exige consentimiento verificable criptograficamente o mediante artefacto out-of-band ligado a usuario SQL canonico y `scope_digest` exacto (nunca texto libre inventado por un agente, nunca auto-concesion del Worker ni permisos wildcard `*`), con revalidacion fail-closed antes de publicar, ejecutar e integrar. Asimismo, una auditoria generica o `READ_ONLY_CANARY` nunca debe marcar una dependencia como satisfecha si no cumple los criterios semanticos de aceptacion reales (`evaluate_handoff_semantic_satisfaction`); cuando existe bloqueo real se conserva `dependency_satisfied=false` con evidencia certificada y causa concreta, y solo se ejecutan sucesores explicitamente predefinidos y autorizados (`execute_handoff_successor`, sin inventar sucesores ni duplicar jobs).

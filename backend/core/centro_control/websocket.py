@@ -63,8 +63,13 @@ class NotificationManager:
     def connection_count(self) -> int:
         return len(self._connections)
     
-    async def connect(self, websocket: WebSocket, user_email: str = "anonymous") -> str:
-        """Acepta una nueva conexión WebSocket"""
+    async def connect(self, websocket: WebSocket, user_email: str = "") -> str:
+        """Acepta una nueva conexión WebSocket solo para usuarios autenticados (fail-closed)."""
+        normalized_email = str(user_email or "").strip()
+        if not normalized_email or normalized_email.lower() == "anonymous":
+            await websocket.close(code=1008)
+            raise PermissionError("WS_AUTHENTICATED_USER_REQUIRED")
+
         await websocket.accept()
         
         self._connection_counter += 1
@@ -72,10 +77,10 @@ class NotificationManager:
         
         self._connections[connection_id] = ConnectionInfo(
             websocket=websocket,
-            user_email=user_email
+            user_email=normalized_email
         )
         
-        logger.info(f"[WS] Nueva conexión: {connection_id} ({user_email}) - Total: {self.connection_count}")
+        logger.info(f"[WS] Nueva conexión: {connection_id} ({normalized_email}) - Total: {self.connection_count}")
         
         # Enviar mensaje de bienvenida
         await self._send_to_connection(connection_id, {

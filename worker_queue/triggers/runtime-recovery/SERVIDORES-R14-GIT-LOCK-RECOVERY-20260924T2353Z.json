@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "SERVIDORES - recuperar el runtime canónico del Universal Worker para el Job existente 000-EDARSAHUB-SERVIDORES-DEFINITIVO-R14-CARLOS-20260924 después de GIT_LOCK_BUSY. PRIORIDAD ALTA solicitada por Carlos Ruz. No crear otro Job funcional ni duplicar alcance. Reutilizar la solicitud existente en worker/requests, liberar únicamente contención stale/runtime del writer lock mediante el flujo canónico, preservar propietarios activos, fallar cerrado ante estado Git inseguro y no tocar Producción.",
+  "existing_job_id": "000-EDARSAHUB-SERVIDORES-DEFINITIVO-R14-CARLOS-20260924",
+  "production_touched": false
+}

@@ -161,7 +161,10 @@ def get_external_sql_connection(config: dict):
 
     try:
         import pymssql
+    except ImportError:
+        pymssql = None
 
+    if pymssql is not None:
         return pymssql.connect(
             server=host,
             port=port,
@@ -173,10 +176,10 @@ def get_external_sql_connection(config: dict):
             tds_version=tds_version,
             as_dict=as_dict,
         )
-    except Exception:
-        import pyodbc
 
-        return pyodbc.connect(
+    import pyodbc
+
+    return pyodbc.connect(
             "DRIVER={ODBC Driver 17 for SQL Server};"
             f"SERVER={host},{port};"
             f"DATABASE={database};"

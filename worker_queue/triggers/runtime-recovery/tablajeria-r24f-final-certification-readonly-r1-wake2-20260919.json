@@ -1,0 +1,23 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "triggered_at_utc": "2026-09-19T07:35:00Z",
+  "source": "chatgpt",
+  "project": "13. Produccion",
+  "reason": "Re-wake final READ_ONLY certification for Tablajerias R24F after frontend-build, backend-tests, UAT wiring and UAT preview passed.",
+  "existing_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-FINAL-CERTIFICATION-READONLY-R1-20260919",
+  "validation_before_trigger": {
+    "branch": "Edarsahub_Desarrollo",
+    "frontend_build_run_id": "35429506328",
+    "frontend_build_status": "completed_success",
+    "backend_tests_status": "completed_success",
+    "uat_wiring_r2_status": "CERTIFIED_READ_ONLY",
+    "uat_preview_r1_status": "PASS_PENDING_AUDIT_EVIDENCE"
+  },
+  "guards": {
+    "production_allowed": false,
+    "sql_allowed": false,
+    "product_mutation_allowed": false,
+    "touch_scheduler_netpay_allowed": false,
+    "touch_rbac_or_menu_allowed": false
+  }
+}

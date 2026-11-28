@@ -92,12 +92,30 @@ async def register_user(user_data: UserCreate) -> Dict[str, Any]:
     doc['created_at'] = doc['created_at'].isoformat()
     
     # Insertar
-    await repo.create_user(doc)
+    created_id = await repo.create_user(doc)
+    created_uid = (
+        int(created_id)
+        if isinstance(created_id, (int, str)) and not isinstance(created_id, bool) and str(created_id).strip().isdigit()
+        else None
+    )
+    resolved_public_uuid = str(user.public_uuid or user.id)
     
-    # Generar token
-    token = create_token(user.id, user.email, user.role)
+    # Generar token con identidad SQL canónica (usuario_id y public_uuid)
+    try:
+        token = create_token(
+            user.id,
+            user.email,
+            user.role,
+            usuario_id=created_uid,
+            public_uuid=resolved_public_uuid,
+        )
+    except TypeError:
+        token = create_token(user.id, user.email, user.role)
     
-    return {"token": token, "user": user.model_dump()}
+    user_payload = user.model_dump()
+    user_payload["usuario_id"] = created_uid
+    user_payload["public_uuid"] = resolved_public_uuid
+    return {"token": token, "user": user_payload}
 
 
 async def login_user(email: str, password: str) -> Dict[str, Any]:
@@ -143,11 +161,31 @@ async def login_user(email: str, password: str) -> Dict[str, Any]:
     # Login exitoso: limpiar contador de intentos fallidos
     lockout.clear_attempts(email)
 
-    # Generar token
-    token = create_token(user['id'], user['email'], user['role'])
+    raw_uid = user.get("usuario_id") if user.get("usuario_id") is not None else user.get("UsuarioID")
+    try:
+        canonical_uid = int(raw_uid) if raw_uid is not None and not isinstance(raw_uid, bool) else None
+    except Exception:
+        canonical_uid = None
+    canonical_puuid = user.get("public_uuid") or user.get("PublicUUID")
+    if not canonical_puuid and isinstance(user.get("id"), str) and "-" in user.get("id", ""):
+        canonical_puuid = user.get("id")
+
+    # Generar token con identidad SQL canónica (usuario_id y public_uuid)
+    try:
+        token = create_token(
+            user['id'],
+            user['email'],
+            user['role'],
+            usuario_id=canonical_uid,
+            public_uuid=str(canonical_puuid) if canonical_puuid else None,
+        )
+    except TypeError:
+        token = create_token(user['id'], user['email'], user['role'])
     
     # Respuesta sin password
     user_response = {k: v for k, v in user.items() if k != 'password'}
+    user_response["usuario_id"] = canonical_uid
+    user_response["public_uuid"] = str(canonical_puuid) if canonical_puuid else None
     
     return {"token": token, "user": user_response}
 

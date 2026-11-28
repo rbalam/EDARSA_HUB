@@ -155,8 +155,12 @@ class AuthRepositorySQL:
         rol_mongo = ROL_SQL_TO_MONGO.get(rol_codigo, rol_codigo) if rol_codigo else None
         
         return {
-            # Campos compatibles con MongoDB
-            'id': str(public_uuid) if public_uuid else None,  # PublicUUID como string
+            # Campos compatibles con MongoDB + identidad SQL canónica
+            'id': str(public_uuid) if public_uuid else (str(usuario_id) if usuario_id is not None else None),  # PublicUUID como string
+            'usuario_id': int(usuario_id) if usuario_id is not None else None,
+            'UsuarioID': int(usuario_id) if usuario_id is not None else None,
+            'public_uuid': str(public_uuid) if public_uuid else None,
+            'PublicUUID': str(public_uuid) if public_uuid else None,
             'email': email,
             'name': nombre,
             'nombre': nombre,
@@ -169,7 +173,7 @@ class AuthRepositorySQL:
             'empresa_default_id': empresa_default,
             
             # Campos adicionales SQL
-            '_sql_usuario_id': usuario_id,  # ID interno SQL (no usar como id principal)
+            '_sql_usuario_id': int(usuario_id) if usuario_id is not None else None,  # ID interno SQL (no usar como id principal)
             '_sql_rol_id': rol['rol_id'] if rol else None,
             '_sql_rol_codigo': rol_codigo,
             '_sql_mongo_legacy_id': mongo_legacy_id,

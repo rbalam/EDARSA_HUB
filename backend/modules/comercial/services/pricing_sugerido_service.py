@@ -170,7 +170,7 @@ def _es_producto_vino(codigo_producto: str, server_id: str) -> bool:
     familias_str = "', '".join(familias_vino)
     
     query = f"""
-    SELECT 1
+    SELECT 1 AS existe
     FROM Sync_Productos
     WHERE ServerID = '{server_id}'
       AND CodigoFuente = '{codigo_producto}'

@@ -267,3 +267,52 @@ def test_rechaza_perfiles_sql_alternativos(profile):
         match="Perfil EDARSAHUB SQL no soportado",
     ):
         get_edarsahub_sql_config(profile)
+
+
+def test_writer_profile_reuses_default_transport_and_dedicated_credentials(
+    monkeypatch,
+):
+    values = {
+        "EDARSAHUB_SQL_HOST": "canonical-host",
+        "EDARSAHUB_SQL_PORT": "1444",
+        "EDARSAHUB_SQL_DATABASE": "EDARSAHUB",
+        "EDARSAHUB_SQL_USER": "HRLectura",
+        "EDARSAHUB_SQL_PASSWORD": "readonly-secret",
+        "EDARSAHUB_SQL_WRITER_USER": "GptEscritura",
+        "EDARSAHUB_SQL_WRITER_PASSWORD": "writer-secret",
+    }
+
+    for name, value in values.items():
+        monkeypatch.setenv(name, value)
+
+    cfg = get_edarsahub_sql_config("writer")
+
+    assert cfg.profile == "writer"
+    assert cfg.host == "canonical-host"
+    assert cfg.port == 1444
+    assert cfg.database == "EDARSAHUB"
+    assert cfg.user == "GptEscritura"
+    assert cfg.password == "writer-secret"
+
+
+def test_writer_profile_fails_closed_when_dedicated_credentials_missing(
+    monkeypatch,
+):
+    values = {
+        "EDARSAHUB_SQL_HOST": "canonical-host",
+        "EDARSAHUB_SQL_DATABASE": "EDARSAHUB",
+        "EDARSAHUB_SQL_USER": "HRLectura",
+        "EDARSAHUB_SQL_PASSWORD": "readonly-secret",
+    }
+
+    for name, value in values.items():
+        monkeypatch.setenv(name, value)
+
+    monkeypatch.delenv("EDARSAHUB_SQL_WRITER_USER", raising=False)
+    monkeypatch.delenv("EDARSAHUB_SQL_WRITER_PASSWORD", raising=False)
+
+    with pytest.raises(
+        RuntimeError,
+        match="EDARSAHUB_SQL_WRITER_USER",
+    ):
+        get_edarsahub_sql_config("writer")

@@ -47,3 +47,9 @@ def test_health_publisher_does_not_embed_github_token():
         "ghs_",
     )
     assert not any(token in text for token in forbidden)
+
+
+def test_health_publisher_propagates_per_url_use_http_path_override():
+    text = _text()
+    assert "resolve_runtime_git_url_use_http_path" in text
+    assert "credential.{remote_url}.useHttpPath" in text

@@ -1,4 +1,4 @@
-"""HTTP trigger controlado para jobs productivos de EDARSAHUB."""
+"""Production-only HTTP scheduler trigger boundary."""
 
 from .routes import router
 

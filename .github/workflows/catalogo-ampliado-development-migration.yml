@@ -1,0 +1,103 @@
+name: Catalogo Ampliado Development Migration
+
+on:
+  push:
+    branches: [Edarsahub_Desarrollo]
+    paths: [ops/migrations/requests/CATALOGO-AMPLIADO-GOBIERNO-CORE-20260908.execute]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: catalogo-ampliado-development-migration
+  cancel-in-progress: false
+
+jobs:
+  migrate-development:
+    runs-on: ubuntu-latest
+    environment: development
+    timeout-minutes: 25
+    env:
+      EDARSAHUB_SQL_HOST: '54.39.104.176'
+      EDARSAHUB_SQL_PORT: '1433'
+      EDARSAHUB_SQL_DATABASE: 'EDARSAHUB'
+      MIGRATION_SCRIPT: backend/database/migrations/20260908_catalogo_ampliado_gobierno_core.sql
+      EXPECTED_BLOB_SHA: '0178fca34652b41a6e641125d078822055c83483'
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: '${{ github.sha }}'}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Install SQL runtime
+        run: python -m pip install pymssql pydantic python-dotenv email-validator
+      - name: Immutable blob preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_REF}" = 'refs/heads/Edarsahub_Desarrollo'
+          test "$(git hash-object "${MIGRATION_SCRIPT}")" = "${EXPECTED_BLOB_SHA}"
+          ! grep -Eiq '^[[:space:]]*(INSERT[[:space:]]+INTO|UPDATE[[:space:]]|DELETE[[:space:]]+FROM|MERGE[[:space:]])' "${MIGRATION_SCRIPT}"
+      - name: SQL preflight and permissions
+        env:
+          EDARSAHUB_SQL_USER: HRLectura
+          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+        shell: bash
+        run: |
+          python - <<'PY' | tee "$RUNNER_TEMP/catalogo_preflight.json"
+          import json, os, pymssql
+          tables=['Gobierno_EmpresaConfiguracion','Gobierno_Persona','Gobierno_PersonaVinculo','Gobierno_RolCorporativoCatalogo','Gobierno_PersonaEmpresaRol','Gobierno_TipoDocumento','Gobierno_Documento','Gobierno_DocumentoVersion','Gobierno_DocumentoMovimiento','Gobierno_AlertaRegla','Gobierno_AlertaEvento']
+          c=pymssql.connect(server=os.environ['EDARSAHUB_SQL_HOST'],port=int(os.environ['EDARSAHUB_SQL_PORT']),database=os.environ['EDARSAHUB_SQL_DATABASE'],user=os.environ['EDARSAHUB_SQL_USER'],password=os.environ['EDARSAHUB_SQL_PASSWORD'],timeout=60,login_timeout=15)
+          q=c.cursor(as_dict=True)
+          q.execute("SELECT DB_NAME() database_name,SUSER_SNAME() login_name,COALESCE(HAS_PERMS_BY_NAME(DB_NAME(),'DATABASE','CREATE TABLE'),0) can_create_table,COALESCE(HAS_PERMS_BY_NAME('dbo','SCHEMA','ALTER'),0) can_alter_dbo")
+          ident=q.fetchone(); p=','.join(['%s']*len(tables)); q.execute(f"SELECT name FROM sys.tables WHERE schema_id=SCHEMA_ID('dbo') AND name IN ({p}) ORDER BY name",tuple(tables)); existing=[r['name'] for r in q.fetchall()]
+          print(json.dumps({'identity':ident,'existing_tables':existing},default=str,sort_keys=True)); q.close(); c.close()
+          if ident['database_name']!='EDARSAHUB' or ident['login_name']!='HRLectura': raise SystemExit('IDENTITY_MISMATCH')
+          if int(ident['can_create_table'])!=1 or int(ident['can_alter_dbo'])!=1: raise SystemExit('DDL_PERMISSION_MISSING')
+          if existing: raise SystemExit('TARGET_ALREADY_EXISTS')
+          PY
+      - name: Execute certified DDL
+        env:
+          EDARSAHUB_SQL_USER: HRLectura
+          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+          EDARSAHUB_ALLOW_MIGRATIONS: 'true'
+        run: PYTHONPATH="$GITHUB_WORKSPACE/backend" python backend/tools/edarsahub_sql_runner.py --mode migrate --script "${MIGRATION_SCRIPT}" | tee "$RUNNER_TEMP/catalogo_migrate.txt"
+      - name: Post-DDL certification
+        env:
+          EDARSAHUB_SQL_USER: HRLectura
+          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+        shell: bash
+        run: |
+          python - <<'PY' | tee "$RUNNER_TEMP/catalogo_postcheck.json"
+          import json, os, pymssql
+          tables=['Gobierno_EmpresaConfiguracion','Gobierno_Persona','Gobierno_PersonaVinculo','Gobierno_RolCorporativoCatalogo','Gobierno_PersonaEmpresaRol','Gobierno_TipoDocumento','Gobierno_Documento','Gobierno_DocumentoVersion','Gobierno_DocumentoMovimiento','Gobierno_AlertaRegla','Gobierno_AlertaEvento']
+          required_refs={'Sistema_Empresas','Usuario_Catalogo','Cliente_Catalogo','Proveedor_Catalogo','Cliente_Contactos','Proveedor_Contactos'}
+          required_idx={'UX_GobPersona_RFC','UX_GobPersona_CURP','UX_GobPV_Usuario','UX_GobPV_Cliente','UX_GobPV_Proveedor','UX_GobPV_ContactoCliente','UX_GobPV_ContactoProveedor','IX_GobPER_EmpresaRol','IX_GobPER_Persona','IX_GobDoc_Empresa','IX_GobDoc_Persona','IX_GobDocVer_Vencimiento','IX_GobMov_DocFecha','IX_GobAR_EmpTipo','IX_GobAE_Programada'}
+          c=pymssql.connect(server=os.environ['EDARSAHUB_SQL_HOST'],port=int(os.environ['EDARSAHUB_SQL_PORT']),database=os.environ['EDARSAHUB_SQL_DATABASE'],user=os.environ['EDARSAHUB_SQL_USER'],password=os.environ['EDARSAHUB_SQL_PASSWORD'],timeout=60,login_timeout=15); q=c.cursor(as_dict=True); p=','.join(['%s']*len(tables))
+          q.execute(f"SELECT name FROM sys.tables WHERE schema_id=SCHEMA_ID('dbo') AND name IN ({p}) ORDER BY name",tuple(tables)); got=[r['name'] for r in q.fetchall()]
+          q.execute(f"SELECT COUNT(*) n FROM sys.key_constraints kc JOIN sys.tables t ON t.object_id=kc.parent_object_id WHERE t.name IN ({p}) AND kc.type='PK'",tuple(tables)); pk=int(q.fetchone()['n'])
+          q.execute(f"SELECT DISTINCT i.name FROM sys.indexes i JOIN sys.tables t ON t.object_id=i.object_id WHERE t.name IN ({p}) AND i.name IS NOT NULL",tuple(tables)); idx={r['name'] for r in q.fetchall()}
+          q.execute(f"SELECT ref.name referenced_table FROM sys.foreign_keys fk JOIN sys.tables parent ON parent.object_id=fk.parent_object_id JOIN sys.tables ref ON ref.object_id=fk.referenced_object_id WHERE parent.name IN ({p})",tuple(tables)); refs={r['referenced_table'] for r in q.fetchall()}
+          counts={}
+          for t in tables: q.execute(f'SELECT COUNT_BIG(*) n FROM dbo.[{t}]'); counts[t]=int(q.fetchone()['n'])
+          payload={'tables':got,'pk_count':pk,'canonical_refs':sorted(required_refs & refs),'required_indexes_present':sorted(required_idx & idx),'row_counts':counts,'blob':os.environ['EXPECTED_BLOB_SHA'],'production_touched':False}; print(json.dumps(payload,sort_keys=True)); q.close(); c.close()
+          if set(got)!=set(tables): raise SystemExit('MISSING_TABLES')
+          if pk!=11: raise SystemExit('PK_COUNT')
+          if not required_idx.issubset(idx): raise SystemExit('MISSING_INDEXES')
+          if not required_refs.issubset(refs): raise SystemExit('MISSING_CANONICAL_FKS')
+          if any(counts.values()): raise SystemExit('UNEXPECTED_DATA')
+          PY
+      - name: Evidence
+        if: always()
+        run: |
+          mkdir -p "$RUNNER_TEMP/catalogo-evidence"
+          cp "$RUNNER_TEMP/catalogo_preflight.json" "$RUNNER_TEMP/catalogo-evidence/preflight.json" 2>/dev/null || true
+          cp "$RUNNER_TEMP/catalogo_migrate.txt" "$RUNNER_TEMP/catalogo-evidence/migrate.txt" 2>/dev/null || true
+          cp "$RUNNER_TEMP/catalogo_postcheck.json" "$RUNNER_TEMP/catalogo-evidence/postcheck.json" 2>/dev/null || true
+          printf '%s\n' "run=${GITHUB_RUN_ID}" "commit=${GITHUB_SHA}" "blob=${EXPECTED_BLOB_SHA}" > "$RUNNER_TEMP/catalogo-evidence/manifest.txt"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: catalogo-ampliado-development-migration-${{ github.run_id }}
+          path: ${{ runner.temp }}/catalogo-evidence
+          if-no-files-found: error
+          retention-days: 30

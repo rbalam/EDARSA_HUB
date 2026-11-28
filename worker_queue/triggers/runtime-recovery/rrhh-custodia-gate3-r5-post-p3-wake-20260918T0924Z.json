@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Wake and recover canonical Universal Worker runtime after P3 topology reconciliation so it consumes existing job RRHH-CUSTODIA-GATE3-MINIMAL-DDL-DESIGN-R5 from worker_queue/inbox. Do not clone, rename, modify or re-emit R5. Require safe fast-forward/aligned runtime, preserve local work, fail closed on unsafe state, and do not touch Production.",
+  "existing_job_id": "RRHH-CUSTODIA-GATE3-MINIMAL-DDL-DESIGN-R5",
+  "production_touched": false
+}

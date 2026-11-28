@@ -24,16 +24,22 @@ BACKEND_ROOT = Path(__file__).resolve().parents[1]
 if str(BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(BACKEND_ROOT))
 
+from dotenv import load_dotenv
+
+load_dotenv(BACKEND_ROOT / ".env", override=False)
+
 from core.guards.server_secret_guard import require_server_secret_key
 from core.secret_manager import is_encryption_available
 from modules.compras.sync_service import (
     INVENTORY_SYNC_MODE_FULL,
+    INVENTORY_SYNC_MODE_ROLLING_6M,
     log_sync_operation,
     sync_inventarios_fisicos_from_server,
 )
 
 
-REPORT_DIR = Path("docs/reports/inventarios")
+REPO_ROOT = BACKEND_ROOT.parent
+REPORT_DIR = REPO_ROOT / "docs" / "reports" / "inventarios"
 
 
 def _load_sync_compras_job_module():
@@ -76,6 +82,11 @@ def main() -> int:
     target.add_argument("--units", nargs="+", help="Codigos de unidad: ESTELAR CIENFUEGOS 130MID 130QRO ORIGEN")
     target.add_argument("--all", action="store_true", help="Ejecutar para todas las unidades canonicas mapeadas")
     parser.add_argument("--execute", action="store_true", help="Escribe cambios en SQL. Sin esto solo lista objetivos.")
+    parser.add_argument(
+        "--rolling-6m",
+        action="store_true",
+        help="Sincroniza solo la ventana operativa canonica de 6 meses en vez de FULL.",
+    )
     args = parser.parse_args()
 
     try:
@@ -149,11 +160,21 @@ def main() -> int:
             "sucursal_origen_id": server.get("sucursal_origen_id"),
         }
 
+        inventory_executor = getattr(
+            sync_job,
+            "_execute_inventory_sql_with_timeout",
+            sync_job._execute_sql_with_timeout,
+        )
+        sync_mode = (
+            INVENTORY_SYNC_MODE_ROLLING_6M
+            if args.rolling_6m
+            else INVENTORY_SYNC_MODE_FULL
+        )
         result = sync_inventarios_fisicos_from_server(
             server_info,
             unidad_info,
-            sync_job._execute_sql_with_timeout,
-            sync_mode=INVENTORY_SYNC_MODE_FULL,
+            inventory_executor,
+            sync_mode=sync_mode,
         )
         sync_end = datetime.now()
         log_sync_operation(

@@ -20,6 +20,14 @@ def test_readonly_validator_accepts_select_and_with():
     assert m.validate_readonly_sql('SELECT TOP 1 name FROM sys.tables')
     assert m.validate_readonly_sql('WITH x AS (SELECT 1 AS n) SELECT n FROM x;')
 
+def test_json_value_serializes_uuid_to_string():
+    from uuid import UUID
+
+    m = load_helper()
+    value = UUID('12345678-1234-5678-1234-567812345678')
+    assert m._json_value(value) == '12345678-1234-5678-1234-567812345678'
+
+
 def test_readonly_validator_rejects_mutation_and_multistatement():
     m = load_helper()
     blocked = [
@@ -94,7 +102,7 @@ def test_sql_readonly_evidence_survives_output_truncation(monkeypatch, tmp_path)
         returncode = 0
         stdout = full_output
 
-    monkeypatch.setattr(module, 'run', lambda *args, **kwargs: Completed())
+    monkeypatch.setattr(module, 'run_check_process', lambda *args, **kwargs: Completed())
     result = module.run_check(tmp_path, {
         'type': 'sql_readonly_audit',
         'queries': [{'name': 'large_schema', 'sql': 'SELECT 1'}],
@@ -122,7 +130,7 @@ def test_sql_readonly_invalid_json_is_not_promoted(monkeypatch, tmp_path):
         returncode = 0
         stdout = 'not-json'
 
-    monkeypatch.setattr(module, 'run', lambda *args, **kwargs: Completed())
+    monkeypatch.setattr(module, 'run_check_process', lambda *args, **kwargs: Completed())
     result = module.run_check(tmp_path, {
         'type': 'sql_readonly_audit',
         'queries': [{'name': 'x', 'sql': 'SELECT 1'}],

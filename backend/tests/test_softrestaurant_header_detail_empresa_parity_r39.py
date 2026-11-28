@@ -16,8 +16,15 @@ def test_softrestaurant_selection_does_not_gate_by_empresa_id():
     assert '_softrestaurant_empresa_id_for_window' not in detail
 
 
-def test_softrestaurant_matches_executive_apertura_contract():
+def test_softrestaurant_header_and_detail_share_transversal_0900_contract():
     header = SYNC.read_text(encoding='utf-8')
-    assert 'CONVERT(varchar, tr.apertura, 112)' in header
+    detail = DETAIL.read_text(encoding='utf-8')
+    detail_range = detail.split(
+        'def _soft_operational_datetime_range', 1
+    )[1].split('def _extract_soft(', 1)[0]
+    assert 'DATEADD(hour, -{offset_hours}, tr.apertura)' in header
+    assert 'offset_hours = 9' in header
+    assert 'timedelta(hours=9)' in detail_range
+    assert "== 'ESTELAR'" not in detail_range
     assert 'COUNT(DISTINCT ch.folio)' in header
     assert 'ch.cancelado = 0' in header

@@ -66,6 +66,58 @@ class RecetasService:
             return []
 
     @staticmethod
+    def get_componentes_bulk(
+        server_id,
+        producto_codigos_fuente: List[str],
+        chunk_size: int = 400,
+    ) -> List[Dict]:
+        """
+        Componentes de varias recetas en lecturas acotadas.
+
+        Mantiene la misma fuente canónica que get_componentes(), pero evita
+        N round-trips cuando un análisis necesita explotar cientos de ventas.
+        """
+        server_id = str(server_id or "").strip()
+        codigos = list(dict.fromkeys(
+            str(code or "").strip()
+            for code in (producto_codigos_fuente or [])
+            if str(code or "").strip()
+        ))
+        if not server_id or not codigos:
+            return []
+
+        size = max(1, min(int(chunk_size or 400), 800))
+        rows: List[Dict] = []
+
+        for offset in range(0, len(codigos), size):
+            chunk = codigos[offset:offset + size]
+            placeholders = ",".join(["%s"] * len(chunk))
+            sql = (
+                f"SELECT {_COLS} FROM dbo.Sync_Productos_Recetas "
+                "WHERE CAST(ServerID AS char(36)) = %s "
+                f"AND ProductoCodigoFuente IN ({placeholders}) "
+                "AND ISNULL(Activo, 1) = 1 "
+                "ORDER BY ProductoCodigoFuente, OrdenVisual"
+            )
+            try:
+                rows.extend(
+                    execute_sql_query_params(
+                        *_conn(),
+                        sql,
+                        tuple([server_id, *chunk]),
+                    )
+                    or []
+                )
+            except Exception as exc:
+                logger.error(
+                    "[RECETAS_SERVICE] Error get_componentes_bulk: %s",
+                    exc,
+                )
+                return []
+
+        return rows
+
+    @staticmethod
     def get_componentes_by_producto_id(producto_id) -> List[Dict]:
         """Componentes de la receta por ProductoID (UNIQUEIDENTIFIER)."""
         if not producto_id:

@@ -1,0 +1,72 @@
+name: Servers Integrations Gate 5B Cert
+
+on:
+  push:
+    branches:
+      - Edarsahub_Desarrollo
+    paths:
+      - '.github/workflows/servers-integrations-gate5b-cert.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  certify-gate5b:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install backend dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install -r backend/requirements.txt
+      - name: Compile Gate 5B scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            backend/modules/integrations_center/__init__.py \
+            backend/modules/integrations_center/repository.py \
+            backend/modules/integrations_center/service.py \
+            backend/modules/integrations_center/routes.py \
+            backend/modules/api_connections/__init__.py \
+            backend/tests/test_integrations_center_gate5b.py
+      - name: Run Gate 5B contract tests
+        shell: bash
+        env:
+          PYTHONPATH: backend
+        run: |
+          set -euo pipefail
+          pytest -q backend/tests/test_integrations_center_gate5b.py
+      - name: Verify mounted read-only contract
+        shell: bash
+        env:
+          PYTHONPATH: backend
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from modules.api_connections import api_universal_test_router
+          from modules.integrations_center.routes import router
+
+          expected = {
+              '/integrations-center/overview',
+              '/integrations-center/connections',
+              '/integrations-center/connections/{connection_id}',
+              '/integrations-center/catalogs',
+              '/integrations-center/communications',
+          }
+          own = {r.path for r in router.routes}
+          mounted = {r.path for r in api_universal_test_router.routes}
+          assert expected <= own
+          assert expected <= mounted
+          assert all(set(r.methods or ()) <= {'GET'} for r in router.routes)
+          print('GATE5B_MOUNT=PASS')
+          print('GATE5B_READ_ONLY=PASS')
+          print('PRODUCTION_TOUCHED=NO')
+          PY

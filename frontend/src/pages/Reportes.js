@@ -250,6 +250,9 @@ const Reportes = () => {
     return inventorySortConfig.direction === 'asc' ? ' ↑' : ' ↓';
   };
 
+  // La ventana del drilldown debe proceder del mismo reporte generado, no de
+  // fechas editables que pueden diferir de los folios físicos seleccionados.
+  const [detalleVentanas, setDetalleVentanas] = useState(null);
   const [erroresCaptura, setErroresCaptura] = useState([]); // Errores de captura de inventario (MPRO)
   const [loading, setLoading] = useState(false);
   
@@ -736,13 +739,13 @@ const Reportes = () => {
     loadUnidadesNegocio();
   }, [user, authLoading]);
 
-  // Track previous server to detect changes
-  const prevServerIdRef = useRef(filters.server_id);
+  // Track previous canonical business unit to detect scope changes
+  const prevUnidadRef = useRef(selectedUnidad);
   
   useEffect(() => {
     if (filters.server_id) {
       // Si cambió el servidor, limpiar estados dependientes
-      if (prevServerIdRef.current && prevServerIdRef.current !== filters.server_id) {
+      if (prevUnidadRef.current && prevUnidadRef.current !== selectedUnidad) {
         setSelectedAlmacenes([]);
         setSelectedInventariosIni([]);
         setSelectedInventariosFin([]);
@@ -753,7 +756,7 @@ const Reportes = () => {
         setAlmacenes([]);
         setSucursales([]);
       }
-      prevServerIdRef.current = filters.server_id;
+      prevUnidadRef.current = selectedUnidad;
       
       loadSucursales();
       loadReportFilters();
@@ -771,17 +774,14 @@ const Reportes = () => {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.server_id, servers, filters.sucursal_id]);
+  }, [selectedUnidad, filters.server_id, servers, filters.sucursal_id]);
 
   // Cargar almacenes para SoftRestaurant desde EDARSAHUB SQL canónico
   const loadAlmacenesSoftRestaurant = async (soloConsumo = false) => {
     try {
-      const response = await api.get(`/servers/${filters.server_id}/almacenes`);
-      const rows = Array.isArray(response.data)
-        ? response.data
-        : Array.isArray(response.data?.data)
-          ? response.data.data
-          : [];
+      if (!selectedUnidad) return;
+      const response = await api.get(`/config-asignaciones/almacenes/${selectedUnidad}`);
+      const rows = Array.isArray(response.data?.data) ? response.data.data : [];
 
       const map = new Map();
 
@@ -827,7 +827,7 @@ const Reportes = () => {
       }));
     } catch (error) {
       logger.error('Error al cargar almacenes canónicos SoftRestaurant:', error);
-      setAlmacenes([]);
+      // Mantener el último catálogo válido ante un fallo transitorio.
     }
   };
 
@@ -923,7 +923,7 @@ const Reportes = () => {
             params.sucursal = filters.sucursal || '';
           }
           
-          const response = await api.get(`/compras/inventarios-fisicos/${filters.server_id}`, { params });
+          const response = await api.get(`/compras/inventarios-fisicos/${selectedUnidad}`, { params });
           // La respuesta es un array directo, no {inventarios: [...]}
           const inventariosData = Array.isArray(response.data) ? response.data : (response.data.inventarios || []);
           // Agregar el nombre del almacén a cada inventario
@@ -948,16 +948,17 @@ const Reportes = () => {
         setInventarios(allInventarios);
       } catch (error) {
         logger.error('Error cargando inventarios:', error);
-        setInventarios([]);
+        toast.error('No se pudieron actualizar los inventarios. Se conserva la ultima lista cargada; puede estar desactualizada.');
+        // Mantener la última lista válida ante un fallo transitorio.
       }
     };
     
-    if (filters.server_id && selectedAlmacenes.length > 0) {
+    if (selectedUnidad && selectedAlmacenes.length > 0) {
       if (selectedServer?.system_type === 'SoftRestaurant' || filters.sucursal_id) {
         loadAllInventarios();
       }
     }
-  }, [filters.server_id, filters.sucursal_id, selectedAlmacenes, selectedServer, filters.sucursal]);
+  }, [selectedUnidad, filters.sucursal_id, selectedAlmacenes, selectedServer, filters.sucursal]);
 
   // AUTO-CALCULAR fechas cuando ambos inventarios estén seleccionados
   useEffect(() => {
@@ -1127,22 +1128,29 @@ const Reportes = () => {
   };
 
   const loadAlmacenes = async () => {
+    if (!selectedUnidad) return;
     try {
-      logger.log('[loadAlmacenes] Llamando API con sucursal_id:', filters.sucursal_id);
-      const response = await api.get(`/servers/${filters.server_id}/almacenes`, {
-        params: { sucursal_id: filters.sucursal_id }
-      });
-      logger.log('[loadAlmacenes] Respuesta:', response.data);
-      setAlmacenes(response.data);
+      logger.log('[loadAlmacenes] Cargando catálogo canónico para unidad:', selectedUnidad);
+      const response = await api.get(`/config-asignaciones/almacenes/${selectedUnidad}`);
+      const rows = Array.isArray(response.data?.data) ? response.data.data : [];
+      const canonicos = rows
+        .filter(item => String(item?.id ?? item?.almacen_id ?? '').trim())
+        .map(item => {
+          const id = String(item.id ?? item.almacen_id).trim();
+          const nombre = String(item.nombre ?? item.almacen ?? id).trim();
+          return { ...item, id, almacen_id: id, nombre, almacen: nombre, label: nombre, value: nombre, source: 'EDARSAHUB_SQL' };
+        });
+      setAlmacenes(canonicos);
     } catch (error) {
-      logger.error('Error al cargar almacenes:', error);
-      setAlmacenes([]);
+      logger.error('Error al cargar almacenes canónicos:', error);
+      // Mantener el último catálogo válido ante un fallo transitorio.
     }
   };
 
   const loadInventarios = async () => {
     try {
-      const response = await api.get(`/servers/${filters.server_id}/inventarios`, {
+      if (!selectedUnidad) return;
+      const response = await api.get(`/compras/inventarios-fisicos/${selectedUnidad}`, {
         params: { 
           sucursal_id: filters.sucursal_id,
           almacen_id: filters.almacen_id
@@ -1160,7 +1168,8 @@ const Reportes = () => {
       setInventarios(inventariosOrdenados);
     } catch (error) {
       logger.error('Error al cargar inventarios:', error);
-      setInventarios([]);
+      toast.error('No se pudieron actualizar los inventarios. Se conserva la ultima lista cargada; puede estar desactualizada.');
+      // Mantener la última lista válida ante un fallo transitorio.
     }
   };
 
@@ -1796,16 +1805,24 @@ const Reportes = () => {
         .map((a) => {
           const almacenId = String(a.almacen_id ?? a.id ?? '').trim();
           const almacenNombre = String(a.nombre ?? a.almacen ?? a.Al_Descripcion ?? a.label ?? '').trim();
+          const almacenTipo = Number(a.tipo ?? a.tipo_almacen ?? a.almacen_tipo ?? 1);
           return {
             id: almacenId,
             almacen_id: almacenId,
             nombre: almacenNombre,
-            almacen: almacenNombre
+            almacen: almacenNombre,
+            tipo: almacenTipo,
+            tipo_almacen: almacenTipo,
+            unidad_natural: a.unidad_natural || (almacenTipo === 2 ? 'presentaciones' : 'insumos')
           };
         })
         .filter((a) => a.almacen_id || a.nombre);
 
       response = await api.post('/reports/inventory-analysis', {
+        // Contrato canónico: el backend autoriza la unidad y reconstruye
+        // server_id/sucursal internamente. server_id se conserva temporalmente
+        // por compatibilidad con consumidores legacy.
+        unidad: String(selectedUnidad || '').trim(),
         server_id: String(filters.server_id || '').trim(),
         sucursal_id: filters.sucursal_id,
         sucursal: filters.sucursal,
@@ -2012,6 +2029,7 @@ const Reportes = () => {
         roundedRows.length;
 
       logger.log('Primer producto normalizado:', roundedRows[0] || null);
+      setDetalleVentanas(response.data?.detalle_ventanas || null);
       setReportData(roundedRows);
       
       // Manejar errores de captura de inventario (MPRO)
@@ -2485,29 +2503,38 @@ const Reportes = () => {
   const loadMovementDetails = (producto) => {
     const codigo = producto.Codigo ?? producto.codigo_producto ?? producto.codigo ?? producto.CODIGO;
     const nombre = producto.Producto ?? producto.nombre_producto ?? producto.nombre ?? producto.Nombre ?? codigo;
+    const isSoft = /^SOFT/i.test(selectedServer?.system_type || '');
+    const window = isSoft ? detalleVentanas?.movimientos : null;
 
     abrirMovimientos({
-      serverId: filters.server_id,
+      serverId: selectedUnidad || filters.server_id,
+      systemType: selectedServer?.system_type || '',
       sucursal: filters.sucursal,
       codigo,
       producto: nombre,
-      fechaInicio: filters.fecha_ini,
-      fechaFin: filters.fecha_fin,
-      almacenes: selectedAlmacenes.length > 0 ? selectedAlmacenes.map(a => a.id || a.almacen_id || a.nombre) : filters.almacen,
+      fechaInicio: window?.fecha_inicio || filters.fecha_ini,
+      fechaFin: window?.fecha_fin || filters.fecha_fin,
+      almacenes: isSoft && detalleVentanas?.almacenes
+        ? detalleVentanas.almacenes
+        : selectedAlmacenes.length > 0
+          ? selectedAlmacenes.map(a => a.id || a.almacen_id || a.nombre)
+          : filters.almacen,
     });
   };
 
-  // Doble clic: detalle CANÓNICO de ventas/consumos (hook + componente compartido con Auditoría).
   const loadSalesDetails = (producto) => {
     const codigo = producto.Codigo ?? producto.codigo_producto ?? producto.codigo ?? producto.CODIGO;
     const nombre = producto.Producto ?? producto.nombre_producto ?? producto.nombre ?? producto.Nombre ?? codigo;
+    const isSoft = /^SOFT/i.test(selectedServer?.system_type || '');
     let fechaInicioDetalle = filters.fecha_ini;
     let fechaFinDetalle = filters.fecha_fin;
-
-    if (selectedServer?.system_type === 'SoftRestaurant') {
+    if (isSoft && detalleVentanas?.ventas) {
+      fechaInicioDetalle = detalleVentanas.ventas.fecha_inicio;
+      fechaFinDetalle = detalleVentanas.ventas.fecha_fin;
+    } else if (isSoft) {
+      // Compatibilidad cuando se restaura un reporte anterior sin metadata.
       const fechaInicialVentas = parseDateString(selectedInventariosIni[0]?.fecha || filters.inventario_inicial_fecha);
       const fechaFinalVentas = parseDateString(selectedInventariosFin[0]?.fecha || filters.inventario_final_fecha);
-
       if (fechaInicialVentas && fechaFinalVentas) {
         fechaInicialVentas.setHours(0, 0, 0, 0);
         fechaFinalVentas.setHours(0, 0, 0, 0);
@@ -2518,13 +2545,16 @@ const Reportes = () => {
     }
 
     abrirConsumos({
-      serverId: filters.server_id,
+      serverId: selectedUnidad || filters.server_id,
+      systemType: selectedServer?.system_type || '',
       sucursal: filters.sucursal,
       codigo,
       producto: nombre,
       fechaInicio: fechaInicioDetalle,
       fechaFin: fechaFinDetalle,
-      almacenes: selectedAlmacenes.length > 0 ? selectedAlmacenes.map(a => a.id || a.almacen_id || a.nombre) : filters.almacen,
+      almacenes: selectedAlmacenes.length > 0
+        ? selectedAlmacenes.map(a => a.id || a.almacen_id || a.nombre)
+        : filters.almacen,
     });
   };
 

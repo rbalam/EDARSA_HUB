@@ -1,0 +1,7 @@
+{
+  "canary_certified": false,
+  "diagnostic_only": true,
+  "docker_available": false,
+  "exact_error": "DOCKER_COMMAND_NOT_AVAILABLE",
+  "production_touched": false
+}

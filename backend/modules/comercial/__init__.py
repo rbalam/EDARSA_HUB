@@ -32,10 +32,12 @@ def get_router():
         router as canonical_detail_router,
     )
     from modules.comercial.routes import router as legacy_router
+    from modules.finanzas.incidencias_caja_routes import router as cajas_router
 
     router = APIRouter()
     router.include_router(canonical_detail_router)
     router.routes.extend(without_legacy_detail_route(legacy_router.routes))
+    router.include_router(cajas_router)
     return router
 
 

@@ -15,8 +15,6 @@ from typing import Dict, Any
 import logging
 
 from ..db_utils import get_database
-from ..services.excel_service import get_excel_service
-from ..services.pdf_service import get_pdf_service
 from ..services.document_data_service import (
     get_document_data_service,
     WorkflowNoEncontradoError
@@ -56,6 +54,7 @@ async def descargar_excel_workflow(
     """
     try:
         db = get_database()
+        from ..services.excel_service import get_excel_service
         excel_service = get_excel_service(db)
         
         # Generar Excel
@@ -148,6 +147,7 @@ async def descargar_pdf_workflow(
     """
     try:
         db = get_database()
+        from ..services.pdf_service import get_pdf_service
         pdf_service = get_pdf_service(db)
         
         # Generar PDF

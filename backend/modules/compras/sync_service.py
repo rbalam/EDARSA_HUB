@@ -745,23 +745,39 @@ TIPO_MOVIMIENTO_SR_TO_EDARSAHUB = {
     "EPC": 1,  # ENTRADA_COMPRA
     "SPC": 2,  # SALIDA_DEV_PROV
 
-    # Traspasos
-    "ETA": 5,  # TRASPASO_ENTRADA
-    "STA": 6,  # TRASPASO_SALIDA
+    # Traspasos verificados
+    "ETA": 5,  # ENTRADA POR TABLAJERIA / TRASPASO
+    "ETR": 5,  # ENTRADA POR TRASPASO
+    "STA": 6,  # SALIDA POR TABLAJERIA / TRASPASO
+    "STR": 6,  # SALIDA POR TRASPASO
 
     # Inventario físico / ajustes
-    "ECI": 3,  # AJUSTE_ENTRADA
-    "SCI": 4,  # AJUSTE_SALIDA
+    "ECI": 3,
+    "SCI": 4,
 
-    # Otras entradas
+    # Otras entradas verificadas SoftRestaurant
+    "EAL": 3,  # ENTRADA DE ALMACEN
+    "ECA": 3,  # ENTRADA POR CANCELACION
+    "ECS": 3,  # ENTRADA POR CONSIGNA
+    "ECO": 3,  # ENTRADA POR CORTESIA
+    "EDE": 3,  # ENTRADA POR DEVOLUCION
+    "EEH": 3,  # ENTRADA POR EXHIBICION
+    "EPR": 3,  # ENTRADA POR PRODUCCION
     "EPA": 3,
     "EPL": 3,
     "EPB": 3,
 
-    # Otras salidas
+    # Otras salidas verificadas SoftRestaurant
+    "SDE": 4,  # SALIDA POR DESPERDICIO
+    "SDV": 4,  # SALIDA POR DEVOLUCION
+    "SPR": 4,  # SALIDA POR PRODUCCION
     "SPA": 4,
     "SPM": 4,
     "SPD": 4,
+
+    # Los conceptos Soft no listados explícitamente aquí se resuelven
+    # por naturaleza E*/S* en map_tipo_movimiento_softrestaurant().
+    # La autoridad de inclusión es Servidores_Conexiones.tipos_movimiento.
 }
 
 
@@ -855,11 +871,26 @@ def map_tipo_movimiento_softrestaurant(idconcepto, cantidad=None):
     """
     Mapea idconcepto de SoftRestaurant a Inventario_TipoMovimiento.TipoMovimientoID.
 
-    Si no hay mapeo, devuelve None para evitar insertar movimientos ambiguos.
+    Prioridad:
+    1) Mapeo verificado específico (compra, traspaso, ajustes, etc.).
+    2) Convención canónica SoftRestaurant por prefijo:
+       - E* => AJUSTE_ENTRADA (3)
+       - S* => AJUSTE_SALIDA  (4)
+
+    La selección efectiva de qué conceptos participan NO se decide aquí:
+    la autoridad es Servidores_Conexiones.tipos_movimiento y se aplica antes
+    de llamar a este resolver. Así, un concepto seleccionado siempre puede
+    conservar su naturaleza entrada/salida sin hardcodear sucursales.
     """
     concepto = str(idconcepto or "").strip().upper()
     if concepto in TIPO_MOVIMIENTO_SR_TO_EDARSAHUB:
         return TIPO_MOVIMIENTO_SR_TO_EDARSAHUB[concepto]
+
+    if concepto.startswith("E"):
+        return 3
+
+    if concepto.startswith("S"):
+        return 4
 
     return None
 
@@ -884,6 +915,15 @@ def get_compras_adapter(system_type: str):
 def get_edarsahub_connection():
     """Obtiene conexión a EDARSAHUB usando configuración de variables de entorno"""
     return get_sql_connection()
+
+
+def get_edarsahub_writer_connection():
+    """Obtiene conexión de escritura canónica a EDARSAHUB.
+
+    Las lecturas NO-LIVE conservan el perfil default (HRLectura).
+    Los jobs autorizados de sincronización usan exclusivamente el perfil writer.
+    """
+    return get_sql_connection("writer")
 
 
 # =============================================================================
@@ -1382,7 +1422,7 @@ def sync_inventarios_fisicos_from_server(
             headers_without_detail = 0
         
         # Guardar en EDARSAHUB
-        conn = get_edarsahub_connection()
+        conn = get_edarsahub_writer_connection()
         cursor = conn.cursor()
 
         detail_result = {
@@ -1660,7 +1700,7 @@ def sync_requisiciones_from_server(
             return {"status": "OK", "records_synced": 0, "error": None}
         
         # Guardar en EDARSAHUB
-        conn = get_edarsahub_connection()
+        conn = get_edarsahub_writer_connection()
         cursor = conn.cursor()
         
         # Marcar registros anteriores como inactivos
@@ -1787,7 +1827,7 @@ def log_sync_operation(
 ):
     """Registra la operación de sincronización en el log"""
     try:
-        conn = get_edarsahub_connection()
+        conn = get_edarsahub_writer_connection()
         cursor = conn.cursor()
         cursor.execute("""
             INSERT INTO Compras_Sync_Log
@@ -1901,7 +1941,7 @@ def sync_almacenes_from_server(
         if not result_origen:
             return {"status": "OK", "records_synced": 0, "message": "Sin datos en origen"}
         
-        conn = get_edarsahub_connection()
+        conn = get_edarsahub_writer_connection()
         cursor = conn.cursor()
         
         records_synced = 0
@@ -1997,7 +2037,7 @@ def sync_existencias_from_server(
         if not result_origen:
             return {"status": "OK", "records_synced": 0, "message": "Sin datos en origen"}
         
-        conn = get_edarsahub_connection()
+        conn = get_edarsahub_writer_connection()
         cursor = conn.cursor()
         
         records_synced = 0
@@ -2160,7 +2200,7 @@ def sync_pedidos_from_server(
             server_info['username'], server_info['password'], query_detalle
         ) or []
 
-        conn = get_edarsahub_connection()
+        conn = get_edarsahub_writer_connection()
         cursor = conn.cursor()
 
         enc_synced = 0
@@ -2345,7 +2385,7 @@ def sync_ordenes_from_server(
         if not result_enc:
             return {"status": "OK", "encabezados_synced": 0, "detalles_synced": 0, "message": "Sin ordenes en origen"}
 
-        conn = get_edarsahub_connection()
+        conn = get_edarsahub_writer_connection()
         cursor = conn.cursor()
 
         enc_synced = 0
@@ -2449,7 +2489,7 @@ def sync_recepciones_from_server(
         if not result_enc:
             return {"status": "OK", "encabezados_synced": 0, "detalles_synced": 0, "message": "Sin recepciones en origen"}
 
-        conn = get_edarsahub_connection()
+        conn = get_edarsahub_writer_connection()
         cursor = conn.cursor()
 
         enc_synced = 0

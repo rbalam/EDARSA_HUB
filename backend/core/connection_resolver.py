@@ -324,43 +324,103 @@ class ConnectionResolver:
             logger.error(f"[ConnectionResolver] Error SQL obteniendo servidor {server_id}: {e}")
             return None
     
-    def _get_api_config(self, server_host: str, sucursal: str) -> Optional[Dict[str, Any]]:
+    def _get_api_config(self, server_id: str) -> Optional[Dict[str, Any]]:
         """
-        Obtiene configuración de API local desde EDARSAHUB SQL.
-        P2-02: Migrado de MongoDB a SQL Server (Servidores_Conexiones con tipo_conexion='API_LOCAL').
+        Resuelve una API_LOCAL exclusivamente por relaciones canónicas.
+
+        Flujo:
+        Servidor solicitado -> Sistema_EmpresasServidores.EmpresaID
+        -> RolConexion=VENTAS_DIA_API_LOCAL -> Servidores_Conexiones.id
+        -> api_url.
+
+        No usa host, nombres ni LIKE sobre api_url para identificar la conexión.
         """
         try:
             cn = get_edarsahub_connection(timeout=20)
             cur = cn.cursor(as_dict=True)
-            
-            # Buscar API_LOCAL que coincida con host y tenga la sucursal
-            cur.execute("""
-                SELECT TOP 1 *
-                FROM Servidores_Conexiones
-                WHERE tipo_conexion = 'API_LOCAL'
+            cur.execute(
+                """
+                SELECT DISTINCT ses.EmpresaID
+                FROM dbo.Sistema_EmpresasServidores ses
+                WHERE ses.ServidorID = %s
+                  AND ses.Activo = 1
+                """,
+                (server_id,),
+            )
+            rows = cur.fetchall() or []
+            cn.close()
+
+            empresa_ids = sorted({
+                row.get("EmpresaID")
+                for row in rows
+                if row.get("EmpresaID") is not None
+            })
+            if len(empresa_ids) != 1:
+                logger.warning(
+                    "[ConnectionResolver] No se pudo resolver una EmpresaID única "
+                    "para server_id=%s (count=%s)",
+                    server_id,
+                    len(empresa_ids),
+                )
+                return None
+
+            from core.empresa_resolver import get_connection_for_role
+
+            relation = get_connection_for_role(
+                empresa_ids[0],
+                "VENTAS_DIA_API_LOCAL",
+            )
+            if not relation:
+                logger.warning(
+                    "[ConnectionResolver] Sin relación VENTAS_DIA_API_LOCAL "
+                    "para EmpresaID=%s",
+                    empresa_ids[0],
+                )
+                return None
+
+            cn = get_edarsahub_connection(timeout=20)
+            cur = cn.cursor(as_dict=True)
+            cur.execute(
+                """
+                SELECT TOP (1)
+                    id,
+                    api_url,
+                    api_key_encrypted,
+                    activo
+                FROM dbo.Servidores_Conexiones
+                WHERE id = %s
+                  AND tipo_conexion = 'API_LOCAL'
                   AND activo = 1
-                  AND (host = %s OR api_url LIKE %s)
-            """, (server_host, f"%{server_host}%"))
-            
+                """,
+                (str(relation.servidor_id),),
+            )
             row = cur.fetchone()
             cn.close()
-            
-            if not row:
-                logger.warning(f"[ConnectionResolver] API config no encontrada en SQL: host={server_host}, sucursal={sucursal}")
+
+            api_url = str((row or {}).get("api_url") or "").strip()
+            if not row or not api_url:
+                logger.warning(
+                    "[ConnectionResolver] API_LOCAL canónica no disponible "
+                    "para server_id=%s",
+                    relation.servidor_id,
+                )
                 return None
-            
+
             return {
                 "id": str(row.get("id", "")),
-                "server_host": row.get("host"),
-                "api_url": row.get("api_url"),
+                "api_url": api_url,
+                "api_base_url": api_url,
                 "api_key": row.get("api_key_encrypted"),
-                "sucursal": sucursal,
-                "tipo": "api_mpro",
-                "activo": row.get("activo", False),
+                "empresa_id": empresa_ids[0],
+                "rol_conexion": "VENTAS_DIA_API_LOCAL",
+                "activo": bool(row.get("activo", False)),
             }
-            
+
         except Exception as e:
-            logger.error(f"[ConnectionResolver] Error SQL obteniendo API config: {e}")
+            logger.error(
+                "[ConnectionResolver] Error resolviendo API_LOCAL canónica: %s",
+                type(e).__name__,
+            )
             return None
     
     def resolve_source(
@@ -458,11 +518,8 @@ class ConnectionResolver:
             )
         
         elif source_type == SourceType.API:
-            # Para API local, buscar configuración específica
-            api_config = self._get_api_config(
-                server_config.get('host', ''),
-                sucursal_nombre or server_config.get('name', '')
-            )
+            # Para API local, resolver exclusivamente por ID/relación canónica.
+            api_config = self._get_api_config(server_id)
             
             if api_config:
                 resolved = ResolvedSource(
@@ -472,7 +529,7 @@ class ConnectionResolver:
                     metric_type=metric_type,
                     source_type=source_type,
                     connection_origin=connection_origin,
-                    api_base_url=api_config.get('api_base_url'),
+                    api_base_url=api_config.get('api_url'),
                     server_id=server_id,
                     timeout_seconds=30,
                     status="resolved",

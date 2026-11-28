@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "existing_job_id": "CAVAS-GATE12N-UAT-CONTROLLED-EXECUTION-R2-20260918",
+  "reason": "Wake canonical Universal Worker for Gate12N controlled UAT R2 now that the request is published. Execute exactly one canary with mandatory cleanup and zero-residue postcheck. No Production.",
+  "production_touched": false
+}

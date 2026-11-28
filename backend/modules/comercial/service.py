@@ -2591,37 +2591,131 @@ def get_dashboard_kpis_from_edarsahub(
         )
         return None
 
-    ventas_ant = _ventas_periodo_canonicas(fecha_ini_ant, fecha_fin_ant, unidad_pks) if fecha_ini_ant and fecha_fin_ant else 0.0
-    ventas_ano_ant = _ventas_periodo_canonicas(fecha_ini_ano_ant, fecha_fin_ano_ant, unidad_pks) if fecha_ini_ano_ant and fecha_fin_ano_ant else 0.0
+    def _metricas_periodo(fecha_inicio, fecha_fin_periodo):
+        if (
+            not fecha_inicio
+            or not fecha_fin_periodo
+            or fecha_inicio == "PENDIENTE"
+            or fecha_fin_periodo == "PENDIENTE"
+        ):
+            return {}
+        periodo_resumen = KPIsCanonicosService.resumen_periodo(
+            fecha_inicio,
+            _fecha_fin_exclusiva(fecha_fin_periodo),
+            unidad_pks=unidad_pks,
+        )
+        return periodo_resumen.get("metricas") or {}
 
-    vs_periodo_anterior = round(((ventas - ventas_ant) / ventas_ant * 100), 1) if ventas_ant > 0 else 0
-    vs_ano_anterior = round(((ventas - ventas_ano_ant) / ventas_ano_ant * 100), 1) if ventas_ano_ant > 0 else 0
+    def _pct(actual, base):
+        actual = float(actual or 0)
+        base = float(base or 0)
+        return round(((actual - base) / base) * 100, 1) if base > 0 else None
+
+    metricas_ant = _metricas_periodo(fecha_ini_ant, fecha_fin_ant)
+    metricas_ano_ant = _metricas_periodo(fecha_ini_ano_ant, fecha_fin_ano_ant)
+
+    ventas_ant = float(metricas_ant.get("ventas") or 0)
+    pax_ant = float(metricas_ant.get("pax") or 0)
+    cheques_ant = float(metricas_ant.get("cheques") or 0)
+    cheque_promedio_ant = float(metricas_ant.get("cheque_promedio") or 0)
+    pax_promedio_ant = float(
+        metricas_ant.get("consumo_promedio_pax")
+        or metricas_ant.get("pax_promedio")
+        or 0
+    )
+    rotacion_ant = float(metricas_ant.get("cheques_por_pax") or 0)
+
+    ventas_ano_ant = float(metricas_ano_ant.get("ventas") or 0)
+    pax_ano_ant = float(metricas_ano_ant.get("pax") or 0)
+    cheques_ano_ant = float(metricas_ano_ant.get("cheques") or 0)
+    cheque_promedio_ano_ant = float(metricas_ano_ant.get("cheque_promedio") or 0)
+    pax_promedio_ano_ant = float(
+        metricas_ano_ant.get("consumo_promedio_pax")
+        or metricas_ano_ant.get("pax_promedio")
+        or 0
+    )
+    rotacion_ano_ant = float(metricas_ano_ant.get("cheques_por_pax") or 0)
+
+    pax_actual = float(metricas.get("pax") or 0)
+    cheques_actual = float(metricas.get("cheques") or 0)
+    cheque_promedio_actual = float(metricas.get("cheque_promedio") or 0)
+    pax_promedio_actual = float(metricas.get("consumo_promedio_pax") or 0)
+    rotacion_actual = float(metricas.get("cheques_por_pax") or 0)
+
+    presupuesto_total = None
+    try:
+        fecha_ini_dt = datetime.strptime(fecha_ini, "%Y-%m-%d")
+        fecha_fin_dt = datetime.strptime(fecha_fin, "%Y-%m-%d")
+        periodo_ini = fecha_ini_dt.year * 100 + fecha_ini_dt.month
+        periodo_fin = fecha_fin_dt.year * 100 + fecha_fin_dt.month
+        safe_server = str(server_id or "").replace("'", "''")
+        safe_sucursal = str(sucursal_id or "").replace("'", "''")
+        filtro_sucursal = ""
+        if safe_sucursal and safe_sucursal.upper() not in ("DEFAULT", "ALL", "TODAS"):
+            filtro_sucursal = f" AND SucursalID = '{safe_sucursal}'"
+
+        presupuesto_rows = _query_edarsahub_tablero(
+            f"""
+            SELECT
+                COUNT(*) AS registros,
+                SUM(CASE WHEN ISNULL(MetaVentaBruta,0) > 0 THEN MetaVentaBruta ELSE 0 END) AS presupuesto
+            FROM dbo.Sync_Metas_Comerciales WITH (NOLOCK)
+            WHERE ServerID = '{safe_server}'
+              {filtro_sucursal}
+              AND (Anio * 100 + Mes) BETWEEN {periodo_ini} AND {periodo_fin}
+              AND ISNULL(Activo,1) = 1
+              AND ISNULL(MetaVentaBruta,0) > 0
+            """
+        )
+        if presupuesto_rows:
+            presupuesto_valor = float(presupuesto_rows[0].get("presupuesto") or 0)
+            if presupuesto_valor > 0:
+                presupuesto_total = presupuesto_valor
+    except Exception as exc:
+        logging.warning(
+            "[DASHBOARD-CANONICO] No fue posible consultar presupuesto para %s: %s",
+            str(server_id)[:8],
+            exc,
+        )
 
     return {
         'ventas_periodo': ventas,
-        'pax_total': float(metricas.get("pax") or 0),
-        'cheques_total': float(metricas.get("cheques") or 0),
-        'ticket_promedio': float(metricas.get("cheque_promedio") or 0),
-        'pax_promedio': float(metricas.get("consumo_promedio_pax") or 0),
-        'consumo_persona': float(metricas.get("consumo_promedio_pax") or 0),
-        'mesas_atendidas': float(metricas.get("cheques") or 0),
-        'rotacion_mesas': float(metricas.get("cheques_por_pax") or 0),
+        'pax_total': pax_actual,
+        'cheques_total': cheques_actual,
+        'ticket_promedio': cheque_promedio_actual,
+        'pax_promedio': pax_promedio_actual,
+        'consumo_persona': pax_promedio_actual,
+        'mesas_atendidas': cheques_actual,
+        'rotacion_mesas': rotacion_actual,
         'venta_por_hora': 0,
         'ventas_anterior': ventas_ant,
-        'pax_anterior': 0,
-        'cheques_anterior': 0,
+        'pax_anterior': pax_ant,
+        'cheques_anterior': cheques_ant,
         'ventas_ano_anterior': ventas_ano_ant,
-        'pax_ano_anterior': 0,
-        'cheques_ano_anterior': 0,
-        'vs_periodo_anterior': vs_periodo_anterior,
-        'vs_ano_anterior': vs_ano_anterior,
-        'vs_presupuesto': 0,
+        'pax_ano_anterior': pax_ano_ant,
+        'cheques_ano_anterior': cheques_ano_ant,
+        'vs_periodo_anterior': _pct(ventas, ventas_ant),
+        'vs_ano_anterior': _pct(ventas, ventas_ano_ant),
+        'pax_vs_mes_anterior': _pct(pax_promedio_actual, pax_promedio_ant),
+        'pax_vs_ano_anterior': _pct(pax_promedio_actual, pax_promedio_ano_ant),
+        'cheque_vs_mes_anterior': _pct(cheque_promedio_actual, cheque_promedio_ant),
+        'cheque_vs_ano_anterior': _pct(cheque_promedio_actual, cheque_promedio_ano_ant),
+        'rotacion_vs_mes': _pct(rotacion_actual, rotacion_ant),
+        'rotacion_vs_ano': _pct(rotacion_actual, rotacion_ano_ant),
+        'pax_total_vs_mes': _pct(pax_actual, pax_ant),
+        'pax_total_vs_ano': _pct(pax_actual, pax_ano_ant),
+        'cheques_total_vs_mes': _pct(cheques_actual, cheques_ant),
+        'cheques_total_vs_ano': _pct(cheques_actual, cheques_ano_ant),
+        'presupuesto_total': presupuesto_total,
+        'presupuesto_disponible': presupuesto_total is not None,
+        'vs_presupuesto': _pct(ventas, presupuesto_total) if presupuesto_total else None,
+        'sin_datos_periodo_anterior': ventas_ant <= 0,
+        'sin_datos_ano_anterior': ventas_ano_ant <= 0,
         'source': 'KPIsCanonicosService',
         'source_table': resumen.get("source_table"),
         'registros_consultados': registros,
         'unidad_pks': unidad_pks,
     }
-
 
 
 

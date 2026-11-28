@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Wake the canonical Universal Worker and consume the already-published READ_ONLY job EDARSAHUB-CRM-CALENDAR-CANONICAL-EVENTS-GATE1-R1 from worker_queue/inbox. Do not create, clone, rename, or re-emit the job. Preserve original job_id and request. If terminal result already exists, do not execute again; converge safely. Do not touch Production. Do not modify dispatcher, supervisor, watchdog, formulas, SQL data, schema, or functional code. This trigger exists only to invoke the authoritative worker wake flow.",
+  "existing_job_id": "EDARSAHUB-CRM-CALENDAR-CANONICAL-EVENTS-GATE1-R1",
+  "production_touched": false
+}

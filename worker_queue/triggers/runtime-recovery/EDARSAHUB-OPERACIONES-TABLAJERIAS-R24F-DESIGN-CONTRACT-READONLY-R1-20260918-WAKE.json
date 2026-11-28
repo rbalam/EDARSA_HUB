@@ -1,0 +1,7 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Wake canonical Universal Worker for EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-DESIGN-CONTRACT-READONLY-R1-20260918. This is READ_ONLY / DESIGN-CONTRACT only. Do not implement R24F. Do not touch product, SQL, Production, Scheduler, NetPay, permissions/RBAC, menu/layout transversal, frontend mutation, backend mutation, database migrations or functional changes.",
+  "existing_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-DESIGN-CONTRACT-READONLY-R1-20260918",
+  "queue_sha": "c468b7932d467aec8cdb832f6398b709ed81cdb9",
+  "production_touched": false
+}

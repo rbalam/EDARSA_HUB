@@ -1,0 +1,134 @@
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+BRIDGE = ROOT / "tools" / "mirror_sync" / "universal_job_bridge.py"
+DISPATCHER = ROOT / "tools" / "mirror_sync" / "universal_job_dispatcher.py"
+GUARD = ROOT / "tools" / "mirror_sync" / "git_divergence_guard.py"
+SCRIPT = ROOT / "backend" / "scripts" / "update_server_registry_metadata.py"
+
+
+def test_mode_is_closed_and_forbids_secrets_and_inline_sql():
+    bridge = BRIDGE.read_text(encoding="utf-8")
+    dispatcher = DISPATCHER.read_text(encoding="utf-8")
+    assert 'SERVER_REGISTRY_METADATA_UPDATE_MODE = "SERVER_REGISTRY_METADATA_UPDATE"' in bridge
+    assert 'SERVER_REGISTRY_METADATA_UPDATE_MODE = "SERVER_REGISTRY_METADATA_UPDATE"' in dispatcher
+    for forbidden in ('"sql"', '"command"', '"shell"', '"script"', '"path"', '"password"', '"secret"', '"username"'):
+        assert forbidden in bridge
+        assert forbidden in dispatcher
+    assert "confirm_server_registry_metadata_update" in bridge
+    assert "confirm_server_registry_metadata_update" in dispatcher
+
+
+def test_mode_requires_readonly_preflight_and_post_audit():
+    bridge = BRIDGE.read_text(encoding="utf-8")
+    dispatcher = DISPATCHER.read_text(encoding="utf-8")
+    assert "SERVER_REGISTRY_METADATA_UPDATE_PREFLIGHT_PROFILE_REQUIRED" in bridge
+    assert "SERVER_REGISTRY_METADATA_UPDATE_POST_PROFILE_REQUIRED" in bridge
+    assert "SERVER_REGISTRY_METADATA_UPDATE_INLINE_SQL_FORBIDDEN" in bridge
+    block = dispatcher.split("if mode == SERVER_REGISTRY_METADATA_UPDATE_MODE:", 1)[1].split("if mode == SQL_MIGRATION_DEVELOPMENT_MODE:", 1)[0]
+    assert "build_readonly_audit_checks(preflight_profile)" in block
+    assert "build_readonly_audit_checks(post_profile)" in block
+    assert "SERVER_REGISTRY_METADATA_UPDATE_INLINE_SQL_FORBIDDEN" in block
+    assert "preflight_checks" in block
+    assert 'result["checks"]' in block
+    assert "CERTIFIED_OPERATIONAL" in block
+    assert "canonical_sql_mutation" in block
+
+
+def test_runtime_uses_canonical_server_registry_helper_and_preserves_active():
+    text = SCRIPT.read_text(encoding="utf-8")
+    assert "result = asyncio.run(update_server(server_id, payload))" in text
+    assert 'payload["database_name"] = database_name' in text
+    assert "_get_server_by_id_from_sql(server_id, include_inactive=True)" in text
+    assert "ACTIVE_STATE_CHANGED" in text
+    assert "password" not in text.lower()
+    assert "pymssql" not in text.lower()
+
+
+def test_operational_mode_does_not_require_git_writer_lock():
+    text = GUARD.read_text(encoding="utf-8")
+    assert '"SERVER_REGISTRY_METADATA_UPDATE"' in text
+
+
+def test_runtime_allows_disable_operations_only_and_never_enables_it():
+    text = SCRIPT.read_text(encoding="utf-8")
+    assert 'parser.add_argument("--disable-operations", action="store_true")' in text
+    assert 'payload["visible_en_operaciones"] = False' in text
+    assert 'payload["visible_en_operaciones"] = True' not in text
+    bridge = BRIDGE.read_text(encoding="utf-8")
+    dispatcher = DISPATCHER.read_text(encoding="utf-8")
+    assert 'disable_operations = job.get("disable_operations") is True' in bridge
+    assert 'disable_operations = job.get("disable_operations") is True' in dispatcher
+
+
+def test_bridge_does_not_require_inline_post_checks_for_server_registry_metadata_update():
+    text = BRIDGE.read_text(encoding="utf-8")
+    blocks = text.split("elif mode == SERVER_REGISTRY_METADATA_UPDATE_MODE:")
+    assert len(blocks) >= 3
+    post_validation_block = blocks[2].split("elif mode == SQL_MIGRATION_DEVELOPMENT_MODE:", 1)[0]
+    assert "SERVER_REGISTRY_METADATA_UPDATE_POST_AUDIT_REQUIRED" not in post_validation_block
+    assert "SERVER_REGISTRY_METADATA_UPDATE_POST_ONLY_SQL_AUDIT_ALLOWED" not in post_validation_block
+    assert "checks = []" in post_validation_block
+
+
+def test_bridge_accepts_governed_api_local_health_test():
+    job = {
+        "schema": "edarsahub.worker-job.v2",
+        "job_id": "api-local-health-test-contract",
+        "target_repo": "rbalam/EDARSA_HUB",
+        "target_branch": "Edarsahub_Desarrollo",
+        "production_allowed": False,
+        "objective": "Test API_LOCAL health",
+        "human_summary_language": "es",
+        "mode": "API_LOCAL_HEALTH_TEST",
+        "actions": [],
+        "connection_ids": [
+            "8CBDCC89-6495-49C3-BE9C-A965DB82C77F",
+            "D8B2D1EB-2E1F-4E43-B7D9-822BF671E315",
+        ],
+        "confirm_api_local_health_test": True,
+        "preflight_audit_profile": "chapur_external_integration_readiness_v1",
+        "post_audit_profile": "chapur_external_integration_readiness_v1",
+        "preflight_checks": [],
+        "checks": [],
+    }
+    assert BRIDGE.validate(job) == []
+
+
+def test_bridge_rejects_secret_or_inline_execution_fields_for_api_local_health_test():
+    base = {
+        "schema": "edarsahub.worker-job.v2",
+        "job_id": "api-local-health-test-secret-reject",
+        "target_repo": "rbalam/EDARSA_HUB",
+        "target_branch": "Edarsahub_Desarrollo",
+        "production_allowed": False,
+        "objective": "Test API_LOCAL health",
+        "human_summary_language": "es",
+        "mode": "API_LOCAL_HEALTH_TEST",
+        "actions": [],
+        "connection_ids": ["8CBDCC89-6495-49C3-BE9C-A965DB82C77F"],
+        "confirm_api_local_health_test": True,
+        "preflight_audit_profile": "chapur_external_integration_readiness_v1",
+        "post_audit_profile": "chapur_external_integration_readiness_v1",
+        "preflight_checks": [],
+        "checks": [],
+    }
+    for field in ("sql", "url", "api_key", "password", "secret", "username"):
+        job = dict(base)
+        job[field] = "forbidden"
+        errors = BRIDGE.validate(job)
+        assert f"API_LOCAL_HEALTH_TEST_FORBIDDEN_FIELD:{field}" in errors
+
+
+def test_api_local_health_dispatcher_requires_post_audit_rows():
+    text = (ROOT / "tools/mirror_sync/universal_job_dispatcher.py").read_text(encoding="utf-8")
+    block = text.split("if mode == API_LOCAL_HEALTH_TEST_MODE:", 1)[1].split("if mode == SQL_MIGRATION_DEVELOPMENT_MODE:", 1)[0]
+    assert "API_LOCAL_HEALTH_TEST_POST_AUDIT_INCOMPLETE" in block
+    assert "post_health_ids" in block
+    assert "post_audit_complete" in block
+
+
+def test_health_writer_uses_validated_canonical_writer_connection():
+    text = (ROOT / "backend/modules/integrations_runtime/health.py").read_text(encoding="utf-8")
+    assert "open_validated_writer_connection" in text
+    assert "get_edarsahub_pymssql_connection" not in text

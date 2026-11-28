@@ -16,7 +16,7 @@ RESPONSABILIDADES:
 - Delegar operaciones de datos al repositorio
 """
 
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from fastapi import HTTPException
 import logging
 
@@ -434,6 +434,21 @@ class RHColaboradoresService:
             raise HTTPException(status_code=404, detail="Servidor EDARSA HUB no configurado")
         return server
     
+    def _enforce_sucursal_in_scope(
+        self,
+        target_sucursal_id: Optional[int],
+        allowed_sucursal_ids: Optional[List[int]],
+    ) -> None:
+        if target_sucursal_id is not None and int(target_sucursal_id) <= 0:
+            raise HTTPException(status_code=400, detail="Filtro sucursal_id inválido")
+        if allowed_sucursal_ids is None:
+            return
+        allowed = {int(x) for x in allowed_sucursal_ids if int(x) > 0}
+        if not allowed:
+            raise HTTPException(status_code=403, detail="Sin alcance efectivo de sucursales RH")
+        if target_sucursal_id is None or int(target_sucursal_id) not in allowed:
+            raise HTTPException(status_code=403, detail="Acceso denegado a sucursal fuera de alcance RH")
+
     async def listar_colaboradores(
         self,
         sucursal_id: Optional[int] = None,
@@ -441,11 +456,17 @@ class RHColaboradoresService:
         estatus: Optional[str] = None,
         buscar: Optional[str] = None,
         page: int = 1,
-        limit: int = 50
+        limit: int = 50,
+        allowed_sucursal_ids: Optional[List[int]] = None,
     ) -> Dict[str, Any]:
-        """Lista colaboradores con filtros y paginación."""
+        """Lista colaboradores con filtros, aislamiento RBAC por sucursal y paginación."""
+        if sucursal_id is not None:
+            self._enforce_sucursal_in_scope(sucursal_id, allowed_sucursal_ids)
+        elif allowed_sucursal_ids is not None and not allowed_sucursal_ids:
+            raise HTTPException(status_code=403, detail="Sin alcance efectivo de sucursales RH")
+
         server = await self._get_server()
-        
+
         result = query_listar_colaboradores(
             server,
             sucursal_id=sucursal_id,
@@ -453,43 +474,58 @@ class RHColaboradoresService:
             estatus=estatus,
             buscar=buscar,
             page=page,
-            limit=limit
+            limit=limit,
+            allowed_sucursal_ids=allowed_sucursal_ids,
         )
-        
+
         return {
             "colaboradores": result.get("datos", []),
             "total": result.get("total", 0),
             "page": result.get("page", page),
             "limit": result.get("limit", limit),
-            "pages": result.get("pages", 1)
+            "pages": result.get("pages", 1),
         }
-    
-    async def obtener_colaborador_detalle(self, colaborador_id: int) -> Dict[str, Any]:
-        """Obtiene detalle de un colaborador con incidencias, asistencias y auditoría."""
+
+    async def obtener_colaborador_detalle(
+        self,
+        colaborador_id: int,
+        allowed_sucursal_ids: Optional[List[int]] = None,
+    ) -> Dict[str, Any]:
+        """Obtiene detalle de un colaborador validando aislamiento RBAC antes de exponer CURP/RFC/CLABE."""
+        if int(colaborador_id) <= 0:
+            raise HTTPException(status_code=400, detail="ID de colaborador inválido")
         server = await self._get_server()
-        
+
         # Datos del colaborador
         result_col = query_obtener_colaborador(server, colaborador_id)
-        
+
         if not result_col.get("datos"):
             raise HTTPException(status_code=404, detail="Colaborador no encontrado")
-        
+
+        col_sucursal = result_col["datos"].get("SucursalID")
+        self._enforce_sucursal_in_scope(col_sucursal, allowed_sucursal_ids)
+
         # Datos relacionados (consultas secundarias)
         incidencias = query_incidencias_colaborador(server, colaborador_id)
         asistencias = query_asistencias_colaborador(server, colaborador_id)
         auditoria = query_auditoria_colaborador(server, colaborador_id)
-        
+
         return {
             "colaborador": result_col["datos"],
             "incidencias": incidencias,
             "asistencias": asistencias,
-            "auditoria_fiscal": auditoria
+            "auditoria_fiscal": auditoria,
         }
-    
-    async def crear_colaborador(self, data: ColaboradorCreate) -> Dict[str, Any]:
-        """Crea un nuevo colaborador."""
+
+    async def crear_colaborador(
+        self,
+        data: ColaboradorCreate,
+        allowed_sucursal_ids: Optional[List[int]] = None,
+    ) -> Dict[str, Any]:
+        """Crea un nuevo colaborador validando alcance RBAC de sucursal."""
+        self._enforce_sucursal_in_scope(data.sucursal_id, allowed_sucursal_ids)
         server = await self._get_server()
-        
+
         result = query_crear_colaborador(
             server,
             nombre_completo=data.nombre_completo,
@@ -498,57 +534,81 @@ class RHColaboradoresService:
             clabe_bancaria=data.clabe_bancaria,
             sucursal_id=data.sucursal_id,
             puesto_id=data.puesto_id,
-            estatus_laboral=data.estatus_laboral
+            estatus_laboral=data.estatus_laboral,
         )
-        
+
         if not result.get("success"):
             raise HTTPException(
-                status_code=500, 
-                detail=result.get("error", "Error al crear colaborador")
+                status_code=500,
+                detail=result.get("error", "Error al crear colaborador"),
             )
-        
+
         return {
             "success": True,
             "message": "Colaborador creado exitosamente",
-            "colaborador_id": result.get("colaborador_id")
+            "colaborador_id": result.get("colaborador_id"),
         }
-    
+
     async def actualizar_colaborador(
-        self, 
-        colaborador_id: int, 
-        data: ColaboradorUpdate
+        self,
+        colaborador_id: int,
+        data: ColaboradorUpdate,
+        allowed_sucursal_ids: Optional[List[int]] = None,
     ) -> Dict[str, Any]:
-        """Actualiza datos de un colaborador existente."""
+        """Actualiza datos de un colaborador validando alcance RBAC actual y destino."""
+        if int(colaborador_id) <= 0:
+            raise HTTPException(status_code=400, detail="ID de colaborador inválido")
         server = await self._get_server()
-        
+
+        if allowed_sucursal_ids is not None:
+            existing = query_obtener_colaborador(server, colaborador_id)
+            if not existing.get("datos"):
+                raise HTTPException(status_code=404, detail="Colaborador no encontrado")
+            self._enforce_sucursal_in_scope(existing["datos"].get("SucursalID"), allowed_sucursal_ids)
+
         # Convertir Pydantic model a dict excluyendo None
         updates = data.model_dump(exclude_none=True)
-        
+
         if not updates:
             raise HTTPException(status_code=400, detail="No hay campos para actualizar")
-        
+
+        if "sucursal_id" in updates:
+            self._enforce_sucursal_in_scope(updates["sucursal_id"], allowed_sucursal_ids)
+
         result = query_actualizar_colaborador(server, colaborador_id, updates)
-        
+
         if not result.get("success"):
             raise HTTPException(
-                status_code=400, 
-                detail=result.get("error", "Error al actualizar colaborador")
+                status_code=400,
+                detail=result.get("error", "Error al actualizar colaborador"),
             )
-        
+
         return {"success": True, "message": "Colaborador actualizado"}
-    
-    async def dar_baja_colaborador(self, colaborador_id: int) -> Dict[str, Any]:
-        """Da de baja lógica a un colaborador."""
+
+    async def dar_baja_colaborador(
+        self,
+        colaborador_id: int,
+        allowed_sucursal_ids: Optional[List[int]] = None,
+    ) -> Dict[str, Any]:
+        """Da de baja lógica a un colaborador validando alcance RBAC de sucursal."""
+        if int(colaborador_id) <= 0:
+            raise HTTPException(status_code=400, detail="ID de colaborador inválido")
         server = await self._get_server()
-        
+
+        if allowed_sucursal_ids is not None:
+            existing = query_obtener_colaborador(server, colaborador_id)
+            if not existing.get("datos"):
+                raise HTTPException(status_code=404, detail="Colaborador no encontrado")
+            self._enforce_sucursal_in_scope(existing["datos"].get("SucursalID"), allowed_sucursal_ids)
+
         result = query_dar_baja_colaborador(server, colaborador_id)
-        
+
         if not result.get("success"):
             raise HTTPException(
-                status_code=400, 
-                detail=result.get("error", "Error al dar de baja colaborador")
+                status_code=400,
+                detail=result.get("error", "Error al dar de baja colaborador"),
             )
-        
+
         return {"success": True, "message": "Colaborador dado de baja"}
 
 
@@ -602,6 +662,22 @@ class RHIncidenciasService:
         tipos_validos = query_obtener_tipos_incidencias_validos(server)
         return tipo in tipos_validos
     
+    def _enforce_incidencia_scope(
+        self,
+        *,
+        sucursal_id: Optional[int],
+        allowed_sucursal_ids: Optional[List[int]],
+    ) -> None:
+        if sucursal_id is not None and int(sucursal_id) <= 0:
+            raise HTTPException(status_code=400, detail="Filtro sucursal_id inválido")
+        if allowed_sucursal_ids is None:
+            return
+        allowed = {int(x) for x in allowed_sucursal_ids if int(x) > 0}
+        if not allowed:
+            raise HTTPException(status_code=403, detail="Sin alcance efectivo de sucursales RH")
+        if sucursal_id is not None and int(sucursal_id) not in allowed:
+            raise HTTPException(status_code=403, detail="Acceso denegado a sucursal fuera de alcance RH")
+
     async def listar_incidencias(
         self,
         colaborador_id: Optional[int] = None,
@@ -610,11 +686,27 @@ class RHIncidenciasService:
         fecha_hasta: Optional[str] = None,
         sucursal_id: Optional[int] = None,
         page: int = 1,
-        limit: int = 50
+        limit: int = 50,
+        allowed_sucursal_ids: Optional[List[int]] = None,
     ) -> Dict[str, Any]:
-        """Lista incidencias con filtros y paginación."""
+        """Lista incidencias con filtros, aislamiento RBAC por sucursal y paginación."""
+        if colaborador_id is not None and int(colaborador_id) <= 0:
+            raise HTTPException(status_code=400, detail="Filtro colaborador_id inválido")
+        self._enforce_incidencia_scope(
+            sucursal_id=sucursal_id,
+            allowed_sucursal_ids=allowed_sucursal_ids,
+        )
         server = await self._get_server()
-        
+
+        if colaborador_id is not None and allowed_sucursal_ids is not None:
+            col = query_obtener_colaborador(server, colaborador_id)
+            if not col.get("datos"):
+                raise HTTPException(status_code=404, detail="Colaborador no encontrado")
+            self._enforce_incidencia_scope(
+                sucursal_id=col["datos"].get("SucursalID"),
+                allowed_sucursal_ids=allowed_sucursal_ids,
+            )
+
         result = query_listar_incidencias(
             server,
             colaborador_id=colaborador_id,
@@ -623,30 +715,48 @@ class RHIncidenciasService:
             fecha_hasta=fecha_hasta,
             sucursal_id=sucursal_id,
             page=page,
-            limit=limit
+            limit=limit,
+            allowed_sucursal_ids=allowed_sucursal_ids,
         )
-        
+
         return {
             "incidencias": result.get("datos", []),
             "total": result.get("total", 0),
             "page": result.get("page", page),
-            "limit": result.get("limit", limit)
+            "limit": result.get("limit", limit),
         }
-    
-    async def crear_incidencia(self, data: IncidenciaCreate, current_user: Dict) -> Dict[str, Any]:
+
+    async def crear_incidencia(
+        self,
+        data: IncidenciaCreate,
+        current_user: Dict,
+        allowed_sucursal_ids: Optional[List[int]] = None,
+    ) -> Dict[str, Any]:
         """
-        Crea una nueva incidencia.
-        
-        Valida el tipo de incidencia contra el catálogo RH_Cat_Tipos_Incidencias.
+        Crea una nueva incidencia validando aislamiento RBAC del colaborador y catálogo.
         """
+        if int(data.colaborador_id) <= 0:
+            raise HTTPException(status_code=400, detail="ID de colaborador inválido")
         server = await self._get_server()
-        
+
+        if allowed_sucursal_ids is not None:
+            col = query_obtener_colaborador(server, data.colaborador_id)
+            if not col.get("datos"):
+                raise HTTPException(status_code=404, detail="Colaborador no encontrado")
+            allowed = {int(x) for x in allowed_sucursal_ids if int(x) > 0}
+            col_suc = col["datos"].get("SucursalID")
+            if not allowed or col_suc is None or int(col_suc) not in allowed:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Acceso denegado: colaborador fuera de sucursales autorizadas RH",
+                )
+
         # Validar tipo de incidencia contra catálogo
         if not await self._validar_tipo_incidencia(server, data.tipo_incidencia):
             tipos_validos = query_obtener_tipos_incidencias_validos(server)
             raise HTTPException(
                 status_code=400,
-                detail=f"Tipo de incidencia inválido. Tipos válidos: {', '.join(tipos_validos[:10])}"
+                detail=f"Tipo de incidencia inválido. Tipos válidos: {', '.join(tipos_validos[:10])}",
             )
         
         result = query_crear_incidencia(

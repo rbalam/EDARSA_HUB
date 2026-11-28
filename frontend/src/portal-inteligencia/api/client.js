@@ -11,10 +11,13 @@
  * el portal maneje sus propios estados de sesión. Sin mocks.
  */
 import axios from 'axios';
-import { getToken } from '../../lib/api';
+import api, { getToken } from '../../lib/api';
 
 const API_URL = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const INTEL_SESSION_FLAG = 'edarsa_intel_session';
+// Contrato historico del Portal Inteligencia: consultas reales pueden tardar >15s en arranque frio.
+// El cliente central conserva refresh/retry, pero cada request del portal usa su propio margen.
+const INTEL_REQUEST_TIMEOUT_MS = 60000;
 
 export const ESTADO = {
   CARGANDO: 'CARGANDO',
@@ -27,7 +30,7 @@ export const ESTADO = {
 };
 
 // Instancia dedicada: envía cookie (externo) y Bearer si hay sesión interna.
-const intelApi = axios.create({ baseURL: API_URL, withCredentials: true, timeout: 35000 });
+const intelApi = axios.create({ baseURL: API_URL, withCredentials: true, timeout: INTEL_REQUEST_TIMEOUT_MS });
 intelApi.interceptors.request.use((config) => {
   const t = getToken();
   if (t) config.headers.Authorization = `Bearer ${t}`;
@@ -75,13 +78,22 @@ export async function logoutIntel() {
 export async function apiGet(path, params) {
   if (!haySesion()) return { estado: ESTADO.SIN_SESION, data: null, status: 0 };
   try {
-    const res = await intelApi.get(path, { params });
+    // Sesion interna: reutilizar el cliente central para conservar refresh/retry coordinado.
+    // Sesion externa: mantener el cliente dedicado con cookie httpOnly del portal.
+    const client = getToken() ? api : intelApi;
+    const res = await client.get(path, { params, timeout: INTEL_REQUEST_TIMEOUT_MS });
     return { estado: ESTADO.OK, data: res.data, status: res.status };
   } catch (err) {
-    const status = err?.response?.status;
-    if (status === 401) return { estado: ESTADO.SESION_EXPIRADA, data: null, status };
-    if (status === 403) return { estado: ESTADO.SIN_PERMISO, data: null, status };
-    return { estado: ESTADO.ERROR, data: null, status: status || 0 };
+    const status = err?.response?.status || 0;
+    const data = err?.response?.data ?? null;
+    const detail = data?.detail;
+    const mensaje = typeof detail === 'string'
+      ? detail
+      : (typeof data?.message === 'string' ? data.message : (err?.message || 'Error de comunicación'));
+    const failure = { data, status, mensaje, error_code: err?.code || null };
+    if (status === 401) return { estado: ESTADO.SESION_EXPIRADA, ...failure };
+    if (status === 403) return { estado: ESTADO.SIN_PERMISO, ...failure };
+    return { estado: ESTADO.ERROR, ...failure };
   }
 }
 
@@ -89,13 +101,22 @@ export async function apiGet(path, params) {
 export async function apiPost(path, payload, config = {}) {
   if (!haySesion()) return { estado: ESTADO.SIN_SESION, data: null, status: 0 };
   try {
-    const res = await intelApi.post(path, payload, config);
+    // Sesion interna: reutilizar el cliente central para conservar refresh/retry coordinado.
+    // Sesion externa: mantener el cliente dedicado con cookie httpOnly del portal.
+    const client = getToken() ? api : intelApi;
+    const res = await client.post(path, payload, { timeout: INTEL_REQUEST_TIMEOUT_MS, ...config });
     return { estado: ESTADO.OK, data: res.data, status: res.status };
   } catch (err) {
-    const status = err?.response?.status;
-    if (status === 401) return { estado: ESTADO.SESION_EXPIRADA, data: null, status };
-    if (status === 403) return { estado: ESTADO.SIN_PERMISO, data: null, status };
-    return { estado: ESTADO.ERROR, data: null, status: status || 0 };
+    const status = err?.response?.status || 0;
+    const data = err?.response?.data ?? null;
+    const detail = data?.detail;
+    const mensaje = typeof detail === 'string'
+      ? detail
+      : (typeof data?.message === 'string' ? data.message : (err?.message || 'Error de comunicación'));
+    const failure = { data, status, mensaje, error_code: err?.code || null };
+    if (status === 401) return { estado: ESTADO.SESION_EXPIRADA, ...failure };
+    if (status === 403) return { estado: ESTADO.SIN_PERMISO, ...failure };
+    return { estado: ESTADO.ERROR, ...failure };
   }
 }
 

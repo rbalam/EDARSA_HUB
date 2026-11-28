@@ -1,0 +1,8 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "existing_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-IMPLEMENTATION-MUTATION-R1A-20260919",
+  "reason": "intake SLA breached with R24F R1A pending; wake worker without production or SQL",
+  "production_allowed": false,
+  "requested_by": "chatgpt",
+  "created_at_utc": "2026-09-19T05:07:00Z"
+}

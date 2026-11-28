@@ -1,0 +1,14 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Wake canonical Universal Worker for R24E-R9 frontend build certification after FRONTEND_BUILD_CERTIFICATION capability was certified by R2. Do not publish R24F. Do not touch SQL or Production.",
+  "existing_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24E-R9-FRONTEND-BUILD-CERTIFICATION-R1-20260918",
+  "queue_sha": "e43e83686ccf938c1051b89797ea38cf4da1c77f",
+  "precondition_certification": {
+    "job_id": "EDARSAHUB-WORKER-FRONTEND-BUILD-CERTIFICATION-MODE-R2-20260918",
+    "quality_gate": "PASS",
+    "tests": "PASS",
+    "certification": "CERTIFIED",
+    "production_touched": false
+  },
+  "production_touched": false
+}

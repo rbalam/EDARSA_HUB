@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "existing_job_id": "EDARSAHUB-RESYNC-CIENFUEGOS-20261013-DIAG-R1-CARLOS-20261014",
+  "reason": "Wake canonical Universal Worker and prefer CIENFUEGOS 2026-10-13 Re-Sync diagnostic. Read-only DRY_RUN; do not touch Production.",
+  "production_touched": false
+}

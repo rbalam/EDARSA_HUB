@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Wake canonical Universal Worker to consume the already-published Gate E E3B owner/capability READ_ONLY audit. Preserve exact job_id and payload. Do not create implementation yet. Do not touch Production.",
+  "existing_job_id": "BOS-V1-GATE-E-E3B-OWNER-CAPABILITY-AUDIT-R1-20260919",
+  "production_touched": false
+}

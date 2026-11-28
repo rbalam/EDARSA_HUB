@@ -93,13 +93,31 @@ def test_all_endpoints_require_explicit_ia_permission():
 
     for endpoint in endpoints:
         assert (
-            "require_explicit_permission("
+            "require_explicit_permission_dual("
             in endpoint
         )
         assert (
             "IA_PERMISSION"
             in endpoint
         )
+
+
+def test_ia_routes_use_dual_auth_without_legacy_admin_bypass():
+    source = (
+        BACKEND
+        / "modules/ia_assistant/routes.py"
+    ).read_text(
+        encoding="utf-8"
+    )
+
+    assert (
+        "require_explicit_permission_dual"
+        in source
+    )
+    assert (
+        "require_explicit_permission,"
+        not in source
+    )
 
 
 def test_identity_fails_closed_without_email():

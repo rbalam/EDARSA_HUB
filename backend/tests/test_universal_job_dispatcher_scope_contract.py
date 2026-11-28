@@ -1,4 +1,5 @@
 import importlib.util
+import sys
 from pathlib import Path
 
 
@@ -13,7 +14,15 @@ def load_dispatcher():
     )
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
-    spec.loader.exec_module(module)
+    mirror_sync_dir = str(DISPATCHER.parent)
+    inserted = mirror_sync_dir not in sys.path
+    if inserted:
+        sys.path.insert(0, mirror_sync_dir)
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        if inserted:
+            sys.path.remove(mirror_sync_dir)
     return module
 
 

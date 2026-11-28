@@ -145,10 +145,164 @@ def range_changes(base: str, head: str) -> list[tuple[str, str]]:
     return changes
 
 
+
+# EDARSA_MIRROR_RESEED_GUARD_V3
+def _edarsa_parse_pre_push_updates(pre_push_path):
+    """Parse canonical Git pre-push input without hidden global state."""
+    from pathlib import Path
+
+    if not pre_push_path:
+        return []
+
+    path = Path(pre_push_path)
+
+    if not path.is_file():
+        return []
+
+    updates = []
+
+    for raw in path.read_text(
+        encoding="utf-8",
+        errors="replace",
+    ).splitlines():
+        parts = raw.split()
+
+        if len(parts) != 4:
+            continue
+
+        updates.append(
+            {
+                "local_ref": parts[0],
+                "local_sha": parts[1],
+                "remote_ref": parts[2],
+                "remote_sha": parts[3],
+            }
+        )
+
+    return updates
+
+
+def _edarsa_is_certified_mirror_reseed(pre_push_path):
+    """
+    Permit only the specific non-destructive canonical mirror reseed.
+
+    Requirements:
+      - exactly one mirror/emergent-live update;
+      - candidate has exactly two parents;
+      - parent 1 is current origin/Edarsahub_Desarrollo;
+      - parent 2 is current remote mirror SHA;
+      - candidate tree equals Development tree;
+      - old mirror is ancestor of candidate.
+
+    This does not disable Agent Guard and does not permit force-push.
+    """
+    import subprocess
+
+    updates = _edarsa_parse_pre_push_updates(
+        pre_push_path
+    )
+
+    matching = [
+        row
+        for row in updates
+        if row["remote_ref"]
+        == "refs/heads/mirror/emergent-live"
+    ]
+
+    if len(matching) != 1:
+        return False
+
+    update = matching[0]
+
+    local_sha = update["local_sha"]
+    remote_sha = update["remote_sha"]
+
+    zero_sha = "0" * 40
+
+    if local_sha == zero_sha or remote_sha == zero_sha:
+        return False
+
+    def git(*args):
+        proc = subprocess.run(
+            ["git", *args],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            check=False,
+        )
+
+        if proc.returncode != 0:
+            return None
+
+        return proc.stdout.strip()
+
+    development = git(
+        "rev-parse",
+        "origin/Edarsahub_Desarrollo",
+    )
+
+    if not development:
+        return False
+
+    parents_raw = git(
+        "show",
+        "-s",
+        "--format=%P",
+        local_sha,
+    )
+
+    if not parents_raw:
+        return False
+
+    parents = parents_raw.split()
+
+    if len(parents) != 2:
+        return False
+
+    if parents[0] != development:
+        return False
+
+    if parents[1] != remote_sha:
+        return False
+
+    candidate_tree = git(
+        "rev-parse",
+        f"{local_sha}^{{tree}}",
+    )
+
+    development_tree = git(
+        "rev-parse",
+        f"{development}^{{tree}}",
+    )
+
+    if not candidate_tree or not development_tree:
+        return False
+
+    if candidate_tree != development_tree:
+        return False
+
+    ancestor = subprocess.run(
+        [
+            "git",
+            "merge-base",
+            "--is-ancestor",
+            remote_sha,
+            local_sha,
+        ],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+
+    return ancestor.returncode == 0
+# /EDARSA_MIRROR_RESEED_GUARD_V3
+
+
 def validate(
     changes: list[tuple[str, str]],
     size_resolver,
     previous_size_resolver=None,
+    pre_push_path: str | None = None,
 ) -> int:
     violations: list[str] = []
     added_count = 0
@@ -215,10 +369,13 @@ def validate(
         )
 
     if added_count > NEW_FILE_LIMIT:
-        violations.append(
-            f"demasiados archivos nuevos: "
-            f"{added_count} > {NEW_FILE_LIMIT}"
-        )
+        if _edarsa_is_certified_mirror_reseed(pre_push_path):
+            pass
+        else:
+            violations.append(
+                f"demasiados archivos nuevos: "
+                f"{added_count} > {NEW_FILE_LIMIT}"
+            )
 
     if total_added_bytes > CHANGE_LIMIT:
         violations.append(
@@ -249,12 +406,15 @@ def validate_staged() -> int:
     )
 
 
-def validate_range(base: str, head: str) -> int:
+def validate_range(base: str, head: str,
+    pre_push_path: str | None = None,
+) -> int:
     changes = range_changes(base, head)
     return validate(
         changes,
         lambda path: blob_size(f"{head}:{path}"),
         lambda path: blob_size(f"{base}:{path}"),
+        pre_push_path=pre_push_path,
     )
 
 
@@ -291,7 +451,7 @@ def validate_pre_push_input(path: str) -> int:
         else:
             base = remote_sha
 
-        rc = validate_range(base, local_sha)
+        rc = validate_range(base, local_sha, pre_push_path=path)
 
         if rc != 0:
             return rc

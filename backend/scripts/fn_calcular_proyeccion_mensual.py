@@ -20,7 +20,9 @@ def py_calcular_proyeccion_mensual(ventas, dias_vta, mes, anio):
         "enero": 1, "febrero": 2, "marzo": 3, "abril": 4, "mayo": 5, "junio": 6,
         "julio": 7, "agosto": 8, "septiembre": 9, "octubre": 10, "noviembre": 11, "diciembre": 12
     }
-    num_mes = mes_map.get(mes.lower().strip(), 5)
+    num_mes = mes_map.get(mes.lower().strip())
+    if num_mes is None:
+        return None
     _, total_dias = calendar.monthrange(anio, num_mes)
     if dias_vta == 0:
         return 0.0

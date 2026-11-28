@@ -144,25 +144,67 @@ async def _get_empresas_codigos_sql(empresas_ids):
         return []
 
 
-async def get_user_sucursales_permitidas_rh(current_user: Dict[str, Any]) -> List[int]:
+async def resolve_rh_allowed_sucursal_ids(current_user: Dict[str, Any]) -> Optional[List[int]]:
+    """Resuelve el alcance efectivo de SucursalID para RH usando resolve_user_access_context().
+
+    - Retorna None únicamente cuando context.tiene_acceso_global es explícitamente True.
+    - Falla cerrado (HTTP 403) para cualquier usuario sin acceso global que no tenga sucursales
+      numéricas efectivas asignadas.
     """
-    FASE 6-8: Obtiene los IDs de sucursales permitidas para el usuario.
-    Usa resolve_user_access_context() como fuente única de verdad.
-    
-    Retorna lista vacía si el usuario tiene acceso total (admin).
-    
-    Nota: RH usa IDs numéricos de SQL Server, no UUIDs.
-    """
-    # Usar función centralizada de contexto
     context = await resolve_user_access_context(current_user)
-    
-    if context.tiene_acceso_global:
-        return []  # Sin restricción (admin o acceso total)
-    
-    if not context.empresas_ids:
-        return []  # Sin restricción explícita
-    
-    return await _get_empresas_codigos_sql(context.empresas_ids)
+    if getattr(context, "tiene_acceso_global", False) is True:
+        return None
+
+    sucursal_ids: set[int] = set()
+    raw_by_server = getattr(context, "sucursales_por_server", None) or {}
+    if isinstance(raw_by_server, dict):
+        for items in raw_by_server.values():
+            if not isinstance(items, (list, tuple, set)):
+                continue
+            for item in items:
+                try:
+                    val = int(str(item).strip())
+                    if val > 0:
+                        sucursal_ids.add(val)
+                except (ValueError, TypeError):
+                    continue
+
+    empresas_ids = list(getattr(context, "empresas_ids", None) or [])
+    if not sucursal_ids and empresas_ids:
+        codigos = await _get_empresas_codigos_sql(empresas_ids)
+        if codigos:
+            try:
+                from core.db import execute_sql_query
+
+                safe_codes = [str(c).replace("'", "''").upper() for c in codigos if c]
+                if safe_codes:
+                    in_codes = ",".join(f"N'{c}'" for c in safe_codes)
+                    rows = execute_sql_query(
+                        f"""
+                        SELECT SucursalID
+                        FROM RH_Cat_Sucursales
+                        WHERE UPPER(Nombre_Sucursal) IN ({in_codes})
+                        """
+                    ) or []
+                    for row in rows:
+                        val = row.get("SucursalID")
+                        if val is not None and int(val) > 0:
+                            sucursal_ids.add(int(val))
+            except Exception:
+                pass
+
+    if not sucursal_ids:
+        raise HTTPException(
+            status_code=403,
+            detail="Acceso denegado: usuario sin alcance efectivo de sucursales RH",
+        )
+    return sorted(sucursal_ids)
+
+
+async def get_user_sucursales_permitidas_rh(current_user: Dict[str, Any]) -> List[int]:
+    """Compatibilidad hacia atrás: delega en resolve_rh_allowed_sucursal_ids (fail-closed)."""
+    resolved = await resolve_rh_allowed_sucursal_ids(current_user)
+    return [] if resolved is None else resolved
 
 
 # ============================================================================
@@ -343,21 +385,15 @@ async def rrhh_listar_colaboradores(
     
     Requiere autenticación.
     """
-    # RBAC Fase 3.1: Obtener sucursales permitidas
-    await get_user_sucursales_permitidas_rh(current_user)
-    
-    # Si el usuario tiene restricciones y pide una sucursal específica,
-    # validar que tenga acceso a ella
-    # (Por ahora, el filtrado completo se implementará cuando tengamos
-    # el mapeo empresa->sucursal_id de SQL Server)
-    
+    allowed_sucursal_ids = await resolve_rh_allowed_sucursal_ids(current_user)
     return await rh_colaboradores_service.listar_colaboradores(
         sucursal_id=sucursal_id,
         puesto_id=puesto_id,
         estatus=estatus,
         buscar=buscar,
         page=page,
-        limit=limit
+        limit=limit,
+        allowed_sucursal_ids=allowed_sucursal_ids,
     )
 
 
@@ -377,7 +413,11 @@ async def rrhh_obtener_colaborador(
     
     Requiere autenticación.
     """
-    return await rh_colaboradores_service.obtener_colaborador_detalle(colaborador_id)
+    allowed_sucursal_ids = await resolve_rh_allowed_sucursal_ids(current_user)
+    return await rh_colaboradores_service.obtener_colaborador_detalle(
+        colaborador_id,
+        allowed_sucursal_ids=allowed_sucursal_ids,
+    )
 
 
 @router.post("/colaboradores", response_model=SuccessWithIdResponse)
@@ -401,7 +441,11 @@ async def rrhh_crear_colaborador(
     
     Requiere autenticación.
     """
-    return await rh_colaboradores_service.crear_colaborador(body)
+    allowed_sucursal_ids = await resolve_rh_allowed_sucursal_ids(current_user)
+    return await rh_colaboradores_service.crear_colaborador(
+        body,
+        allowed_sucursal_ids=allowed_sucursal_ids,
+    )
 
 
 @router.put("/colaboradores/{colaborador_id}", response_model=SuccessResponse)
@@ -418,7 +462,12 @@ async def rrhh_actualizar_colaborador(
     
     Requiere autenticación.
     """
-    return await rh_colaboradores_service.actualizar_colaborador(colaborador_id, body)
+    allowed_sucursal_ids = await resolve_rh_allowed_sucursal_ids(current_user)
+    return await rh_colaboradores_service.actualizar_colaborador(
+        colaborador_id,
+        body,
+        allowed_sucursal_ids=allowed_sucursal_ids,
+    )
 
 
 @router.delete("/colaboradores/{colaborador_id}", response_model=SuccessResponse)
@@ -434,7 +483,11 @@ async def rrhh_dar_baja_colaborador(
     
     Requiere autenticación.
     """
-    return await rh_colaboradores_service.dar_baja_colaborador(colaborador_id)
+    allowed_sucursal_ids = await resolve_rh_allowed_sucursal_ids(current_user)
+    return await rh_colaboradores_service.dar_baja_colaborador(
+        colaborador_id,
+        allowed_sucursal_ids=allowed_sucursal_ids,
+    )
 
 
 
@@ -470,9 +523,7 @@ async def rrhh_listar_incidencias(
     
     Requiere autenticación.
     """
-    # RBAC Fase 3.1: Obtener sucursales permitidas
-    await get_user_sucursales_permitidas_rh(current_user)
-    
+    allowed_sucursal_ids = await resolve_rh_allowed_sucursal_ids(current_user)
     return await rh_incidencias_service.listar_incidencias(
         colaborador_id=colaborador_id,
         tipo=tipo,
@@ -480,7 +531,8 @@ async def rrhh_listar_incidencias(
         fecha_hasta=fecha_hasta,
         sucursal_id=sucursal_id,
         page=page,
-        limit=limit
+        limit=limit,
+        allowed_sucursal_ids=allowed_sucursal_ids,
     )
 
 
@@ -503,7 +555,12 @@ async def rrhh_crear_incidencia(
     
     Requiere autenticación.
     """
-    return await rh_incidencias_service.crear_incidencia(body, current_user)
+    allowed_sucursal_ids = await resolve_rh_allowed_sucursal_ids(current_user)
+    return await rh_incidencias_service.crear_incidencia(
+        body,
+        current_user,
+        allowed_sucursal_ids=allowed_sucursal_ids,
+    )
 
 
 @router.post("/incidencias/importar-excel", response_model=ImportacionExcelResponse)

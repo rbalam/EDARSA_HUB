@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Tras recuperar el runtime, priorizar el diagnóstico C1 ya publicado para aislar la falla exacta de Gate16L. No duplicar jobs, no interrumpir trabajo activo, no tocar Producción.",
+  "preferred_job_id": "CAVAS-GATE16L-PYTEST-DIAG-C1-READONLY-R1-20260921",
+  "production_touched": false
+}

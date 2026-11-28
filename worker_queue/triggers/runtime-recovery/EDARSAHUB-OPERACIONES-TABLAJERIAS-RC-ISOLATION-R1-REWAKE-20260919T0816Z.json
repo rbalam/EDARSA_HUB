@@ -1,0 +1,8 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "triggered_at_utc": "2026-09-19T08:16:00Z",
+  "source": "chatgpt",
+  "project": "13. Produccion",
+  "existing_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-RELEASE-CANDIDATE-ISOLATION-READONLY-R1-20260919",
+  "reason": "Re-wake no funcional: request existe en worker/requests, wake anterior cerro success, pero worker/health sigue en ciclo previo y no materializo terminal. No crear R2, no tocar codigo, no desplegar."
+}

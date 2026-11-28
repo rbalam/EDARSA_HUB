@@ -1,0 +1,6 @@
+{
+  "schema":"edarsahub.runtime-recovery-trigger.v1",
+  "reason":"Preferred wake for read-only RCA EDARSAHUB-ISCAM-HIST-R93B-130MID-20260911-12-RCA-CARLOS-20260921T222000Z. Preserve any healthy active job, register this job as next preferred, never touch Production.",
+  "existing_job_id":"EDARSAHUB-ISCAM-HIST-R93B-130MID-20260911-12-RCA-CARLOS-20260921T222000Z",
+  "production_touched":false
+}

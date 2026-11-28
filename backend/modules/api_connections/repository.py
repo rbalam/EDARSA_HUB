@@ -23,14 +23,16 @@ import uuid
 from typing import List, Dict, Optional, Any
 from datetime import datetime, timezone
 from core.db import execute_sql_query
+from core.config.edarsahub_config import get_edarsahub_sql_config
 
-# Configuración de EDARSAHUB SQL - FUENTE PRIMARIA
+# Configuración SQL EDARSAHUB canónica.
+_cfg = get_edarsahub_sql_config()
 EDARSAHUB_CONFIG = {
-    'host': os.getenv('EDARSAHUB_SQL_HOST'),
-    'port': 1433,
-    'database': 'EDARSAHUB',
-    'username': os.getenv('EDARSAHUB_SQL_USER'),
-    'password': os.getenv('EDARSAHUB_SQL_PASSWORD')
+    'host': _cfg.host,
+    'port': _cfg.port,
+    'database': _cfg.database,
+    'username': _cfg.user,
+    'password': _cfg.password,
 }
 
 # Referencia a MongoDB (solo para caché, NO autoritativo)
@@ -128,8 +130,11 @@ def _sql_row_to_api_dict(row: Dict) -> Dict:
         'servidor_padre': row.get('host', ''),
         'servidor_padre_id': row.get('empresa_id', ''),
         'sucursal_destino': row.get('database_name', ''),
-        'hora_replica': row.get('port', 4),  # Reutilizado para hora de réplica
-        'solo_ventas_dia': bool(row.get('queries_configured', True)),
+        'solo_ventas_dia': bool(row.get('solo_ventas_dia', False)),
+        'queries_configured': any(
+            bool(str(row.get(field) or '').strip())
+            for field in ('query_ventas', 'query_inventario', 'query_movimientos')
+        ),
         'activo': bool(row.get('activo', True)),
         'visible_en_operaciones': bool(row.get('visible_en_operaciones', False)),
         'config': parse_json(row.get('sucursales')),
@@ -150,14 +155,23 @@ def list_api_connections_sql(include_inactive: bool = False) -> List[Dict]:
     Lista conexiones API desde EDARSAHUB SQL (fuente primaria).
     """
     try:
-        where_clause = "WHERE tipo_conexion = 'API_LOCAL'"
+        where_clause = "WHERE sc.tipo_conexion = 'API_LOCAL'"
         if not include_inactive:
-            where_clause += " AND activo = 1"
+            where_clause += " AND sc.activo = 1"
         
         query = f"""
-        SELECT * FROM Servidores_Conexiones
+        SELECT
+            sc.*,
+            CASE WHEN EXISTS (
+                SELECT 1
+                FROM dbo.Sistema_EmpresasServidores ses
+                WHERE ses.ServidorID = sc.id
+                  AND ses.RolConexion = 'VENTAS_DIA_API_LOCAL'
+                  AND ses.Activo = 1
+            ) THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS solo_ventas_dia
+        FROM Servidores_Conexiones sc
         {where_clause}
-        ORDER BY nombre
+        ORDER BY sc.nombre
         """
         results = execute_sql_query(
             EDARSAHUB_CONFIG['host'], EDARSAHUB_CONFIG['port'],
@@ -186,9 +200,18 @@ def get_api_connection_sql(api_id: str) -> Optional[Dict]:
     """
     try:
         query = f"""
-        SELECT * FROM Servidores_Conexiones
-        WHERE id = '{_escape_sql(api_id)}'
-          AND tipo_conexion = 'API_LOCAL'
+        SELECT
+            sc.*,
+            CASE WHEN EXISTS (
+                SELECT 1
+                FROM dbo.Sistema_EmpresasServidores ses
+                WHERE ses.ServidorID = sc.id
+                  AND ses.RolConexion = 'VENTAS_DIA_API_LOCAL'
+                  AND ses.Activo = 1
+            ) THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS solo_ventas_dia
+        FROM Servidores_Conexiones sc
+        WHERE sc.id = '{_escape_sql(api_id)}'
+          AND sc.tipo_conexion = 'API_LOCAL'
         """
         results = execute_sql_query(
             EDARSAHUB_CONFIG['host'], EDARSAHUB_CONFIG['port'],
@@ -270,14 +293,9 @@ async def create_api_connection(data: Dict, created_by: str = "system") -> Dict:
     except Exception as e:
         logging.warning(f"[API_CONNECTIONS] No se pudo cifrar API key: {e}")
     
-    # 3. Preparar datos
-    hora_replica = data.get('hora_replica', '04:00')
-    if isinstance(hora_replica, str):
-        try:
-            hora_replica = int(hora_replica.split(':')[0])
-        except Exception:
-            hora_replica = 4
-    
+    # 3. Preparar datos.
+    # API_LOCAL no reutiliza host/port/database_name/EmpresaID para semánticas
+    # de negocio. La asignación operativa vive en Sistema_EmpresasServidores.
     config_json = json.dumps(data.get('config') or {})
     
     # 4. INSERT en EDARSAHUB SQL
@@ -293,17 +311,17 @@ async def create_api_connection(data: Dict, created_by: str = "system") -> Dict:
         N'{_escape_sql(data.get("name", ""))}',
         N'{_escape_sql(data.get("tipo", "MPRO"))}',
         'API_LOCAL',
-        N'{_escape_sql(data.get("servidor_padre", ""))}',
-        {hora_replica},
-        N'{_escape_sql(data.get("sucursal_destino", ""))}',
+        NULL,
+        NULL,
+        NULL,
         N'{_escape_sql(data.get("url", ""))}',
         N'{_escape_sql(api_key_encrypted)}',
         {1 if data.get("activo", True) else 0},
         {1 if data.get("visible_en_operaciones", False) else 0},
         1, 1, 1,
-        N'{_escape_sql(data.get("servidor_padre_id", ""))}',
+        NULL,
         N'{_escape_sql(config_json)}',
-        {1 if data.get("solo_ventas_dia", True) else 0},
+        0,
         GETDATE(), GETDATE(),
         N'{_escape_sql(created_by)}'
     )
@@ -373,18 +391,22 @@ async def update_api_connection(api_id: str, data: Dict, updated_by: str = "syst
         set_parts.append(f"api_key_encrypted = N'{_escape_sql(api_key_encrypted)}'")
     if 'tipo' in data:
         set_parts.append(f"system_type = N'{_escape_sql(data['tipo'])}'")
-    if 'servidor_padre' in data:
-        set_parts.append(f"host = N'{_escape_sql(data['servidor_padre'])}'")
-    if 'servidor_padre_id' in data:
-        set_parts.append(f"empresa_id = N'{_escape_sql(data['servidor_padre_id'])}'")
-    if 'sucursal_destino' in data:
-        set_parts.append(f"database_name = N'{_escape_sql(data['sucursal_destino'])}'")
-    if 'hora_replica' in data:
-        hr = data['hora_replica']
-        hr_int = int(hr.split(':')[0]) if isinstance(hr, str) else hr
-        set_parts.append(f"port = {hr_int}")
+    for legacy_field in (
+        'servidor_padre',
+        'servidor_padre_id',
+        'sucursal_destino',
+    ):
+        if legacy_field in data:
+            logging.warning(
+                "[API_CONNECTIONS] %s ignorado: la relación operativa "
+                "se administra mediante Sistema_EmpresasServidores",
+                legacy_field,
+            )
     if 'solo_ventas_dia' in data:
-        set_parts.append(f"queries_configured = {1 if data['solo_ventas_dia'] else 0}")
+        logging.warning(
+            "[API_CONNECTIONS] solo_ventas_dia ignorado como campo legacy; "
+            "la fuente canonica es Sistema_EmpresasServidores.RolConexion"
+        )
     if 'activo' in data:
         set_parts.append(f"activo = {1 if data['activo'] else 0}")
     if 'visible_en_operaciones' in data:
@@ -504,52 +526,78 @@ async def sync_all_to_mongo_cache() -> Dict:
 
 async def test_api_connection_health(api_id: str = None, url: str = None, api_key: str = None) -> Dict:
     """
-    Prueba la conexión a una API local.
-    Devuelve el resultado de salud sin persistencia MongoDB.
+    Prueba la conexión a una API local usando el transporte canónico READ_ONLY.
     """
-    import requests
-    
-    # Si se proporciona api_id, obtener config desde EDARSAHUB SQL
+    import re
+    import time
+
+    from modules.integrations_runtime.api_local_sync import (
+        ApiLocalSyncConfig,
+        ApiLocalSyncError,
+        DEFAULT_API_LOCAL_TIMEOUT_SECONDS,
+        execute_api_local_readonly,
+        resolve_api_local_sync_config,
+    )
+
     if api_id:
-        api = get_api_connection_sql(api_id)
-        if not api:
-            return {"success": False, "error": "API no encontrada en EDARSAHUB SQL"}
-        url = api.get('url')
-        api_key = api.get('api_key')
-    
-    if not url:
-        return {"success": False, "error": "URL no proporcionada"}
-    
+        try:
+            config = await resolve_api_local_sync_config(api_id)
+        except ApiLocalSyncError as exc:
+            return {"success": False, "error": str(exc)}
+    else:
+        if not url:
+            return {"success": False, "error": "URL no proporcionada"}
+        config = ApiLocalSyncConfig(
+            server_id="adhoc",
+            server_name="adhoc",
+            api_url=str(url),
+            api_key=str(api_key or ""),
+        )
+
+    started = time.time()
     result = {}
     try:
-        headers = {"x-api-key": api_key} if api_key else {}
-        response = requests.get(
-            url,
-            headers=headers,
-            params={"sql": "SELECT 1 as test"},
-            timeout=5
+        execute_api_local_readonly(
+            config,
+            "SELECT 1 as test",
+            timeout_seconds=DEFAULT_API_LOCAL_TIMEOUT_SECONDS,
         )
-        
-        if response.status_code == 200:
-            result = {
-                "success": True,
-                "status_code": 200,
-                "message": "Conexión exitosa",
-                "response_time_ms": round(response.elapsed.total_seconds() * 1000, 2)
-            }
-        else:
-            result = {
-                "success": False,
-                "status_code": response.status_code,
-                "error": f"HTTP {response.status_code}"
-            }
-    except requests.exceptions.Timeout:
-        result = {"success": False, "error": "Timeout (5s)"}
-    except requests.exceptions.ConnectionError:
-        result = {"success": False, "error": "Sin conexión"}
-    except Exception as e:
-        result = {"success": False, "error": str(e)}
-    
+        result = {
+            "success": True,
+            "status_code": 200,
+            "message": "Conexión exitosa",
+            "response_time_ms": round((time.time() - started) * 1000, 2),
+        }
+    except ApiLocalSyncError as exc:
+        error_code = str(exc)
+        match = re.match(r"API_LOCAL_HTTP_(\d+)", error_code)
+        result = {
+            "success": False,
+            "status_code": int(match.group(1)) if match else None,
+            "error": error_code,
+            "response_time_ms": round((time.time() - started) * 1000, 2),
+        }
+
+    # Gate 5C: solo una prueba asociada a ConexionID canonico persiste health.
+    # Las pruebas ad-hoc por URL siguen siendo efimeras y no fabrican identidad.
+    if api_id:
+        try:
+            from modules.integrations_runtime.health import persist_connection_health
+            persist_connection_health(
+                api_id,
+                success=bool(result.get("success")),
+                latency_ms=result.get("response_time_ms"),
+                error_code=None if result.get("success") else result.get("error"),
+                error_message=None if result.get("success") else result.get("error"),
+            )
+            result["health_persisted"] = True
+        except Exception as health_exc:
+            logging.error(
+                "[API_CONNECTIONS][HEALTH] No se pudo persistir health: %s",
+                type(health_exc).__name__,
+            )
+            result["health_persisted"] = False
+
     return result
 
 
@@ -560,8 +608,8 @@ async def test_api_connection_health(api_id: str = None, url: str = None, api_ke
 def get_api_connection_with_decrypted_key(api_id: str) -> Optional[Dict]:
     """
     Obtiene una conexión API con la API key descifrada.
-    SOLO PARA USO INTERNO EN TEST-QUERY.
-    NUNCA exponer en responses de API.
+    SOLO PARA USO INTERNO de health/test-query.
+    NUNCA exponer en responses de API ni logs.
     """
     try:
         query = f"""
@@ -604,6 +652,75 @@ def get_api_connection_with_decrypted_key(api_id: str) -> Optional[Dict]:
     except Exception as e:
         logging.error(f"[API_CONNECTIONS] Error obteniendo conexión con key: {e}")
         return None
+
+
+
+
+def _default_api_replication_policy() -> Dict[str, Any]:
+    from core.cerebro import HORA_REPLICA_DEFAULT, TIMEZONE_MEXICO
+
+    return {
+        "enabled": True,
+        "cutoff_time": f"{int(HORA_REPLICA_DEFAULT):02d}:00",
+        "timezone": TIMEZONE_MEXICO,
+    }
+
+
+def normalize_api_replication_policy(policy: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    from zoneinfo import ZoneInfo
+
+    defaults = _default_api_replication_policy()
+    raw = dict(policy or {})
+
+    enabled = bool(raw.get("enabled", defaults["enabled"]))
+    cutoff_time = str(raw.get("cutoff_time") or defaults["cutoff_time"]).strip()
+    timezone_name = str(raw.get("timezone") or defaults["timezone"]).strip()
+
+    try:
+        datetime.strptime(cutoff_time, "%H:%M")
+    except ValueError as exc:
+        raise ValueError("REPLICATION_CUTOFF_TIME_INVALID") from exc
+
+    try:
+        ZoneInfo(timezone_name)
+    except Exception as exc:
+        raise ValueError("REPLICATION_TIMEZONE_INVALID") from exc
+
+    return {
+        "enabled": enabled,
+        "cutoff_time": cutoff_time,
+        "timezone": timezone_name,
+    }
+
+
+def get_api_replication_policy(api_id: str) -> Dict[str, Any]:
+    api = get_api_connection_sql(api_id)
+    if not api:
+        raise ValueError("API_LOCAL_NOT_FOUND")
+
+    config = api.get("config") if isinstance(api.get("config"), dict) else {}
+    return normalize_api_replication_policy(config.get("replication_policy"))
+
+
+async def update_api_replication_policy(
+    api_id: str,
+    policy: Dict[str, Any],
+    updated_by: str = "system",
+) -> Dict[str, Any]:
+    existing = get_api_connection_sql(api_id)
+    if not existing:
+        raise ValueError("API_LOCAL_NOT_FOUND")
+
+    normalized = normalize_api_replication_policy(policy)
+    config = dict(existing.get("config") or {})
+    config["replication_policy"] = normalized
+
+    await update_api_connection(
+        api_id,
+        {"config": config},
+        updated_by=updated_by,
+    )
+    return normalized
 
 
 async def get_api_connection_by_id_full(api_id: str) -> Optional[Dict]:

@@ -556,6 +556,24 @@ async def test_core_connection(
         )
     
     result = test_core_connectivity(conn)
+
+    # Gate 5C: persistir evidencia operativa; activo sigue siendo solo config.
+    try:
+        from modules.integrations_runtime.health import persist_connection_health
+        persist_connection_health(
+            server_id,
+            success=result.get('status') == 'SUCCESS',
+            latency_ms=result.get('duration_ms'),
+            error_code=None if result.get('status') == 'SUCCESS' else result.get('status'),
+            error_message=result.get('safe_error'),
+        )
+        result['health_persisted'] = True
+    except Exception as health_exc:
+        logger.error(
+            "[CORE_ADMIN][HEALTH] No se pudo persistir health: %s",
+            type(health_exc).__name__,
+        )
+        result['health_persisted'] = False
     
     audit_core_action(
         action='TEST_CORE_CONNECTION',

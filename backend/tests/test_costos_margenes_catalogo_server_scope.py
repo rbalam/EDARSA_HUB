@@ -123,3 +123,40 @@ def test_route_resuelve_server_desde_unidad():
         "unidad_pk_filtro"
         in segment
     )
+
+
+def test_familias_y_subfamilias_no_filtran_unidad_legacy_y_exigen_activo():
+    for fn_name in ("get_familias_productos", "get_subfamilias_productos"):
+        _, _, segment = _get_fn(
+            REPO,
+            fn_name,
+            ast.FunctionDef,
+        )
+        assert "CONVERT(varchar(36), p.UnidadNegocioID) = %s" not in segment
+        assert "AND p.Activo = 1" in segment
+        assert "p.ServerID" in segment
+
+
+def test_resumen_corporativo_filtra_insumos_y_recetas_activos():
+    _, _, segment = _get_fn(
+        REPO,
+        "get_resumen_costos_margenes",
+        ast.FunctionDef,
+    )
+    assert "CONVERT(varchar(36), p.UnidadNegocioID) = %s" not in segment
+    assert "ISNULL(i.Activo, 1) = 1" in segment
+    assert "ISNULL(e.Activo, 1) = 1" in segment
+    assert "SELECT COUNT(*) as total FROM Sync_Productos_Insumos" not in segment
+    assert "SELECT COUNT(*) as total FROM Sync_Productos_Recetas" not in segment
+
+
+def test_todas_las_unidades_sentinels_no_disparan_409():
+    from modules.costos_margenes.routes import (
+        _normalize_unit_selector,
+        _resolve_configuracion_efectiva,
+    )
+
+    user = {"_sql_usuario_id": 1}
+    for sentinel in (None, "", "   ", "TODAS", "todas", "ALL", "__ALL__", "TODOS", "*"):
+        assert _normalize_unit_selector(sentinel) is None
+        assert _resolve_configuracion_efectiva(user, sentinel) is None

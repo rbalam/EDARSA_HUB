@@ -145,7 +145,7 @@ def verificar_estado_sync() -> Dict:
     
     try:
         for tabla in tablas_esperadas:
-            query = f"SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = '{tabla}'"
+            query = f"SELECT 1 AS existe FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = '{tabla}'"
             result = execute_sql_query(
                 EDARSAHUB_CONFIG['host'],
                 EDARSAHUB_CONFIG['port'],

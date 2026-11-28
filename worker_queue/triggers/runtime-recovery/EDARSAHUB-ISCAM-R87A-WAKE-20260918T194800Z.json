@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Wake canonical Universal Worker to consume the already-published READ_ONLY job EDARSAHUB-ISCAM-AUTOSYNC-FAILURES-R87A-CARLOS-20260918T191200Z from worker_queue/inbox. The job has remained pending while newer jobs were consumed. Do not create, clone, rename, modify or re-emit R87A. Preserve original job_id and request. If terminal result already exists, do not execute again; converge safely. Do not touch Production. Do not modify SQL data/schema, secrets, RBAC, dispatcher, supervisor configuration or functional code.",
+  "existing_job_id": "EDARSAHUB-ISCAM-AUTOSYNC-FAILURES-R87A-CARLOS-20260918T191200Z",
+  "production_touched": false
+}

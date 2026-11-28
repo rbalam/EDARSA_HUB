@@ -1,10 +1,14 @@
 """
-Backfill histórico ENFOCADO de inventario (almacenes + movimientos + requisiciones)
-para las unidades activas que conectan: 130MID, ESTELAR, ORIGEN, 130QRO.
+Backfill histórico CANÓNICO de inventario (almacenes + movimientos + requisiciones)
+para las unidades activas elegibles del registro central.
 Reutiliza las mismas funciones canónicas del job sync_compras.
 
-Uso: python tests/backfill_inventario.py [dias_atras]
-Idempotente (MERGE/NOT EXISTS). CIENFUEGOS se omite (DDNS caído).
+Uso:
+  python tests/backfill_inventario.py [dias_atras]
+  python tests/backfill_inventario.py [dias_atras] CIENFUEGOS,ESTELAR
+
+Sin lista explícita descubre unidades activas de forma transversal desde
+Servidores_Conexiones + Unidades_Negocio. Idempotente (MERGE/NOT EXISTS).
 """
 import sys, time
 sys.path.insert(0, "/app/backend")
@@ -21,7 +25,7 @@ from core.inventarios.resolver_canonico import clear_resolver_caches
 from core.scheduler.jobs.sync_compras_job import _execute_sql_with_timeout
 
 DIAS = int(sys.argv[1]) if len(sys.argv) > 1 else 365
-UNIDADES = sys.argv[2].split(",") if len(sys.argv) > 2 else ["130MID", "ESTELAR", "ORIGEN", "130QRO"]
+UNIDADES = [u.strip() for u in sys.argv[2].split(",") if u.strip()] if len(sys.argv) > 2 else None
 
 
 def log(msg):
@@ -30,19 +34,36 @@ def log(msg):
 
 def main():
     conn = get_sql_connection(); cur = conn.cursor()
-    _ph = ",".join(["%s"] * len(UNIDADES))
+    params = []
+    unit_filter = ""
+    if UNIDADES:
+        _ph = ",".join(["%s"] * len(UNIDADES))
+        unit_filter = f" AND u.codigo IN ({_ph})"
+        params.extend(UNIDADES)
+
     cur.execute(f"""
       SELECT s.id,s.host,s.port,s.database_name,s.username,s.password_encrypted,s.system_type,
              u.id uid,u.codigo uc,u.nombre un,u.sucursal_origen_id soi
-      FROM Servidores_Conexiones s JOIN Unidades_Negocio u ON u.server_id=CAST(s.id AS NVARCHAR(36))
-      WHERE u.codigo IN ({_ph})
-    """, tuple(UNIDADES))
+      FROM Servidores_Conexiones s
+      JOIN Unidades_Negocio u ON u.server_id=CAST(s.id AS NVARCHAR(36))
+      WHERE s.activo = 1
+        AND u.activo = 1
+        AND s.tipo_conexion IN ('SQL_SERVER', 'DATA_SOURCE')
+        AND UPPER(LTRIM(RTRIM(s.system_type))) IN (
+            'SOFTRESTAURANT', 'SOFTRESTAURANT_PRO', 'SOFTRESTAURANTPRO', 'SR',
+            'MPRO', 'MANAGEMENTPRO', 'MANAGMENTPRO'
+        )
+        {unit_filter}
+      ORDER BY u.codigo
+    """, tuple(params))
     cols = [d[0] for d in cur.description]
-    by_code = {r[cols.index('uc')]: dict(zip(cols, r)) for r in cur.fetchall()}
+    rows = cur.fetchall()
+    by_code = {r[cols.index('uc')]: dict(zip(cols, r)) for r in rows}
+    target_units = UNIDADES or list(by_code.keys())
     conn.close()
 
-    log(f"==== BACKFILL INVENTARIO (dias_atras={DIAS}) ====")
-    for code in UNIDADES:
+    log(f"==== BACKFILL INVENTARIO (dias_atras={DIAS}) unidades={','.join(target_units)} ====")
+    for code in target_units:
         r = by_code.get(code)
         if not r:
             log(f"{code}: NO encontrada en BD, omitida"); continue

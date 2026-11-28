@@ -56,6 +56,12 @@ class SchedulerConfig(BaseModel):
         notif_interval = int(os.environ.get("SCHEDULER_NOTIFICATIONS_INTERVAL_SECONDS", "120"))
         notif_enabled = os.environ.get("SCHEDULER_NOTIFICATIONS_ENABLED", "false").lower() == "true"
         
+        # Catalogo Ampliado - alertas documentales
+        catalogo_alertas_interval = int(os.environ.get("SCHEDULER_CATALOGO_AMPLIADO_ALERTAS_INTERVAL_SECONDS", "3600"))
+        catalogo_alertas_enabled = os.environ.get("SCHEDULER_CATALOGO_AMPLIADO_ALERTAS_ENABLED", "true").lower() == "true"
+        if catalogo_alertas_interval < 60:
+            raise ValueError("SCHEDULER_CATALOGO_AMPLIADO_ALERTAS_INTERVAL_SECONDS must be >= 60")
+
         # Auditorías Programadas Job config
         audit_interval = int(os.environ.get("SCHEDULER_AUDITORIAS_INTERVAL_SECONDS", "3600"))  # 1 hora
         audit_enabled = os.environ.get("SCHEDULER_AUDITORIAS_ENABLED", "true").lower() == "true"
@@ -167,6 +173,15 @@ class SchedulerConfig(BaseModel):
                 interval_seconds=notif_interval,
                 batch_size=50,
                 timeout_seconds=180
+            ),
+            "catalogo_ampliado_alertas": JobConfig(
+                job_id="catalogo_ampliado_alertas",
+                job_name="Catalogo Ampliado - Alertas",
+                description="Planifica alertas documentales y materializa tareas canonicas; canales externos permanecen fail-closed",
+                enabled=catalogo_alertas_enabled,
+                interval_seconds=catalogo_alertas_interval,
+                batch_size=50,
+                timeout_seconds=300
             ),
             "auditorias_scheduler": JobConfig(
                 job_id="auditorias_scheduler",

@@ -1,0 +1,23 @@
+{
+  "schema": "edarsahub.gate-chain.v1",
+  "chain_id": "BOS-AGENT-HARNESS-V1",
+  "enabled": false,
+  "max_hops": 20,
+  "start_gate_id": "AH0",
+  "adopt_existing_job_ids": [],
+  "gates": [
+    {"gate_id":"AH0","job_id":"BOS-AGENT-HARNESS-AH0-MASTER-ARCHITECTURE-V1-R2-20260911","mutation_class":"CODE_MUTATION","authorization_class":"PREAUTHORIZED_CODE_MUTATION","next_gate_ids":["AH1"]},
+    {"gate_id":"AH1","job_id":"BOS-AGENT-HARNESS-AH1-SQL-DISCOVERY-V1-20260911","mutation_class":"READ_ONLY","next_gate_ids":["AH2"]},
+    {"gate_id":"AH2","job_id":"BOS-AGENT-HARNESS-AH2-REGISTRY-FOUNDATION-V1","mutation_class":"CODE_MUTATION","authorization_class":"PREAUTHORIZED_CODE_MUTATION","next_gate_ids":["AH3"]},
+    {"gate_id":"AH3","job_id":"BOS-AGENT-HARNESS-AH3-PLANNER-ROUTER-V1","mutation_class":"CODE_MUTATION","authorization_class":"PREAUTHORIZED_CODE_MUTATION","next_gate_ids":["AH4"]},
+    {"gate_id":"AH4","job_id":"BOS-AGENT-HARNESS-AH4-WORKER-COMPILER-V1","mutation_class":"CODE_MUTATION","authorization_class":"PREAUTHORIZED_CODE_MUTATION","next_gate_ids":["AH5"]},
+    {"gate_id":"AH5","job_id":"BOS-AGENT-HARNESS-AH5-EVIDENCE-PROVENANCE-V1","mutation_class":"CODE_MUTATION","authorization_class":"PREAUTHORIZED_CODE_MUTATION","next_gate_ids":["AH6"]},
+    {"gate_id":"AH6","job_id":"BOS-AGENT-HARNESS-AH6-SECURITY-REDTEAM-V1","mutation_class":"CODE_MUTATION","authorization_class":"PREAUTHORIZED_CODE_MUTATION","next_gate_ids":["AH7"]},
+    {"gate_id":"AH7","job_id":"BOS-AGENT-HARNESS-AH7-MARKETING-CX-V1","mutation_class":"CODE_MUTATION","authorization_class":"PREAUTHORIZED_CODE_MUTATION","next_gate_ids":["AH8"]},
+    {"gate_id":"AH8","job_id":"BOS-AGENT-HARNESS-AH8-MOBILE-V1","mutation_class":"CODE_MUTATION","authorization_class":"PREAUTHORIZED_CODE_MUTATION","next_gate_ids":["AH9"]},
+    {"gate_id":"AH9","job_id":"BOS-AGENT-HARNESS-AH9-CONTROL-PLANE-V1","mutation_class":"CODE_MUTATION","authorization_class":"PREAUTHORIZED_CODE_MUTATION","next_gate_ids":["AH10"]},
+    {"gate_id":"AH10","job_id":"BOS-AGENT-HARNESS-AH10-E2E-SIMULATION-V1","mutation_class":"CODE_MUTATION","authorization_class":"PREAUTHORIZED_CODE_MUTATION","next_gate_ids":["AH11"]},
+    {"gate_id":"AH11","job_id":"BOS-AGENT-HARNESS-AH11-LOCAL-RUNTIME-V1","mutation_class":"CODE_MUTATION","authorization_class":"PREAUTHORIZED_CODE_MUTATION","next_gate_ids":["AH12"]},
+    {"gate_id":"AH12","job_id":"BOS-AGENT-HARNESS-AH12-DEV-CERTIFICATION-V1","mutation_class":"READ_ONLY","next_gate_ids":[]}
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "existing_job_id": "CAVAS-GATE12N-SCOPE-FIX-R2B-CERT-READONLY-R1-20260918",
+  "reason": "Corrected pickup trigger for the already-published Cavas Gate12N R2B READ_ONLY certification. This does not create or modify the functional certification job. Consume the existing job when the canonical worker is available. No Production.",
+  "production_touched": false
+}

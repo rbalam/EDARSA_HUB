@@ -124,3 +124,93 @@ def test_sucursal_mpro_resuelve_con_origen():
     r_qro = rc.resolver_sucursal_id(server_id, "0021")
     assert r_origen.resuelto is True and r_origen.canonical_id == 1
     assert r_qro.resuelto is True and r_qro.canonical_id == 2
+
+
+def test_product_resolver_normalizes_mpro_system_aliases(monkeypatch):
+    from core.inventarios import resolver_canonico as rc
+
+    rc.clear_resolver_caches()
+
+    monkeypatch.setattr(
+        rc,
+        "_server_id_de_unidad",
+        lambda unidad_codigo: "server-mpro",
+    )
+    monkeypatch.setattr(
+        rc,
+        "_tabla_existe",
+        lambda table_name: True,
+    )
+
+    calls = []
+
+    def fake_fetchall(sql, params=(), as_dict=False):
+        calls.append((sql, params))
+        if "CodigoFuente, ProductoID" in sql:
+            assert params[1] == "MPRO"
+            return [("P001", 123)]
+        if "SELECT TOP 1 ProductoID" in sql:
+            assert params[1] == "MPRO"
+            return [(123,)]
+        return []
+
+    monkeypatch.setattr(rc, "_fetchall", fake_fetchall)
+
+    for alias in ("MPRO", "ManagementPro", "ManagmentPro", "MANAGEMENT PRO"):
+        rc.clear_resolver_caches()
+        monkeypatch.setattr(
+            rc,
+            "_server_id_de_unidad",
+            lambda unidad_codigo: "server-mpro",
+        )
+        monkeypatch.setattr(
+            rc,
+            "_tabla_existe",
+            lambda table_name: True,
+        )
+        monkeypatch.setattr(rc, "_fetchall", fake_fetchall)
+
+        loaded = rc.precargar_productos_mapeo("130QRO", alias)
+        assert loaded == 1
+
+        result = rc.resolver_producto_id("130QRO", alias, "P001")
+        assert result.resuelto is True
+        assert result.canonical_id == 123
+
+
+def test_product_resolver_normalizes_softrestaurant_aliases(monkeypatch):
+    from core.inventarios import resolver_canonico as rc
+
+    rc.clear_resolver_caches()
+    monkeypatch.setattr(
+        rc,
+        "_server_id_de_unidad",
+        lambda unidad_codigo: "server-soft",
+    )
+    monkeypatch.setattr(
+        rc,
+        "_tabla_existe",
+        lambda table_name: True,
+    )
+
+    def fake_fetchall(sql, params=(), as_dict=False):
+        if "CodigoFuente, ProductoID" in sql:
+            assert params[1] == "SOFTRESTAURANT_PRO"
+            return [("A100001", 456)]
+        if "SELECT TOP 1 ProductoID" in sql:
+            assert params[1] == "SOFTRESTAURANT_PRO"
+            return [(456,)]
+        return []
+
+    monkeypatch.setattr(rc, "_fetchall", fake_fetchall)
+
+    loaded = rc.precargar_productos_mapeo("CIENFUEGOS", "SoftRestaurant")
+    assert loaded == 1
+
+    result = rc.resolver_producto_id(
+        "CIENFUEGOS",
+        "SOFTRESTAURANT",
+        "A100001",
+    )
+    assert result.resuelto is True
+    assert result.canonical_id == 456

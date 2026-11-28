@@ -1,0 +1,164 @@
+name: Soft Missing Movement Insumos Source Audit
+
+on:
+  push:
+    branches:
+      - Edarsahub_Desarrollo
+    paths:
+      - ".github/workflows/soft-missing-movement-insumos-source-audit.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      EDARSAHUB_SQL_HOST: "54.39.104.176"
+      EDARSAHUB_SQL_PORT: "1433"
+      EDARSAHUB_SQL_DATABASE: "EDARSAHUB"
+      EDARSAHUB_SQL_USER: "HRLectura"
+      EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+      SERVER_SECRET_KEY: ${{ secrets.SERVER_SECRET_KEY }}
+
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: python -m pip install --quiet pymssql cryptography
+
+      - name: Check unresolved codes in current SoftRestaurant insumos
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          import pymssql
+          from cryptography.fernet import Fernet
+
+          targets = {
+              "130MID": [
+                  "005239","005240","008124","046014","005242","008125",
+                  "020161","001083","005247","008126","020162","013068",
+                  "018067","020160","027012","027013","A02013","A066025",
+                  "001084","005236","005241","008127","008128","013081",
+                  "013084",
+              ],
+              "CIENFUEGOS": [
+                  "A500307","A500309","A500310","A500311","A500312",
+              ],
+              "ESTELAR": ["B160011","A100220","B131068"],
+          }
+
+          hub=pymssql.connect(
+              server=os.environ["EDARSAHUB_SQL_HOST"],
+              port=int(os.environ["EDARSAHUB_SQL_PORT"]),
+              database=os.environ["EDARSAHUB_SQL_DATABASE"],
+              user=os.environ["EDARSAHUB_SQL_USER"],
+              password=os.environ["EDARSAHUB_SQL_PASSWORD"],
+              login_timeout=15, timeout=30, as_dict=True,
+          )
+          hc=hub.cursor(as_dict=True)
+          hc.execute("""
+              SELECT
+                  CONVERT(varchar(36),s.id) server_id,
+                  s.host, ISNULL(s.port,1433) port, s.database_name,
+                  s.username, s.password_encrypted,
+                  u.codigo unidad_codigo
+              FROM dbo.Servidores_Conexiones s
+              INNER JOIN dbo.Unidades_Negocio u
+                  ON u.server_id=CAST(s.id AS nvarchar(36))
+                 AND ISNULL(u.activo,0)=1
+              WHERE UPPER(u.codigo) IN ('130MID','CIENFUEGOS','ESTELAR')
+                AND ISNULL(s.activo,0)=1
+          """)
+          servers={str(r["unidad_codigo"]).upper():r for r in hc.fetchall() or []}
+          hc.close(); hub.close()
+
+          fernet=Fernet(os.environ["SERVER_SECRET_KEY"].encode())
+
+          def decrypt(v):
+              v=str(v or "")
+              return fernet.decrypt(v[7:].encode()).decode() if v.startswith("enc:v1:") else v
+
+          def endpoint(r):
+              host=str(r.get("host") or "").strip()
+              port=int(r.get("port") or 1433)
+              if "\\" in host:
+                  host=host.split("\\",1)[0].strip()
+              if "," in host:
+                  hp,pp=host.rsplit(",",1)
+                  host=hp.strip()
+                  try: port=int(pp.strip())
+                  except ValueError: pass
+              return host,port
+
+          total_found=0
+          total_missing=0
+          for unit,codes in targets.items():
+              s=servers.get(unit)
+              if not s:
+                  raise SystemExit(f"SERVER_NOT_FOUND={unit}")
+              host,port=endpoint(s)
+              conn=pymssql.connect(
+                  server=host, port=port,
+                  database=str(s["database_name"]),
+                  user=str(s["username"]),
+                  password=decrypt(s["password_encrypted"]),
+                  login_timeout=15, timeout=60, as_dict=True,
+              )
+              cur=conn.cursor(as_dict=True)
+              placeholders=",".join(["%s"]*len(codes))
+              cur.execute(f"""
+                  SELECT
+                      UPPER(LTRIM(RTRIM(i.idinsumo))) idinsumo,
+                      i.descripcion,
+                      i.unidad,
+                      i.elaborado,
+                      i.rendimientoelaborado,
+                      i.idgruposi,
+                      g.descripcion grupo_nombre,
+                      id.costo,
+                      id.costopromedio,
+                      id.costoestandar,
+                      id.costoconimpuestos
+                  FROM insumos i
+                  LEFT JOIN insumosdetalle id ON id.idinsumo=i.idinsumo
+                  LEFT JOIN gruposi g ON g.idgruposi=i.idgruposi
+                  WHERE UPPER(LTRIM(RTRIM(i.idinsumo))) IN ({placeholders})
+                  ORDER BY i.idinsumo
+              """, tuple(codes))
+              rows=cur.fetchall() or []
+              cur.close(); conn.close()
+
+              by={str(r["idinsumo"]).upper():r for r in rows}
+              payload=[]
+              for code in codes:
+                  r=by.get(code.upper())
+                  if r:
+                      total_found+=1
+                      payload.append({
+                          "codigo":code,
+                          "status":"CURRENT_INSUMO",
+                          "descripcion":r.get("descripcion"),
+                          "unidad":r.get("unidad"),
+                          "elaborado":bool(r.get("elaborado")),
+                          "grupo":r.get("grupo_nombre"),
+                          "costo":float(r.get("costo") or 0),
+                      })
+                  else:
+                      total_missing+=1
+                      payload.append({
+                          "codigo":code,
+                          "status":"NOT_IN_CURRENT_INSUMOS",
+                      })
+              print(f"SOFT_SOURCE_INSUMOS unit={unit} "+json.dumps(payload,ensure_ascii=False))
+
+          print("SOFT_SOURCE_INSUMOS_TOTALS="+json.dumps({
+              "found":total_found,
+              "missing":total_missing,
+          }))
+          PY

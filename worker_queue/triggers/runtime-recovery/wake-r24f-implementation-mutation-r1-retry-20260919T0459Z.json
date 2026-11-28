@@ -1,0 +1,8 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "existing_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-IMPLEMENTATION-MUTATION-R1-20260919",
+  "reason": "retry intake for R24F implementation mutation R1 after already_healthy wake",
+  "production_allowed": false,
+  "requested_by": "chatgpt",
+  "created_at_utc": "2026-09-19T04:59:00Z"
+}

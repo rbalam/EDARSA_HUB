@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Recover canonical Universal Worker runtime convergence for existing MEJORA-TABEJE-VENTAS-DIA-PARIDAD-COMERCIAL-R17-CARLOS-20261001T2344Z after terminal GIT_DIVERGENCE_BLOCKED with NEEDS_FAST_FORWARD_REFRESH. Fast-forward only to current Edarsahub_Desarrollo, preserve local work, fail closed on wrong branch, dirty state, non-fast-forward or unsafe local state, then consume the existing R17 without creating a new functional job. Do not touch Production.",
+  "existing_job_id": "MEJORA-TABEJE-VENTAS-DIA-PARIDAD-COMERCIAL-R17-CARLOS-20261001T2344Z",
+  "production_touched": false
+}

@@ -1,0 +1,15 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "triggered_at_utc": "2026-09-19T07:43:00Z",
+  "source": "chatgpt",
+  "project": "13. Produccion",
+  "reason": "Ejecutar mutacion quirurgica Fase 6 Tablajerias R1: idempotencia, MERMA canonica y poliza balanceada dentro del scope certificado.",
+  "existing_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-FASE6-IDEMPOTENCIA-BALANCE-MUTATION-R1-20260919",
+  "guards": {
+    "production_allowed": false,
+    "sql_allowed": false,
+    "touch_scheduler_netpay_allowed": false,
+    "touch_rbac_or_menu_allowed": false,
+    "touch_menu_layout_allowed": false
+  }
+}

@@ -478,7 +478,10 @@ def get_pos_config_for_unidad(unidad_row: Optional[Dict]) -> Optional[Dict]:
     if not server_id:
         return None
     from modules.comercial_v2.sync_comercial_edarsahub import get_server_connection_config
-    cfg = get_server_connection_config(server_id)
+    cfg = get_server_connection_config(
+        server_id,
+        unidad_negocio_pk=unidad_row.get("unidad_pk"),
+    )
     if not cfg:
         return None
     return {
