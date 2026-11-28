@@ -6,13 +6,19 @@ def test_cajas_profile_metadata_only():
     p = sem.sql_readonly_profiles()["CAJAS_INCIDENCIAS_SCHEMA_METADATA"]
     assert p.bounded_contexts == ("COMERCIAL_POS",)
     assert p.source == "EDARSAHUB" and p.login_policy == "HRLectura" and p.read_only
-    assert len(p.queries) == 5
+    assert len(p.queries) == 9
+    discovery = {q["name"] for q in p.queries if q["name"].startswith("cajas_expedientes_")}
+    assert discovery == {"cajas_expedientes_tables", "cajas_expedientes_columns", "cajas_expedientes_indexes", "cajas_expedientes_relationships"}
     for q in p.queries:
         assert q["sql"].startswith("SELECT ")
+        assert "FROM dbo." not in q["sql"]
         if q["name"] != "cajas_identity":
             assert "FROM sys.tables" in q["sql"]
-            for name in ["Finanzas_CortesCaja","Finanzas_CuadresZ","Usuario_Autorizaciones","Sistema_Tareas","Operativo_Notificaciones_Queue"]:
-                assert name in q["sql"]
+            if q["name"].startswith("cajas_expedientes_"):
+                assert "t.name LIKE" in q["sql"]
+            else:
+                for name in ["Finanzas_CortesCaja","Finanzas_CuadresZ","Usuario_Autorizaciones","Sistema_Tareas","Operativo_Notificaciones_Queue"]:
+                    assert name in q["sql"]
 
 
 def test_cajas_profile_rejects_other_domain_and_arbitrary_sql():
