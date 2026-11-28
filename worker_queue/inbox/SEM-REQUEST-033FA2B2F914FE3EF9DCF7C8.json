@@ -1,0 +1,84 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "old_text": "from .routes import router\n\n__all__ = [\"router\"]",
+      "path": "backend/modules/worker_ingress/__init__.py",
+      "replacement": "__all__ = [\"router\"]\n\n\ndef __getattr__(name):\n    if name == \"router\":\n        from .routes import router\n        return router\n    raise AttributeError(name)",
+      "source_sha256": "ec8bacd15a69269cf9b086aa887d923e15573503efb4bb3a3a9ccd545ebbe4a4",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "def _load_registered_capabilities() -> tuple[tuple[str, ...], str | None]:\n    \"\"\"Load registered semantic capabilities fail-closed without requiring SQL bootstrap.\"\"\"\n    import importlib.util\n    import sys\n\n    try:\n        from modules.worker_ingress.semantic_capabilities import (\n            registered_capabilities as _reg_caps,\n        )\n\n        caps = tuple(sorted(str(c).strip().upper() for c in _reg_caps() if str(c).strip()))\n        if caps:\n            return caps, None\n        return (), \"CAPABILITY_CATALOG_EMPTY\"\n    except Exception as primary_exc:\n        cap_file = ROOT / \"backend\" / \"modules\" / \"worker_ingress\" / \"semantic_capabilities.py\"\n        if not cap_file.is_file():\n            return (), f\"CAPABILITY_CATALOG_MISSING:{type(primary_exc).__name__}\"\n        try:\n            spec = importlib.util.spec_from_file_location(\n                \"_edarsahub_standalone_semantic_capabilities\",\n                cap_file,\n            )\n            if spec is None or spec.loader is None:\n                return (), \"CAPABILITY_CATALOG_SPEC_INVALID\"\n            mod = importlib.util.module_from_spec(spec)\n            sys.modules[spec.name] = mod\n            spec.loader.exec_module(mod)\n            caps = tuple(\n                sorted(\n                    str(c).strip().upper()\n                    for c in mod.registered_capabilities()\n                    if str(c).strip()\n                )\n            )\n            if not caps:\n                return (), \"CAPABILITY_CATALOG_EMPTY\"\n            return caps, None\n        except Exception as fallback_exc:\n            return (), f\"CAPABILITY_CATALOG_LOAD_FAILED:{type(fallback_exc).__name__}\"",
+      "path": "tools/mirror_sync/worker_runtime_fingerprint.py",
+      "replacement": "def load_semantic_capability_catalog_module():\n    \"\"\"Load the canonical registry for metadata inspection, without HTTP bootstrap.\"\"\"\n    import importlib.util\n    import sys\n\n    try:\n        from modules.worker_ingress import semantic_capabilities\n        return semantic_capabilities\n    except ModuleNotFoundError:\n        cap_file = ROOT / \"backend\" / \"modules\" / \"worker_ingress\" / \"semantic_capabilities.py\"\n        if not cap_file.is_file():\n            raise RuntimeFingerprintError(\"CAPABILITY_CATALOG_MISSING\")\n        spec = importlib.util.spec_from_file_location(\n            \"_edarsahub_standalone_semantic_capabilities\", cap_file,\n        )\n        if spec is None or spec.loader is None:\n            raise RuntimeFingerprintError(\"CAPABILITY_CATALOG_SPEC_INVALID\")\n        mod = importlib.util.module_from_spec(spec)\n        previous = sys.modules.get(spec.name)\n        sys.modules[spec.name] = mod\n        try:\n            spec.loader.exec_module(mod)\n        except Exception:\n            if previous is None:\n                sys.modules.pop(spec.name, None)\n            else:\n                sys.modules[spec.name] = previous\n            raise\n        return mod\n\n\ndef _load_registered_capabilities() -> tuple[tuple[str, ...], str | None]:\n    \"\"\"Load registered semantic capabilities fail-closed without requiring SQL bootstrap.\"\"\"\n    try:\n        mod = load_semantic_capability_catalog_module()\n        caps = tuple(sorted(str(c).strip().upper() for c in mod.registered_capabilities() if str(c).strip()))\n        return (caps, None) if caps else ((), \"CAPABILITY_CATALOG_EMPTY\")\n    except Exception as exc:\n        return (), f\"CAPABILITY_CATALOG_LOAD_FAILED:{type(exc).__name__}\"",
+      "source_sha256": "66dad764682192400b9c3110e66386d1ec301814829ffffd92edbdb4489d54aa",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "        from modules.worker_ingress import semantic_capabilities as sem_caps\n\n        catalog_entries = list(sem_caps.capability_catalog())",
+      "path": "tools/mirror_sync/worker_cross_domain_handoff.py",
+      "replacement": "        try:\n            from tools.mirror_sync.worker_runtime_fingerprint import load_semantic_capability_catalog_module\n        except ModuleNotFoundError:\n            from worker_runtime_fingerprint import load_semantic_capability_catalog_module\n        sem_caps = load_semantic_capability_catalog_module()\n        catalog_entries = list(sem_caps.capability_catalog())\n        if not catalog_entries:\n            raise RuntimeError(\"CAPABILITY_CATALOG_EMPTY\")",
+      "source_sha256": "153010908ec48415d4841b3851e055ffc3926518db3c158d5e406f748614017b",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "path": "backend/tests/test_worker_runtime_convergence_gate_b1.py",
+      "replacement": "\n\n\ndef test_aap04_isolated_registry_and_lazy_http_import():\n    import subprocess\n    import sys\n    from pathlib import Path\n\n    root = Path(__file__).resolve().parents[2]\n    code = \"\"\"\nimport sys\nfrom pathlib import Path\nroot = Path.cwd()\nsys.path.insert(0, str(root))\nfrom tools.mirror_sync import worker_runtime_fingerprint as fp\nfp.ROOT = root\nsys.path[:] = [p for p in sys.path if p and Path(p).resolve() != root / 'backend']\nfrom tools.mirror_sync import worker_cross_domain_handoff as handoffs\nmod = fp.load_semantic_capability_catalog_module()\nassert 'READ_ONLY_CANARY' in mod.registered_capabilities()\nassert mod.capability_catalog()\nassert 'modules.worker_ingress.routes' not in sys.modules\nresult = handoffs.resolve_compatible_capabilities(target_domain='WORKER_CONTROL_PLANE', handoff_mode='READ_ONLY', requested_capability='READ_ONLY_CANARY')\nassert result['resolution_source'] != 'CAPABILITY_REGISTRY_UNAVAILABLE'\nsys.path.insert(0, str(root / 'backend'))\nfrom modules.worker_ingress import semantic_capabilities\nassert 'modules.worker_ingress.routes' not in sys.modules\nassert set(semantic_capabilities.registered_capabilities()) == set(mod.registered_capabilities())\n\"\"\"\n    proc = subprocess.run([sys.executable, \"-I\", \"-c\", code], cwd=root, capture_output=True, text=True, timeout=45)\n    assert proc.returncode == 0, proc.stderr\n\n\ndef test_aap04_handoff_catalog_failure_is_closed(monkeypatch):\n    from tools.mirror_sync import worker_cross_domain_handoff as handoffs\n\n    def unavailable():\n        raise ModuleNotFoundError(\"test catalog unavailable\")\n\n    monkeypatch.setattr(fp, \"load_semantic_capability_catalog_module\", unavailable)\n    result = handoffs.resolve_compatible_capabilities(target_domain=\"WORKER_CONTROL_PLANE\")\n    assert result[\"compatible\"] is False\n    assert result[\"executable\"] is False\n    assert result[\"exception_code\"] == \"NO_COMPATIBLE_CAPABILITY_REGISTRY_UNAVAILABLE\"\n",
+      "source_sha256": "a1a1cb77548dac6a66febd899eb38e6052a97bb237945d17793bc3fac29be326",
+      "type": "append_once"
+    }
+  ],
+  "authorization_ref": "GO-WK70-AAP-04-CAPABILITY-REGISTRY-R1",
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/worker_ingress/__init__.py",
+        "tools/mirror_sync/worker_runtime_fingerprint.py",
+        "tools/mirror_sync/worker_cross_domain_handoff.py",
+        "backend/tests/test_worker_runtime_convergence_gate_b1.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_runtime_convergence_gate_b1.py",
+        "backend/tests/test_worker_universal_multichat_handoff_p2.py",
+        "backend/tests/test_worker_autonomous_runtime_recovery_g1.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-033FA2B2F914FE3EF9DCF7C8",
+  "mode": "MUTATION",
+  "objective": "AAP-04 desacoplar catálogo de HTTP, compartir cargador de consulta canónico y preservar ejecución autenticada.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
