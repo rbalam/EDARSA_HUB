@@ -1,0 +1,50 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 25,
+        "paths": [
+          "backend/modules/integrations_center/repository.py",
+          "backend/modules/api_connections/assignment_repository.py",
+          "backend/modules/integrations_runtime/",
+          "backend/core/connections/"
+        ],
+        "search_terms": [
+          "Sistema_Capacidades",
+          "Sistema_IdentificadoresExternos",
+          "Sistema_EmpresasServidores",
+          "ServidorID",
+          "endpoint",
+          "protocol"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-71E18E69777D3F2F5B91D37D",
+  "mode": "READ_ONLY",
+  "objective": "[HANDOFF HO-COMUNICACIONES-CONEXIONESCOMU-F975DF03659AAF70 COMUNICACIONES_DNS_REMOTE->CONEXIONES_COMUNICACIONES] Gate 2A.4: solicitar al propietario del catálogo universal determinar si las relaciones existentes de capacidades, identificadores externos y asignaciones permiten representar varios endpoints/protocolos por servidor sin alterar identidad ni habilitar sincronización SQL indebida. Reutilizar esquema ya certificado; no repetir auditoría de metadatos ni implementar migraciones.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "CONEXIONES_COMUNICACIONES",
+    "conflict_domains": [
+      "CONEXIONES_COMUNICACIONES"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
