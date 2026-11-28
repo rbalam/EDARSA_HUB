@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "6c1a6a7f683006200f5dbe6f747854c5a56fac95",
-  "generated_at_utc": "2026-11-28T08:29:48Z",
+  "generated_at_utc": "2026-11-28T08:31:10Z",
   "history": {
     "done_total_local": 2430,
     "pending_total_local": 0,
@@ -16,43 +16,43 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 49,
+      "age_seconds": 132,
       "job_id": "SEM-REQUEST-033FA2B2F914FE3EF9DCF7C8",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3039,
+      "age_seconds": 3122,
       "job_id": "SEM-REQUEST-7ED87E560B0E0EF4ABB40540",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 228,
+      "age_seconds": 311,
       "job_id": "SEM-REQUEST-866E690AD6095E8F9665CF09",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 712,
+      "age_seconds": 795,
       "job_id": "SEM-REQUEST-8FFA3DE58A513136C6EE599C",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1539,
+      "age_seconds": 1622,
       "job_id": "SEM-REQUEST-A470B4B03D6C262497B445F7",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 215,
+      "age_seconds": 298,
       "job_id": "SEM-REQUEST-F8FF23FABD6494D785CA39C2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2934,
+      "age_seconds": 3017,
       "job_id": "SEM-WORKER_CONTROL_PLANE-WORKER_RESULT_DETAIL_READ-CCB547F5DD6142F828B7",
       "reason": null,
       "state": "RESULT_READY"
@@ -72,8 +72,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-28T08:29:39Z",
-    "last_receive_utc": "2026-11-28T08:29:34Z",
+    "last_cycle_utc": "2026-11-28T08:30:55Z",
+    "last_receive_utc": "2026-11-28T08:31:08Z",
     "last_terminal_utc": "2026-11-28T08:28:58Z",
     "pid": "2924057",
     "runtime_fingerprint": {
