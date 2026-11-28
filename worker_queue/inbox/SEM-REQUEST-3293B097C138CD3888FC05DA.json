@@ -1,0 +1,52 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 30,
+        "paths": [
+          "backend/modules/integrations_center/",
+          "backend/modules/api_connections/",
+          "frontend/src/pages/Servidores.js",
+          "backend/tests/test_integrations_center_gate5b.py",
+          "backend/tests/test_servidores_api_factory_ui_contract.py"
+        ],
+        "search_terms": [
+          "import",
+          "host",
+          "port",
+          "tipo_conexion",
+          "server_registry",
+          "permission",
+          "rdp"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-3293B097C138CD3888FC05DA",
+  "mode": "READ_ONLY",
+  "objective": "Gate 2A READ_ONLY: identificar puntos exactos de extensión del catálogo de servidores e importación de metadatos RDP, validación de host y puerto, navegación y pruebas herméticas; preparar implementación sin acceso remoto, secretos ni cambios. Reutilizar Master Design certificado y no repetir Gate 0 ni Gate 1A.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMUNICACIONES_DNS_REMOTE",
+    "conflict_domains": [
+      "COMUNICACIONES_DNS_REMOTE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
