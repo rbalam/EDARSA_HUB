@@ -335,6 +335,28 @@ def test_legitimate_e2e_consent_bridge_oauth_mcp_and_6_tools_preserved(tmp_path,
     )
     assert reval["authorized"] is True
 
+    def revalidate_at(sha):
+        return lr.revalidate_gate_authorization_for_mutation(
+            "GO-DEMO-BRIDGE-G1-20261127", domain="COMERCIAL_POS",
+            requested_paths=["backend/modules/demo_target.py"],
+            requested_operations=["replace_text"], expected_base_head_sha=sha,
+            state_root=qroot, repo_root=repo,
+        )
+
+    def commit_change(rel, content):
+        (repo / rel).write_text(content, encoding="utf-8")
+        subprocess.run(["git", "-C", str(repo), "add", rel], check=True)
+        subprocess.run(["git", "-C", str(repo), "commit", "-m", "scope regression"], check=True, capture_output=True)
+        return subprocess.check_output(["git", "-C", str(repo), "rev-parse", "HEAD"], text=True).strip()
+
+    unrelated_head = commit_change("backend/modules/crm/demo_crm_target.py", "CRM_FLAG = True\n")
+    assert revalidate_at(unrelated_head)["authorized"] is True
+    changed_head = commit_change("backend/modules/demo_target.py", "VALUE = 999\n")
+    denied = revalidate_at(changed_head)
+    assert denied["authorized"] is False
+    assert denied["reason"] == "AUTHORIZATION_SCOPE_CHANGED_SINCE_APPROVAL"
+    assert revalidate_at("0" * 40)["authorized"] is False
+
     rev = wis.submit_objective(
         {
             "objective": "Revocar autorizacion DEMO-BRIDGE-G1 al cierre.",

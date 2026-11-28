@@ -2917,6 +2917,7 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                         domain=job_domain,
                         requested_paths=requested_paths,
                         requested_operations=job_ops,
+                        expected_base_head_sha=execution_base_sha,
                         state_root=STATE,
                         repo_root=ROOT,
                     )
@@ -3015,6 +3016,7 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                         domain=job_domain,
                         requested_paths=sorted(allowed_files),
                         requested_operations=job_ops,
+                        expected_base_head_sha=execution_base_sha,
                         state_root=STATE,
                         repo_root=ROOT,
                     )

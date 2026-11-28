@@ -4435,14 +4435,52 @@ def revalidate_gate_authorization_for_mutation(
         }
 
     auth_head = str(doc.get("base_head_sha") or "").strip().lower()
-    if expected_base_head_sha and auth_head and str(expected_base_head_sha).strip().lower() != auth_head:
-        return {
-            "authorized": False,
-            "reason": "AUTHORIZATION_BASE_HEAD_MISMATCH",
-            "gate_id": doc.get("gate_id"),
-            "authorization_id": doc.get("authorization_id"),
-            "production_touched": False,
-        }
+    if expected_base_head_sha:
+        execution_head = str(expected_base_head_sha).strip().lower()
+        def deny_base(reason: str) -> dict[str, Any]:
+            return {
+                "authorized": False,
+                "reason": reason,
+                "gate_id": doc.get("gate_id"),
+                "authorization_id": doc.get("authorization_id"),
+                "production_touched": False,
+            }
+        if not re.fullmatch(r"[0-9a-f]{40}", auth_head) or not re.fullmatch(r"[0-9a-f]{40}", execution_head) or not allowed_paths:
+            return deny_base("AUTHORIZATION_BASE_HEAD_MISMATCH")
+        try:
+            changed = _git_diff_names_between(rroot, auth_head, execution_head)
+            if changed is None:
+                return deny_base("AUTHORIZATION_BASE_HEAD_MISMATCH")
+            if changed & allowed_paths:
+                return deny_base("AUTHORIZATION_SCOPE_CHANGED_SINCE_APPROVAL")
+            bound = doc.get("source_sha256")
+            if not isinstance(bound, Mapping):
+                return deny_base("AUTHORIZATION_SOURCE_SHA256_REQUIRED")
+            # Verify committed originals, never the job's modified worktree.
+            for rel in sorted(allowed_paths):
+                tree = subprocess.run(
+                    ["git", "-C", str(rroot), "ls-tree", "-z", execution_head, "--", rel],
+                    capture_output=True, check=False, timeout=15,
+                )
+                if tree.returncode != 0:
+                    return deny_base("AUTHORIZATION_HEAD_UNVERIFIABLE")
+                expected = bound.get(rel)
+                if not tree.stdout:
+                    if expected:
+                        return deny_base(f"AUTHORIZATION_SOURCE_FILE_MISSING:{rel}")
+                    continue
+                if not expected or not re.fullmatch(r"[0-9a-f]{64}", str(expected)):
+                    return deny_base(f"AUTHORIZATION_SOURCE_SHA256_REQUIRED:{rel}")
+                if not tree.stdout.startswith((b"100644 blob ", b"100755 blob ")):
+                    return deny_base(f"AUTHORIZATION_SOURCE_FILE_INVALID:{rel}")
+                blob = subprocess.run(
+                    ["git", "-C", str(rroot), "show", f"{execution_head}:{rel}"],
+                    capture_output=True, check=False, timeout=15,
+                )
+                if blob.returncode != 0 or hashlib.sha256(blob.stdout).hexdigest() != str(expected):
+                    return deny_base(f"AUTHORIZATION_SOURCE_SHA256_STALE:{rel}")
+        except (OSError, subprocess.SubprocessError):
+            return deny_base("AUTHORIZATION_HEAD_UNVERIFIABLE")
 
     if verify_live_sha:
         bound_shas = doc.get("source_sha256")
