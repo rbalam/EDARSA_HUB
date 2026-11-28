@@ -4190,9 +4190,16 @@ def preflight_supersede_cross_domain_handoff(
     if certified_domain != (owner if notice_only else source):
         raise HandoffSecurityError("HANDOFF_SUPERSEDE_SOURCE_DOMAIN_MISMATCH")
     if notice_only:
-        certified_request = _read_json_safe(qroot / "done" / f"{jid}.json") or {}
+        certified_envelope = _read_json_safe(qroot / "done" / f"{jid}.json") or {}
+        certified_job = certified_envelope.get("job") if isinstance(certified_envelope, Mapping) else None
+        if not isinstance(certified_job, Mapping):
+            raise HandoffSecurityError("HANDOFF_SUPERSEDE_NOTICE_CERTIFIED_GATE_MISMATCH")
+        certified_schedule = certified_job.get("scheduling")
         if (
-            _clean(certified_request.get("authorization_ref")) != evidence_auth
+            _clean(certified_job.get("job_id")) != jid
+            or _clean(certified_job.get("authorization_ref")) != evidence_auth
+            or not isinstance(certified_schedule, Mapping)
+            or _clean(certified_schedule.get("bounded_context")).upper() != owner
             or not evidence_auth.startswith(f"GO-{notice_gate}-")
             or not evidence_auth[len(f"GO-{notice_gate}-"):].isdigit()
             or len(evidence_auth[len(f"GO-{notice_gate}-"):]) != 8

@@ -895,9 +895,9 @@ def test_informational_notice_supersession_requires_exact_gate_binding(tmp_path,
     payload["files_changed"] = ["tools/mirror_sync/worker_cross_domain_handoff.py"]
     res_path.write_text(json.dumps(payload), encoding="utf-8")
     done_path = qroot / "done" / "SEM-CERT-NOTICE-TEST.json"
-    done = json.loads(done_path.read_text(encoding="utf-8"))
-    done["authorization_ref"] = cert_auth
-    done_path.write_text(json.dumps(done), encoding="utf-8")
+    original_done = json.loads(done_path.read_text(encoding="utf-8"))
+    certified_envelope = {"job": {**original_done, "authorization_ref": cert_auth}}
+    done_path.write_text(json.dumps(certified_envelope), encoding="utf-8")
     req = {
         "objective": "Retirar aviso de consentimiento historico informativo.",
         "bounded_context": "WORKER_CONTROL_PLANE", "mode": "MUTATION",
@@ -915,6 +915,18 @@ def test_informational_notice_supersession_requires_exact_gate_binding(tmp_path,
     }
     monkeypatch.setattr(handoff_mod, "_verify_authorization_ref",
                         lambda *args, **kwargs: {"verified": True})
+    for malformed, expected_error in (
+        ({**original_done, "authorization_ref": cert_auth}, "NOTICE_CERTIFIED_GATE_MISMATCH"),
+        ({"job": {**certified_envelope["job"], "job_id": "SEM-OTHER"}}, "NOTICE_CERTIFIED_GATE_MISMATCH"),
+        ({"job": {**certified_envelope["job"], "authorization_ref": "GO-OTHER-20261128"}}, "NOTICE_CERTIFIED_GATE_MISMATCH"),
+        ({"job": {**certified_envelope["job"], "scheduling": {"bounded_context": "FINANZAS"}}}, "SOURCE_DOMAIN_MISMATCH"),
+        ({"job": {**certified_envelope["job"], "scheduling": None}}, "SOURCE_DOMAIN_MISMATCH"),
+    ):
+        done_path.write_text(json.dumps(malformed), encoding="utf-8")
+        with pytest.raises(handoff_mod.HandoffSecurityError, match=expected_error):
+            handoff_mod.preflight_supersede_cross_domain_handoff(
+                req, current_user=actor, state_root=qroot)
+    done_path.write_text(json.dumps(certified_envelope), encoding="utf-8")
     assert handoff_mod.preflight_supersede_cross_domain_handoff(
         req, current_user=actor, state_root=qroot)["status"] == "PREFLIGHT_READY"
     assert handoff_mod.supersede_cross_domain_handoff(
