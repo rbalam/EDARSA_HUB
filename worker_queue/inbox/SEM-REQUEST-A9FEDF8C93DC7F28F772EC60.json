@@ -1,0 +1,65 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "old_text": "    try:\n        from modules.auth.repository import AuthRepository\n        from core.rbac_sql.service import RBACSQLService\n        from modules.worker_mcp.oauth_server import resolve_identity_scopes\n        from tools.mirror_sync.worker_requester_rbac import authorize_requester",
+      "path": "tools/mirror_sync/worker_cross_domain_handoff.py",
+      "replacement": "    try:\n        # The standalone control plane does not run the backend bootstrap.\n        # Reuse the canonical requester module before importing backend services.\n        import sys\n        repo_root = str(Path(__file__).resolve().parents[2])\n        if repo_root not in sys.path:\n            sys.path.insert(0, repo_root)\n        from tools.mirror_sync.worker_requester_rbac import authorize_requester\n        from modules.auth.repository import AuthRepository\n        from core.rbac_sql.service import RBACSQLService\n        from modules.worker_mcp.oauth_server import resolve_identity_scopes",
+      "source_sha256": "4bba75ea452dc6a5b1a489e547d32e538d17c3146cf343eafeaaf14726c7cad6",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "path": "backend/tests/test_worker_universal_multichat_handoff_p2.py",
+      "replacement": "\n\n\ndef test_p0b_standalone_rbac_bootstrap_and_denial():\n    import subprocess\n    import sys\n    from pathlib import Path\n\n    root = Path(__file__).resolve().parents[2]\n    code = \"\"\"\nimport sys\nfrom pathlib import Path\nfrom unittest.mock import patch\nroot = Path.cwd()\nsys.path.insert(0, str(root / 'tools' / 'mirror_sync'))\nimport worker_cross_domain_handoff as hm\nsys.path[:] = [p for p in sys.path if p and Path(p).resolve() not in {root, root / 'backend'}]\n# Intercept only the SQL lookup after the canonical imports succeed.\nimport builtins\noriginal_import = builtins.__import__\ndef guarded_import(name, *args, **kwargs):\n    result = original_import(name, *args, **kwargs)\n    if name == 'modules.auth.repository':\n        from unittest.mock import Mock\n        result.AuthRepository.get_user_by_email = Mock(return_value=None)\n    return result\nwith patch('builtins.__import__', side_effect=guarded_import):\n    try:\n        hm._resolve_canonical_sql_service_identity('test@example.invalid')\n    except hm.HandoffSecurityError as exc:\n        assert str(exc).endswith('USER_NOT_FOUND_OR_INACTIVE'), str(exc)\n    else:\n        raise AssertionError('Missing SQL identity must be denied')\nassert str(root / 'backend') in sys.path\n\"\"\"\n    proc = subprocess.run([sys.executable, \"-I\", \"-c\", code], cwd=root, capture_output=True, text=True, timeout=60)\n    assert proc.returncode == 0, proc.stderr\n",
+      "source_sha256": "f39e85b750601e8b3db80dcac36fbbb342ea6cb122ea4ec71adf3f84d7eb2943",
+      "type": "append_once"
+    }
+  ],
+  "authorization_ref": "GO-WK70-P0B-HANDOFF-RBAC-BOOTSTRAP-R1",
+  "checks": [
+    {
+      "paths": [
+        "tools/mirror_sync/worker_cross_domain_handoff.py",
+        "backend/tests/test_worker_universal_multichat_handoff_p2.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_universal_multichat_handoff_p2.py",
+        "backend/tests/test_worker_runtime_convergence_gate_b1.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-A9FEDF8C93DC7F28F772EC60",
+  "mode": "MUTATION",
+  "objective": "P0-B inicializar bootstrap RBAC existente antes de imports de identidad, conservar consultas SQL y fail-closed.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
