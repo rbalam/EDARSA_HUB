@@ -2084,6 +2084,20 @@ register_sql_readonly_profile(
 )
 
 
+register_sql_readonly_profile(
+    SqlReadonlyProfile(
+        profile_code="RH_INTEGRIDAD_DENUNCIAS_SCHEMA_METADATA",
+        description="Metadatos de estructuras canónicas para integridad laboral; sin datos personales ni filas de negocio.",
+        bounded_contexts=("RH",),
+        queries=(
+            {"name": "rh_integridad_tables", "sql": "SELECT s.name AS schema_name,t.name AS table_name FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE s.name='dbo' AND (t.name IN ('RH_Incidencias_Nomina','RH_Cat_Tipos_Incidencias','Usuario_Catalogo','Unidades_Negocio','Sistema_Empresas','Sistema_Sucursales','Sistema_Tareas','Operativo_Notificaciones_Queue') OR t.name LIKE '%Denuncia%' OR t.name LIKE '%Queja%' OR t.name LIKE '%Expedient%' OR t.name LIKE '%Investig%') ORDER BY t.name"},
+            {"name": "rh_integridad_columns", "sql": "SELECT t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS type_name,c.max_length,c.is_nullable FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE s.name='dbo' AND (t.name IN ('RH_Incidencias_Nomina','RH_Cat_Tipos_Incidencias','Usuario_Catalogo','Unidades_Negocio','Sistema_Empresas','Sistema_Sucursales','Sistema_Tareas','Operativo_Notificaciones_Queue') OR t.name LIKE '%Denuncia%' OR t.name LIKE '%Queja%' OR t.name LIKE '%Expedient%' OR t.name LIKE '%Investig%') ORDER BY t.name,c.column_id"},
+            {"name": "rh_integridad_relationships", "sql": "SELECT t.name AS table_name,fk.name AS foreign_key_name,c.name AS column_name,rt.name AS referenced_table,rc.name AS referenced_column,fk.is_disabled FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.foreign_keys fk ON fk.parent_object_id=t.object_id JOIN sys.foreign_key_columns fc ON fc.constraint_object_id=fk.object_id JOIN sys.columns c ON c.object_id=t.object_id AND c.column_id=fc.parent_column_id JOIN sys.tables rt ON rt.object_id=fc.referenced_object_id JOIN sys.columns rc ON rc.object_id=rt.object_id AND rc.column_id=fc.referenced_column_id WHERE s.name='dbo' AND (t.name IN ('RH_Incidencias_Nomina','RH_Cat_Tipos_Incidencias','Usuario_Catalogo','Unidades_Negocio','Sistema_Empresas','Sistema_Sucursales','Sistema_Tareas','Operativo_Notificaciones_Queue') OR t.name LIKE '%Denuncia%' OR t.name LIKE '%Queja%' OR t.name LIKE '%Expedient%' OR t.name LIKE '%Investig%') ORDER BY t.name,fk.name,fc.constraint_column_id"},
+        ),
+    )
+)
+
+
 def _sql_readonly_profile_audit_builder(request: Mapping[str, Any]) -> dict[str, Any]:
     context = _g3_context(request)
     c = _g3_constraints(request, {"profile_code"})
