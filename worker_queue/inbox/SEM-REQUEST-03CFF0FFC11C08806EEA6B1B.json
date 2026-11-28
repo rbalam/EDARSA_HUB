@@ -1,0 +1,51 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 65,
+        "paths": [
+          "backend/modules/",
+          "backend/tests/",
+          "backend/core/"
+        ],
+        "search_terms": [
+          "COA_Expedientes",
+          "COA_ExpedienteEventos",
+          "COA_ExpedienteReferencias",
+          "TipoOperacionCodigo",
+          "ExpedienteID",
+          "Referencias",
+          "require_explicit_permission",
+          "COA"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-03CFF0FFC11C08806EEA6B1B",
+  "mode": "READ_ONLY",
+  "objective": "Gate6 READ_ONLY enfocado en ownership del motor canónico COA_Expedientes / COA_ExpedienteEventos / COA_ExpedienteReferencias existente en SQL según Gate5 CERTIFIED. Localizar rutas, servicios, restricciones de estados/tipos, RBAC y manejo de referencias/evidencias; evaluar reutilización de expedientes para denuncias laborales sin exposición de identidad, sin compartir listados administrativos ni notificaciones abiertas, evitando nuevos motores paralelos. Solamente contratos de código, no leer denuncias reales, no SQL LIVE ni mutaciones ni Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "RH",
+    "conflict_domains": [
+      "RH"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
