@@ -1,0 +1,36 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "job_id": "SEM-REQUEST-316560481EE61D179059EDFE"
+      },
+      "type": "worker_result_detail_read"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-99BA63022D4F929C3FA34AAF",
+  "mode": "READ_ONLY",
+  "objective": "Extraer evidencia terminal saneada del fallo GIT_TESTS_FAILED de pytest del job SEM-REQUEST-316560481EE61D179059EDFE para corregir de forma acotada la prueba o contrato de handoff SUPERSEDED sin duplicar mutaciones, sin LIVE, sin Produccion",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
