@@ -1,0 +1,200 @@
+{
+  "base_sha": "f2b363c65cc0d4115b3f3680a7bba2208f732db1",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-28T09:03:23Z",
+  "execution_base_sha": "f2b363c65cc0d4115b3f3680a7bba2208f732db1",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-8AB12BBD26C0B346291BFD52",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-28T09:04:57Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "modules.finanzas.incidencias_caja_context",
+              "modules.finanzas.incidencias_caja_contracts",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "idempotencia_ambito",
+              "repositorioexpedientescaja"
+            ],
+            "path": "backend/modules/finanzas/incidencias_caja_application.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "DependenciasCrearCaja",
+              "PersistenciaCajaNoDisponible",
+              "RepositorioExpedientesCaja",
+              "crear_si_no_existe",
+              "preparar_expediente_v1",
+              "registrar_expediente_v1"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "hashlib",
+              "modules.finanzas.incidencias_caja_contracts",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "idempotencia_ambito"
+            ],
+            "path": "backend/modules/finanzas/incidencias_caja_context.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AlcanceCaja",
+              "CajasContextError",
+              "MotivoCajaCatalogo",
+              "RegistroCajaValidado",
+              "preparar_registro_caja"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "dataclasses",
+              "modules.finanzas.incidencias_caja_application",
+              "modules.finanzas.incidencias_caja_context",
+              "modules.finanzas.incidencias_caja_contracts",
+              "pytest"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "idempotencia_ambito"
+            ],
+            "path": "backend/tests/test_incidencias_caja_application.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "Nunca",
+              "RepositorioPrueba",
+              "SinConfirmacion",
+              "__init__",
+              "crear_si_no_existe",
+              "fixtures",
+              "test_delega_clave_al_repositorio_transaccional_sin_generar_folio_local",
+              "test_no_acepta_repositorio_que_devuelve_folio_vacio",
+              "test_no_llama_repositorio_si_rls_rechaza",
+              "test_no_simula_exito_si_sql_falta",
+              "test_preparar_expediente_no_persiste"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "modules.finanzas.incidencias_caja_context",
+              "modules.finanzas.incidencias_caja_contracts",
+              "pytest"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "idempotencia_ambito"
+            ],
+            "path": "backend/tests/test_incidencias_caja_context.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_context",
+              "_motivo",
+              "_preparar",
+              "_solicitud",
+              "test_catalogo_especifico_prevalece_sobre_global",
+              "test_duplicidad_equivalencia_ambigua_bloquea",
+              "test_idempotencia_estable_y_aislada_por_usuario_y_contexto",
+              "test_identidad_invalida_rechazada",
+              "test_motivo_de_otro_origen_no_se_puede_utilizar",
+              "test_motivo_inactivo_rechazado",
+              "test_registro_validado_preserva_equivalencia_y_solicitud",
+              "test_sucursal_ajena_se_rechaza_aunque_empresa_y_unidad_coincidan"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "dataclasses",
+              "modules.finanzas.incidencias_caja_access",
+              "modules.finanzas.incidencias_caja_context",
+              "modules.finanzas.incidencias_caja_contracts",
+              "modules.finanzas.incidencias_caja_orchestration",
+              "pytest",
+              "unittest.mock"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "idempotencia_ambito"
+            ],
+            "path": "backend/tests/test_incidencias_caja_orchestration.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "catalogo",
+              "datos",
+              "ejecutar",
+              "test_catalogo_de_empresa_ajena_rechazado",
+              "test_catalogo_error_falla_cerrado",
+              "test_catalogo_vacio_falla_cerrado",
+              "test_orquestacion_prepara_sin_guardar",
+              "test_rango_sucursal_no_autorizado",
+              "test_rbac_denegado_no_consulta_catalogos"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 5,
+          "scanned_files": 1291,
+          "skipped_sensitive": 429
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-28T09:03:22Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
