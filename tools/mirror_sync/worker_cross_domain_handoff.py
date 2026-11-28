@@ -4117,8 +4117,21 @@ def preflight_supersede_cross_domain_handoff(
     source_id = _validate_optional_token(c.get("expected_source_job_id"), field_name="expected_source_job_id", job_id_style=True)
     auth = _validate_optional_token(c.get("authorization_ref"), field_name="authorization_ref", job_id_style=False)
     reason = _clean(c.get("reason"))
-    if not all((hid, jid, source_id, auth)):
+    notice_only = c.get("notification_only") is True
+    if "notification_only" in c and type(c["notification_only"]) is not bool:
+        raise HandoffSecurityError("HANDOFF_SUPERSEDE_NOTICE_FLAG_INVALID")
+    notice_key = _clean(c.get("expected_notice_request_key"))
+    notice_gate = _clean(c.get("expected_notice_gate_id"))
+    evidence_auth = _clean(c.get("certified_job_authorization_ref"))
+    if not all((hid, jid, auth)) or (not notice_only and not source_id):
         raise HandoffSecurityError("HANDOFF_SUPERSEDE_PROOFS_REQUIRED")
+    if notice_only and not all((notice_key, notice_gate, evidence_auth)):
+        raise HandoffSecurityError("HANDOFF_SUPERSEDE_NOTICE_PROOFS_REQUIRED")
+    if not notice_only and any(k in c for k in (
+        "expected_notice_request_key", "expected_notice_gate_id",
+        "certified_job_authorization_ref",
+    )):
+        raise HandoffSecurityError("HANDOFF_SUPERSEDE_NOTICE_FIELDS_FORBIDDEN")
     if not 12 <= len(reason) <= 500:
         raise HandoffError("HANDOFF_SUPERSEDE_REASON_INVALID")
     handoff = load_handoff(hid, state_root=qroot)
@@ -4130,7 +4143,25 @@ def preflight_supersede_cross_domain_handoff(
     owner = _clean(handoff.get("target_domain")).upper()
     if _clean(request.get("bounded_context")).upper() != owner:
         raise HandoffSecurityError("HANDOFF_SUPERSEDE_OWNER_DOMAIN_MISMATCH")
-    if _clean(handoff.get("source_job_id")) != source_id:
+    if notice_only:
+        requested = handoff.get("requested_constraints")
+        if not isinstance(requested, Mapping):
+            raise HandoffSecurityError("HANDOFF_SUPERSEDE_NOTICE_CONSTRAINTS_MISSING")
+        if (
+            source_id is not None
+            or _clean(handoff.get("source_job_id"))
+            or _clean(handoff.get("incident_id"))
+            or _clean(handoff.get("resolution_job_id"))
+            or _clean(handoff.get("handoff_mode")).upper() != "READ_ONLY"
+            or handoff.get("auto_dispatch") is not False
+            or handoff.get("has_executor") is not False
+            or _clean(handoff.get("requested_capability")).upper() != "GATE_AUTHORIZATION_LIFECYCLE"
+            or _clean(requested.get("action")).upper() not in {"CONSENT_STATUS", "INSPECT"}
+            or _clean(requested.get("gate_id")) != notice_gate
+            or _clean(handoff.get("request_key")) != notice_key
+        ):
+            raise HandoffSecurityError("HANDOFF_SUPERSEDE_NOT_INFORMATIONAL_NOTICE")
+    elif _clean(handoff.get("source_job_id")) != source_id:
         raise HandoffSecurityError("HANDOFF_SUPERSEDE_SOURCE_JOB_MISMATCH")
     try:
         actor = lifecycle_rec._validate_authorized_actor_identity(current_user)
@@ -4150,13 +4181,30 @@ def preflight_supersede_cross_domain_handoff(
     if evidence is None or evidence.get("status") != "INTEGRATED" or evidence.get("certification") != "CERTIFIED":
         raise HandoffSecurityError("HANDOFF_SUPERSEDE_SOURCE_NOT_CERTIFIED")
     raw = _read_json_safe(qroot / "results" / f"{jid}.json") or {}
-    if _extract_result_bounded_context(raw, jid, qroot) != source:
+    certified_domain = _extract_result_bounded_context(raw, jid, qroot)
+    if certified_domain != (owner if notice_only else source):
         raise HandoffSecurityError("HANDOFF_SUPERSEDE_SOURCE_DOMAIN_MISMATCH")
+    if notice_only:
+        certified_request = _read_json_safe(qroot / "done" / f"{jid}.json") or {}
+        if (
+            _clean(certified_request.get("authorization_ref")) != evidence_auth
+            or not evidence_auth.startswith(f"GO-{notice_gate}-")
+            or not evidence_auth[len(f"GO-{notice_gate}-"):].isdigit()
+            or len(evidence_auth[len(f"GO-{notice_gate}-"):]) != 8
+        ):
+            raise HandoffSecurityError("HANDOFF_SUPERSEDE_NOTICE_CERTIFIED_GATE_MISMATCH")
     state = _clean(handoff.get("lifecycle_state")).upper()
     if state == "SUPERSEDED":
         if (_clean(handoff.get("superseded_by_job_id")) != jid
             or _clean(handoff.get("supersession_reason")) != reason
-            or _clean(handoff.get("supersession_authorization_ref")) != auth):
+            or _clean(handoff.get("supersession_authorization_ref")) != auth
+            or (handoff.get("informational_notice_closed") is True) != notice_only
+            or (notice_only and (
+                _clean(handoff.get("supersession_notice_gate_id")) != notice_gate
+                or _clean(handoff.get("supersession_notice_request_key")) != notice_key
+                or _clean(handoff.get("supersession_evidence_authorization_ref")) != evidence_auth
+            ))
+        ):
             raise HandoffConflictError("HANDOFF_SUPERSEDE_IDEMPOTENCY_CONFLICT")
         return {"status": "EXISTS", "handoff_id": hid, "superseded_by_job_id": jid,
                 "duplicate_prevented": True, "production_touched": False}
@@ -4165,7 +4213,11 @@ def preflight_supersede_cross_domain_handoff(
         raise HandoffConflictError("HANDOFF_SUPERSEDE_STATE_NOT_ELIGIBLE")
     return {"status": "PREFLIGHT_READY", "handoff_id": hid, "superseded_by_job_id": jid,
             "actor_email": actor["email"], "authorization_ref": auth,
-            "reason": reason, "evidence": evidence, "production_touched": False}
+            "reason": reason, "evidence": evidence,
+            "notification_only": notice_only, "notice_gate_id": notice_gate if notice_only else None,
+            "notice_request_key": notice_key if notice_only else None,
+            "evidence_authorization_ref": evidence_auth if notice_only else None,
+            "production_touched": False}
 
 
 def supersede_cross_domain_handoff(
@@ -4217,11 +4269,19 @@ def supersede_cross_domain_handoff(
                 exception_code=None, exception_reason=None,
             )
             record["updated_at_utc"] = record["superseded_at_utc"]
+            if pf.get("notification_only") is True:
+                record["informational_notice_closed"] = True
+                record["supersession_notice_gate_id"] = pf["notice_gate_id"]
+                record["supersession_notice_request_key"] = pf["notice_request_key"]
+                record["supersession_evidence_authorization_ref"] = pf["evidence_authorization_ref"]
+            details = {"superseded_by_job_id": pf["superseded_by_job_id"],
+                       "authorization_ref": pf["authorization_ref"],
+                       "reason": pf["reason"]}
+            if pf.get("notification_only") is True:
+                details["notification_only"] = True
+                details["notice_gate_id"] = pf["notice_gate_id"]
             _append_history(record, "ADMINISTRATIVELY_SUPERSEDED",
-                            actor_email=pf["actor_email"],
-                            details={"superseded_by_job_id": pf["superseded_by_job_id"],
-                                     "authorization_ref": pf["authorization_ref"],
-                                     "reason": pf["reason"]})
+                            actor_email=pf["actor_email"], details=details)
             save_handoff(record, state_root=qroot)
             return {"status": "SUPERSEDED", "handoff_id": hid,
                     "superseded_by_job_id": pf["superseded_by_job_id"],

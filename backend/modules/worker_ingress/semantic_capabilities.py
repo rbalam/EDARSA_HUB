@@ -2195,7 +2195,9 @@ _CAPABILITY_METADATA["CROSS_DOMAIN_HANDOFF_REGISTER"] = {
 # Administrative supersession remains distinct from terminal certification.
 _SUPERSEDE_CONSTRAINTS = (
     "handoff_id", "superseded_by_job_id", "expected_source_job_id",
-    "authorization_ref", "reason",
+    "authorization_ref", "reason", "notification_only",
+    "expected_notice_request_key", "expected_notice_gate_id",
+    "certified_job_authorization_ref",
 )
 
 

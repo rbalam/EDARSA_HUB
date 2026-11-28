@@ -856,3 +856,125 @@ def test_supersede_handoff_preserves_certification_history_and_idempotency(tmp_p
     with pytest.raises(handoff_mod.HandoffSecurityError, match="SQL_RBAC_DENIED"):
         handoff_mod.preflight_supersede_cross_domain_handoff(
             req, current_user={**actor, "permissions": ["worker:submit"]}, state_root=qroot)
+
+
+
+def test_informational_notice_supersession_requires_exact_gate_binding(tmp_path, monkeypatch):
+    repo, _head, _sha = _init_git_repo(tmp_path)
+    qroot = _setup_queue(repo)
+    actor = _canonical_actor()
+    gate = "WK60-TEST-NOTICE-GATE-R1"
+    notice_key = "wk60-notice-info-test"
+    cert_auth = "GO-WK60-TEST-NOTICE-GATE-R1-20261128"
+    created = handoff_mod.register_cross_domain_handoff(
+        {"objective": "Comunicar consentimiento previo de Gate sin activar ejecutor.",
+         "bounded_context": "SEC_RBAC", "mode": "READ_ONLY",
+         "request_key": notice_key,
+         "constraints": {
+             "target_domain": "WORKER_CONTROL_PLANE",
+             "requested_capability": "GATE_AUTHORIZATION_LIFECYCLE",
+             "requested_constraints": {"action": "CONSENT_STATUS", "gate_id": gate,
+                                       "consent_request_id": "CONSENT-WK60-TEST-NOTICE"},
+             "auto_dispatch": False,
+             "acceptance_criteria": ["only verify prior consent", "do not create job"]}},
+        current_user=actor, state_root=qroot,
+    )
+    hid = created["handoff_id"]
+    record = handoff_mod.load_handoff(hid, state_root=qroot)
+    assert record["source_job_id"] is None
+    assert record["handoff_mode"] == "READ_ONLY"
+    assert record["auto_dispatch"] is False
+    assert record["has_executor"] is False
+    _write_certified_result(qroot, "SEM-CERT-NOTICE-TEST",
+                            domain="WORKER_CONTROL_PLANE",
+                            status="INTEGRATED", certification="CERTIFIED")
+    res_path = qroot / "results" / "SEM-CERT-NOTICE-TEST.json"
+    payload = json.loads(res_path.read_text(encoding="utf-8"))
+    payload["development_sha"] = "d" * 40
+    payload["git_sync_status"] = "CERTIFIED_GIT_SYNC"
+    payload["files_changed"] = ["tools/mirror_sync/worker_cross_domain_handoff.py"]
+    res_path.write_text(json.dumps(payload), encoding="utf-8")
+    done_path = qroot / "done" / "SEM-CERT-NOTICE-TEST.json"
+    done = json.loads(done_path.read_text(encoding="utf-8"))
+    done["authorization_ref"] = cert_auth
+    done_path.write_text(json.dumps(done), encoding="utf-8")
+    req = {
+        "objective": "Retirar aviso de consentimiento historico informativo.",
+        "bounded_context": "WORKER_CONTROL_PLANE", "mode": "MUTATION",
+        "capability": "CROSS_DOMAIN_HANDOFF_SUPERSEDE",
+        "constraints": {
+            "handoff_id": hid,
+            "superseded_by_job_id": "SEM-CERT-NOTICE-TEST",
+            "authorization_ref": "GO-WK60-TEST-NOTICE-CLOSURE-R2",
+            "reason": "Aviso informativo ya cubierto por ejecucion certificada posterior.",
+            "notification_only": True,
+            "expected_notice_request_key": notice_key,
+            "expected_notice_gate_id": gate,
+            "certified_job_authorization_ref": cert_auth,
+        },
+    }
+    monkeypatch.setattr(handoff_mod, "_verify_authorization_ref",
+                        lambda *args, **kwargs: {"verified": True})
+    assert handoff_mod.preflight_supersede_cross_domain_handoff(
+        req, current_user=actor, state_root=qroot)["status"] == "PREFLIGHT_READY"
+    assert handoff_mod.supersede_cross_domain_handoff(
+        req, current_user=actor, state_root=qroot)["status"] == "SUPERSEDED"
+    saved = handoff_mod.load_handoff(hid, state_root=qroot)
+    assert saved["informational_notice_closed"] is True
+    assert saved["dependency_satisfied"] is False
+    assert saved["certification"] == "NOT_CERTIFIED"
+    assert saved["source_resumed"] is False
+    assert saved["resolution_job_id"] is None
+    assert saved["supersession_evidence_authorization_ref"] == cert_auth
+    history_count = len(saved["history"])
+    assert handoff_mod.supersede_cross_domain_handoff(
+        req, current_user=actor, state_root=qroot)["status"] == "EXISTS"
+    assert len(handoff_mod.load_handoff(hid, state_root=qroot)["history"]) == history_count
+    handoff_mod.reconcile_cross_domain_handoffs(state_root=qroot, max_dispatches=0)
+    assert handoff_mod.load_handoff(hid, state_root=qroot)["lifecycle_state"] == "SUPERSEDED"
+
+    for bad in (
+        {"expected_notice_request_key": "wrong-request-key"},
+        {"expected_notice_gate_id": "WRONG-GATE"},
+        {"certified_job_authorization_ref": "GO-WRONG-GATE-20261128"},
+        {"notification_only": False},
+    ):
+        invalid = {**req, "constraints": {**req["constraints"], **bad}}
+        with pytest.raises(handoff_mod.HandoffError):
+            handoff_mod.preflight_supersede_cross_domain_handoff(
+                invalid, current_user=actor, state_root=qroot)
+
+
+def test_informational_notice_does_not_allow_executable_handoff(tmp_path, monkeypatch):
+    repo, _head, _sha = _init_git_repo(tmp_path)
+    qroot = _setup_queue(repo)
+    actor = _canonical_actor()
+    created = handoff_mod.register_cross_domain_handoff(
+        {"objective": "Ejecucion real de un Gate que no es aviso informativo.",
+         "bounded_context": "SEC_RBAC", "mode": "READ_ONLY",
+         "request_key": "wk60-executable-test",
+         "constraints": {"target_domain": "WORKER_CONTROL_PLANE",
+                         "source_job_id": "SEM-EXEC-SOURCE-JOB",
+                         "requested_capability": "GATE_AUTHORIZATION_LIFECYCLE",
+                         "requested_constraints": {"action": "INSPECT", "gate_id": "TEST-GATE"},
+                         "auto_dispatch": False}},
+        current_user=actor, state_root=qroot,
+    )
+    req = {
+        "objective": "No retirar como aviso un handoff con job origen.",
+        "bounded_context": "WORKER_CONTROL_PLANE", "mode": "MUTATION",
+        "capability": "CROSS_DOMAIN_HANDOFF_SUPERSEDE",
+        "constraints": {
+            "handoff_id": created["handoff_id"],
+            "superseded_by_job_id": "SEM-CERT-NOTICE-TEST",
+            "authorization_ref": "GO-TEST-NOTICE-R2",
+            "reason": "Evitar clasificacion falsa de trabajo ejecutable.",
+            "notification_only": True,
+            "expected_notice_request_key": "wk60-executable-test",
+            "expected_notice_gate_id": "TEST-GATE",
+            "certified_job_authorization_ref": "GO-TEST-GATE-20261128",
+        },
+    }
+    with pytest.raises(handoff_mod.HandoffSecurityError, match="NOT_INFORMATIONAL_NOTICE"):
+        handoff_mod.preflight_supersede_cross_domain_handoff(
+            req, current_user=actor, state_root=qroot)
