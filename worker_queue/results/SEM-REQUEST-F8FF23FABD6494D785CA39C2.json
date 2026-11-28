@@ -1,0 +1,252 @@
+{
+  "base_sha": "a9a94044e1e99517ac2c638715551e3d24df017f",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-28T08:26:12Z",
+  "execution_base_sha": "a9a94044e1e99517ac2c638715551e3d24df017f",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-F8FF23FABD6494D785CA39C2",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-28T08:28:05Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.core.system_type_utils.py",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "dataclasses",
+              "enum",
+              "logging",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "normalize_system_type",
+              "system_type"
+            ],
+            "path": "backend/core/system_type_utils.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "SystemType",
+              "build_cache_key_with_system_type",
+              "build_system_type_sql_filter",
+              "get_not_available_response",
+              "get_system_type_label",
+              "get_system_type_sql_values",
+              "get_unsupported_system_response",
+              "is_api_system",
+              "is_mpro_system",
+              "is_softrestaurant_system",
+              "is_supported_system_type",
+              "is_unknown_system",
+              "log_system_type_check",
+              "log_system_type_normalized",
+              "normalize_system_type"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.connection_resolver.py",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.config.edarsahub_sql",
+              "core.corporate_filters.service",
+              "core.db",
+              "core.empresa_resolver",
+              "core.unidades_service",
+              "dataclasses",
+              "datetime",
+              "enum",
+              "logging",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "system_type",
+              "tipo_conexion"
+            ],
+            "path": "backend/core/connection_resolver.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ConnectionOrigin",
+              "ConnectionResolver",
+              "MetricType",
+              "ResolvedSource",
+              "SourceType",
+              "SystemType",
+              "__init__",
+              "__new__",
+              "_get_api_config",
+              "_get_db",
+              "_get_server_config",
+              "_log_resolution",
+              "get_connection_resolver",
+              "get_resolution_matrix",
+              "get_safe_dict",
+              "health_check",
+              "is_valid",
+              "resolve_source"
+            ],
+            "tables_referenced": [
+              "Servidores_Conexiones",
+              "Sistema_EmpresasServidores"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.connections",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.unidades_service",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "operational_scope"
+            ],
+            "path": "backend/core/connections/operational_scope.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "active_units_for_server",
+              "classify_operational_scope",
+              "connection_scope_summary",
+              "operational_server_ids",
+              "require_operational_mapping"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.integrations_center",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "enum",
+              "hashlib",
+              "json",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "system_type"
+            ],
+            "path": "backend/modules/integrations_center/homologation.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CertificationSource",
+              "DomainCertification",
+              "HomologationProfile",
+              "HomologationStatus",
+              "aggregate_domain_status",
+              "canonical_contract_payload",
+              "compatibility_status",
+              "compute_schema_fingerprint",
+              "empty_connection_homologation"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro",
+              "sap",
+              "softrestaurant",
+              "vtiger"
+            ],
+            "matched_terms": [
+              "system_type",
+              "tipo_conexion"
+            ],
+            "path": "frontend/src/pages/Servidores.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "ast",
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "tipo_conexion"
+            ],
+            "path": "backend/tests/test_servers_crud_explicit_rbac_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_function",
+              "_segment",
+              "_source",
+              "_tree",
+              "test_bypass_test_local_no_se_modifica_en_este_parche",
+              "test_get_server_conserva_scope_individual",
+              "test_listado_conserva_sql_first",
+              "test_mutaciones_conservan_no_mongo",
+              "test_no_role_hardcode_en_mutaciones",
+              "test_server_access_accepts_exact_branch_scope_without_global_bypass",
+              "test_servers_crud_usa_rbac_explicito",
+              "test_update_delete_conservan_core_guard"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 6,
+          "scanned_files": 6,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-28T08:26:12Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
