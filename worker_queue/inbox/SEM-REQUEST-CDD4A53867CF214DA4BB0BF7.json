@@ -1,0 +1,63 @@
+{
+  "actions": [
+    {
+      "anchor": "def _sql_readonly_profile_audit_builder(request: Mapping[str, Any]) -> dict[str, Any]:",
+      "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+      "replacement": "register_sql_readonly_profile(\n    SqlReadonlyProfile(\n        profile_code=\"RH_INTEGRIDAD_DENUNCIAS_SCHEMA_METADATA\",\n        description=\"Metadatos de estructuras canónicas para integridad laboral; sin datos personales ni filas de negocio.\",\n        bounded_contexts=(\"RH\",),\n        queries=(\n            {\"name\": \"rh_integridad_tables\", \"sql\": \"SELECT s.name AS schema_name,t.name AS table_name FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE s.name='dbo' AND (t.name IN ('RH_Incidencias_Nomina','RH_Cat_Tipos_Incidencias','Usuario_Catalogo','Unidades_Negocio','Sistema_Empresas','Sistema_Sucursales','Sistema_Tareas','Operativo_Notificaciones_Queue') OR t.name LIKE '%Denuncia%' OR t.name LIKE '%Queja%' OR t.name LIKE '%Expedient%' OR t.name LIKE '%Investig%') ORDER BY t.name\"},\n            {\"name\": \"rh_integridad_columns\", \"sql\": \"SELECT t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS type_name,c.max_length,c.is_nullable FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE s.name='dbo' AND (t.name IN ('RH_Incidencias_Nomina','RH_Cat_Tipos_Incidencias','Usuario_Catalogo','Unidades_Negocio','Sistema_Empresas','Sistema_Sucursales','Sistema_Tareas','Operativo_Notificaciones_Queue') OR t.name LIKE '%Denuncia%' OR t.name LIKE '%Queja%' OR t.name LIKE '%Expedient%' OR t.name LIKE '%Investig%') ORDER BY t.name,c.column_id\"},\n            {\"name\": \"rh_integridad_relationships\", \"sql\": \"SELECT t.name AS table_name,fk.name AS foreign_key_name,c.name AS column_name,rt.name AS referenced_table,rc.name AS referenced_column,fk.is_disabled FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.foreign_keys fk ON fk.parent_object_id=t.object_id JOIN sys.foreign_key_columns fc ON fc.constraint_object_id=fk.object_id JOIN sys.columns c ON c.object_id=t.object_id AND c.column_id=fc.parent_column_id JOIN sys.tables rt ON rt.object_id=fc.referenced_object_id JOIN sys.columns rc ON rc.object_id=rt.object_id AND rc.column_id=fc.referenced_column_id WHERE s.name='dbo' AND (t.name IN ('RH_Incidencias_Nomina','RH_Cat_Tipos_Incidencias','Usuario_Catalogo','Unidades_Negocio','Sistema_Empresas','Sistema_Sucursales','Sistema_Tareas','Operativo_Notificaciones_Queue') OR t.name LIKE '%Denuncia%' OR t.name LIKE '%Queja%' OR t.name LIKE '%Expedient%' OR t.name LIKE '%Investig%') ORDER BY t.name,fk.name,fc.constraint_column_id\"},\n        ),\n    )\n)\n\n\n",
+      "source_sha256": "8408ee0ef7b1dcf3958b2e4d14fb615fce2cd966c154f64334616cc21f9b70b7",
+      "type": "insert_before"
+    },
+    {
+      "expected_occurrences": 1,
+      "path": "backend/tests/test_worker_cajas_schema_metadata_profile.py",
+      "replacement": "\n\ndef test_rh_integridad_profile_metadata_only():\n    p = sem.sql_readonly_profiles()[\"RH_INTEGRIDAD_DENUNCIAS_SCHEMA_METADATA\"]\n    assert p.bounded_contexts == (\"RH\",)\n    assert p.source == \"EDARSAHUB\" and p.login_policy == \"HRLectura\" and p.read_only\n    assert len(p.queries) == 3\n    for query in p.queries:\n        assert query[\"sql\"].startswith(\"SELECT \")\n        assert \"FROM sys.tables\" in query[\"sql\"]\n        assert not any(fragment in query[\"sql\"] for fragment in (\"RH_Incidencias_Nomina WHERE\", \"SELECT *\", \"FROM dbo.\"))\n    req = {\"bounded_context\": \"RH\", \"constraints\": {\"profile_code\": p.profile_code}}\n    plan = sem._sql_readonly_profile_audit_builder(req)\n    assert plan[\"actions\"] == []\n    assert len(plan[\"checks\"]) == 1\n    assert plan[\"checks\"][0][\"type\"] == \"sql_readonly_audit\"\n\n\ndef test_rh_integridad_profile_fail_closed_for_domain_and_caller_sql():\n    req = {\"bounded_context\": \"COMERCIAL_POS\", \"constraints\": {\"profile_code\": \"RH_INTEGRIDAD_DENUNCIAS_SCHEMA_METADATA\"}}\n    with pytest.raises(sem.SemanticCapabilityError):\n        sem._sql_readonly_profile_audit_builder(req)\n    req[\"bounded_context\"] = \"RH\"\n    req[\"constraints\"][\"sql\"] = \"SELECT * FROM dbo.Usuario_Catalogo\"\n    with pytest.raises(sem.SemanticCapabilityError):\n        sem._sql_readonly_profile_audit_builder(req)\n",
+      "source_sha256": "470483b61c62d5b2302bf37c1088efa7b2f1b7ec980ce89aa66ee75afbda63d4",
+      "type": "append_once"
+    }
+  ],
+  "authorization_ref": "GO-RH-INTEGRIDAD-DENUNCIAS-GATE4-SQL-PROFILE-DEV-R1-20261128",
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/worker_ingress/semantic_capabilities.py",
+        "backend/tests/test_worker_cajas_schema_metadata_profile.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_cajas_schema_metadata_profile.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-CDD4A53867CF214DA4BB0BF7",
+  "mode": "MUTATION",
+  "objective": "Gate4 RH Integridad Laboral: register metadata-only SQL_READONLY_PROFILE_AUDIT profile RH_INTEGRIDAD_DENUNCIAS_SCHEMA_METADATA for RH bounded context only with sys.tables/columns/foreign-key schema metadata. Add strict tests, no PII or business rows, no DDL or Production, preserve prior profiles. Exact two files and active authorization.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
