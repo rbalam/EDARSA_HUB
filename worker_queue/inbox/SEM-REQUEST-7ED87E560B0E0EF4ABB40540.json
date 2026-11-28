@@ -1,0 +1,65 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "old_text": "    # PREFLIGHT or MATERIALIZE: validate all 18 bound invariants!\n    objective = str(request.get(\"objective\") or constraints.get(\"objective\") or \"\").strip()",
+      "path": "tools/mirror_sync/worker_lifecycle_recovery.py",
+      "replacement": "    # Recover only an ID-only request; never merge caller-supplied scope with\n    # persisted scope. Full requests retain the existing strict validation.\n    if action in {\"PREFLIGHT\", \"MATERIALIZE\"} and constraints.get(\"consent_request_id\") and set(constraints) <= {\"action\", \"gate_id\", \"consent_request_id\"}:\n        cid = _safe_id(str(constraints[\"consent_request_id\"]))\n        doc = _read_json_safe(_consent_requests_dir(qroot) / f\"{cid}.json\")\n        if not isinstance(doc, dict) or doc.get(\"schema\") != SCHEMA_CONSENT_REQUEST:\n            raise GateAuthorizationError(\"CONSENT_REQUEST_NOT_FOUND\")\n        if doc.get(\"production_allowed\") is not False:\n            raise GateAuthorizationError(\"PRODUCTION_AUTHORIZATION_FORBIDDEN\")\n        if int(doc.get(\"requested_by_usuario_id\") or 0) != actor[\"usuario_id\"] or str(doc.get(\"requested_by_email\") or \"\").strip().lower() != actor[\"email\"]:\n            raise GateAuthorizationError(\"CONSENT_IMPERSONATION_FORBIDDEN\")\n        if doc.get(\"domain\") != domain:\n            raise GateAuthorizationError(\"CONSENT_DOMAIN_MISMATCH\")\n        if doc.get(\"gate_id\") != gate_id:\n            raise GateAuthorizationError(\"CONSENT_GATE_MISMATCH\")\n        # The original digest and both attestations are still verified below.\n        constraints = {**constraints, **{key: doc.get(key) for key in (\n            \"authorization_id\", \"authorized_operations\", \"allowed_paths\",\n            \"source_sha256\", \"base_head_sha\", \"ttl_hours\",\n            \"verification_tests\", \"rollback_plan\",\n        )}}\n        request = {**request, \"objective\": doc.get(\"objective\"), \"constraints\": constraints}\n        _assert_no_auth_prompt_injection(request, \"authorization_request\")\n\n    # PREFLIGHT or MATERIALIZE: validate all 18 bound invariants!\n    objective = str(request.get(\"objective\") or constraints.get(\"objective\") or \"\").strip()",
+      "source_sha256": "0ef0c8d5d1585fbce058ee00659bdc9ff3744fbd3c39b7145a5d645bddc7e637",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "    # 8. MATERIALIZE succeeds cleanly with consent_request_id and consumes consent\n    mat = wis.submit_objective(mat_req, current_user=actor)",
+      "path": "backend/tests/test_worker_authorization_consent_bridge_g1.py",
+      "replacement": "    # 8. ID-only materialization recovers the original signed scope.\n    minimal = {**mat_req, \"objective\": \"Recuperar alcance aprobado por identificador.\", \"constraints\": {\n        \"action\": \"MATERIALIZE\", \"gate_id\": mat_req[\"constraints\"][\"gate_id\"], \"consent_request_id\": cid,\n    }}\n    with pytest.raises(lr.GateAuthorizationError, match=\"AUTHORIZATION_OPERATIONS_REQUIRED\"):\n        lr.preflight_gate_authorization_lifecycle(\n            {**minimal, \"constraints\": {**minimal[\"constraints\"], \"allowed_paths\": [\"backend/modules/other.py\"]}},\n            current_user=actor, state_root=qroot, repo_root=repo,\n        )\n    with pytest.raises(lr.GateAuthorizationError, match=\"CONSENT_GATE_MISMATCH\"):\n        lr.preflight_gate_authorization_lifecycle(\n            {**minimal, \"constraints\": {**minimal[\"constraints\"], \"gate_id\": \"OTHER-GATE\"}},\n            current_user=actor, state_root=qroot, repo_root=repo,\n        )\n    mat = wis.submit_objective(minimal, current_user=actor)",
+      "source_sha256": "08c70ac0eba634df5921743854af4d28fc174ed45368462cb09ee32162573369",
+      "type": "replace_text"
+    }
+  ],
+  "authorization_ref": "GO-WK70-AAP-01-CANONICAL-CONSENT-RECOVERY-R1",
+  "checks": [
+    {
+      "paths": [
+        "tools/mirror_sync/worker_lifecycle_recovery.py",
+        "backend/tests/test_worker_authorization_consent_bridge_g1.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_authorization_consent_bridge_g1.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-7ED87E560B0E0EF4ABB40540",
+  "mode": "MUTATION",
+  "objective": "AAP-01: recuperar alcance persistido mediante identificador para materializar consentimiento, preservar verificaciones y compatibilidad previa, certificar regresión.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
