@@ -1,0 +1,49 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 30,
+        "paths": [
+          "backend/modules/worker_ingress/semantic_capabilities.py",
+          "tools/mirror_sync/universal_job_bridge.py",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "tools/mirror_sync/sql_migration_development.py"
+        ],
+        "search_terms": [
+          "ModuleNotFoundError",
+          "CAPABILITY_REGISTRY_UNAVAILABLE",
+          "SQL_MIGRATION_DEVELOPMENT",
+          "capability_registry",
+          "importlib"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-97084E19B19F11EEA5CB82AC",
+  "mode": "READ_ONLY",
+  "objective": "[HANDOFF HO-CONEXIONESCOMU-WORKERCONTROLP-6D5C0F4585BFBCDB CONEXIONES_COMUNICACIONES->WORKER_CONTROL_PLANE] WORKER CONTROL PLANE 6.0 — investigar error concreto CAPABILITY_REGISTRY_UNAVAILABLE:ModuleNotFoundError que impide asignar capacidad al handoff Gate19 HO-CONEXIONESCOMU-WORKERCONTROLP-CFDED6F2B3237928. Objetivo distinto del handoff original: localizar import fallido en Capability Registry y dependencia, identificar corrección mínima de Desarrollo y pruebas, devolver evidencia y autorización necesaria al dominio Conexiones. READ_ONLY estricto; no modificar código, credenciales, Producción ni publicar reparaciones sin autorización. No repetir auditoría Gate18B.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
