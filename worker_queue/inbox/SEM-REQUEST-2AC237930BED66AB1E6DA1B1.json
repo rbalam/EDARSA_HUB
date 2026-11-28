@@ -1,0 +1,61 @@
+{
+  "actions": [
+    {
+      "content": "\"\"\"Offline, allowlisted RDP metadata import. Never opens a connection.\"\"\"\nfrom dataclasses import dataclass\nimport ipaddress\nimport re\n\nMAX_BYTES = 65536\nDEFAULT_PORT = 3389  # RDP protocol default, not a deployment setting.\n_DNS_LABEL = re.compile(r\"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\", re.ASCII)\n_PORT = re.compile(r\"[0-9]{1,5}\", re.ASCII)\n\n\nclass RdpMetadataError(ValueError):\n    \"\"\"Stable error codes only; never include untrusted input.\"\"\"\n\n\n@dataclass(frozen=True)\nclass RdpMetadata:\n    host: str\n    port: int\n    port_source: str\n\n\ndef _port(value: str) -> int:\n    if not _PORT.fullmatch(value):\n        raise RdpMetadataError(\"INVALID_PORT\")\n    port = int(value)\n    if not 1 <= port <= 65535:\n        raise RdpMetadataError(\"INVALID_PORT\")\n    return port\n\n\ndef _host(value: str) -> str:\n    if not value or \"%\" in value:\n        raise RdpMetadataError(\"INVALID_HOST\")\n    try:\n        return str(ipaddress.ip_address(value))\n    except ValueError:\n        pass\n    value = value.rstrip(\".\")\n    if not value or len(value) > 253 or not all(\n        _DNS_LABEL.fullmatch(label) for label in value.split(\".\")\n    ):\n        raise RdpMetadataError(\"INVALID_HOST\")\n    if all(c in \"0123456789.\" for c in value):\n        raise RdpMetadataError(\"INVALID_HOST\")\n    return value.lower()\n\n\ndef parse_rdp_address(address: str, *, separate_port: int | None = None) -> RdpMetadata:\n    \"\"\"Parse endpoint syntax without DNS resolution or authorization claims.\"\"\"\n    if not isinstance(address, str) or len(address) > 300:\n        raise RdpMetadataError(\"INVALID_ADDRESS\")\n    if separate_port is not None and (\n        type(separate_port) is not int or not 1 <= separate_port <= 65535\n    ):\n        raise RdpMetadataError(\"INVALID_PORT\")\n    address = address.strip()\n    if any(ord(c) < 33 or ord(c) == 127 for c in address):\n        raise RdpMetadataError(\"INVALID_ADDRESS\")\n    inline = None\n    if address.startswith(\"[\"):\n        match = re.fullmatch(r\"\\[([^\\]]+)\\](?::([0-9]+))?\", address)\n        if match is None:\n            raise RdpMetadataError(\"INVALID_ADDRESS\")\n        raw_host = match.group(1)\n        try:\n            if \"%\" in raw_host:\n                raise ValueError\n            ipaddress.IPv6Address(raw_host)\n        except ValueError:\n            raise RdpMetadataError(\"INVALID_HOST\") from None\n        if match.group(2) is not None:\n            inline = _port(match.group(2))\n    elif address.count(\":\") == 1:\n        raw_host, raw_port = address.rsplit(\":\", 1)\n        inline = _port(raw_port)\n    else:\n        raw_host = address\n    host = _host(raw_host)\n    if inline is not None and separate_port is not None and inline != separate_port:\n        raise RdpMetadataError(\"CONFLICTING_PORT\")\n    if inline is not None:\n        return RdpMetadata(host, inline, \"address\")\n    if separate_port is not None:\n        return RdpMetadata(host, separate_port, \"file\")\n    return RdpMetadata(host, DEFAULT_PORT, \"protocol_default\")\n\n\ndef parse_rdp_metadata(payload: bytes) -> RdpMetadata:\n    \"\"\"Extract only full address and server port; discard all other fields.\"\"\"\n    if not isinstance(payload, bytes) or not 0 < len(payload) <= MAX_BYTES:\n        raise RdpMetadataError(\"INVALID_SIZE\")\n    try:\n        encoding = \"utf-16\" if payload.startswith((b\"\\xff\\xfe\", b\"\\xfe\\xff\")) else \"utf-8-sig\"\n        text = payload.decode(encoding, errors=\"strict\")\n    except UnicodeError:\n        raise RdpMetadataError(\"INVALID_ENCODING\") from None\n    if \"\\x00\" in text:\n        raise RdpMetadataError(\"INVALID_ENCODING\")\n    fields = {}\n    for line in text.splitlines():\n        parts = line.partition(\":\")\n        key = parts[0].strip().lower()\n        if key not in {\"full address\", \"server port\"}:\n            continue\n        if key in fields:\n            raise RdpMetadataError(\"DUPLICATE_FIELD\")\n        kind, sep, value = parts[2].partition(\":\")\n        expected = \"s\" if key == \"full address\" else \"i\"\n        if not parts[1] or not sep or kind != expected:\n            raise RdpMetadataError(\"INVALID_FIELD\")\n        fields[key] = value.strip()\n    if \"full address\" not in fields:\n        raise RdpMetadataError(\"MISSING_ADDRESS\")\n    port = _port(fields[\"server port\"]) if \"server port\" in fields else None\n    return parse_rdp_address(fields[\"full address\"], separate_port=port)\n",
+      "path": "backend/modules/integrations_center/rdp_metadata_import.py",
+      "type": "write_file"
+    },
+    {
+      "content": "from dataclasses import asdict\nimport pytest\nfrom modules.integrations_center.rdp_metadata_import import (\n    MAX_BYTES, RdpMetadataError, parse_rdp_address, parse_rdp_metadata,\n)\n\n\n@pytest.mark.parametrize(\"encoding\", [\"utf-8\", \"utf-8-sig\", \"utf-16\"])\ndef test_import_allowlisted_metadata_only(encoding):\n    payload = (\"full address:s:Example.NET:1379\\r\\n\"\n               \"username:s:ignored\\r\\npassword 51:b:ignored\\r\\n\"\n               \"alternate shell:s:ignored\\r\\ngatewayhostname:s:ignored\").encode(encoding)\n    assert asdict(parse_rdp_metadata(payload)) == {\n        \"host\": \"example.net\", \"port\": 1379, \"port_source\": \"address\",\n    }\n\n\n@pytest.mark.parametrize(\"address,host,port\", [\n    (\"example.net\", \"example.net\", 3389),\n    (\"192.0.2.1:1234\", \"192.0.2.1\", 1234),\n    (\"[2001:db8::1]:1234\", \"2001:db8::1\", 1234),\n    (\"2001:db8::1\", \"2001:db8::1\", 3389),\n    (\"server\", \"server\", 3389),\n])\ndef test_address(address, host, port):\n    result = parse_rdp_address(address)\n    assert (result.host, result.port) == (host, port)\n\n\n@pytest.mark.parametrize(\"address\", [\n    \"https://example.net\", \"user@example.net\", \"a/b\", \"a\\\\b\",\n    \"a:0\", \"a:65536\", \"a:-1\", \"a:abc\", \"999.1.1.1\",\n    \"[example.net]:3389\", \"a b\", \"a\\x00b\", \"a..b\", \"fe80::1%eth0\",\n])\ndef test_invalid_address(address):\n    with pytest.raises(RdpMetadataError):\n        parse_rdp_address(address)\n\n\n@pytest.mark.parametrize(\"payload,error\", [\n    (b\"\", \"INVALID_SIZE\"),\n    (b\"x\" * (MAX_BYTES + 1), \"INVALID_SIZE\"),\n    (b\"\\xff\", \"INVALID_ENCODING\"),\n    (b\"username:s:ignored\", \"MISSING_ADDRESS\"),\n    (b\"full address:s:a\\nfull address:s:b\", \"DUPLICATE_FIELD\"),\n    (b\"full address:i:a\", \"INVALID_FIELD\"),\n    (b\"full address:s:a:1234\\nserver port:i:3389\", \"CONFLICTING_PORT\"),\n    (b\"full address:s:a\\nserver port:i:0\", \"INVALID_PORT\"),\n])\ndef test_rejected_payload(payload, error):\n    with pytest.raises(RdpMetadataError, match=\"^\" + error + \"$\"):\n        parse_rdp_metadata(payload)\n\n\ndef test_separate_port_and_default_provenance():\n    assert asdict(parse_rdp_metadata(b\"full address:s:example.net\\nserver port:i:1234\")) == {\n        \"host\": \"example.net\", \"port\": 1234, \"port_source\": \"file\",\n    }\n    assert parse_rdp_metadata(b\"full address:s:example.net\").port_source == \"protocol_default\"\n\n\ndef test_errors_do_not_echo_input():\n    with pytest.raises(RdpMetadataError) as error:\n        parse_rdp_address(\"secret@example.net\")\n    assert \"secret\" not in str(error.value)\n",
+      "path": "backend/tests/test_edarsa_connect_rdp_metadata_import.py",
+      "type": "write_file"
+    }
+  ],
+  "authorization_ref": "GO-EDARSA-CONNECT-G2A1-RDP-PARSER-R1",
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/integrations_center/rdp_metadata_import.py",
+        "backend/tests/test_edarsa_connect_rdp_metadata_import.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_edarsa_connect_rdp_metadata_import.py",
+        "backend/tests/test_integrations_center_gate5b.py",
+        "backend/tests/test_server_registry_operational_scope_fail_closed.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-2AC237930BED66AB1E6DA1B1",
+  "mode": "MUTATION",
+  "objective": "Implementar Gate 2A.1 parser offline allowlist RDP host/puerto y pruebas herméticas. Crear exclusivamente dos archivos autorizados; sin red, persistencia, ejecución, secretos, cambios a rutas existentes ni Producción. No sobrescribir archivos preexistentes.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMUNICACIONES_DNS_REMOTE",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "COMUNICACIONES_DNS_REMOTE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
