@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "a9a94044e1e99517ac2c638715551e3d24df017f",
-  "generated_at_utc": "2026-11-28T08:22:26Z",
+  "generated_at_utc": "2026-11-28T08:23:46Z",
   "history": {
     "done_total_local": 2427,
     "pending_total_local": 0,
@@ -16,25 +16,25 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2598,
+      "age_seconds": 2678,
       "job_id": "SEM-REQUEST-7ED87E560B0E0EF4ABB40540",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 271,
+      "age_seconds": 351,
       "job_id": "SEM-REQUEST-8FFA3DE58A513136C6EE599C",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1098,
+      "age_seconds": 1178,
       "job_id": "SEM-REQUEST-A470B4B03D6C262497B445F7",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2493,
+      "age_seconds": 2573,
       "job_id": "SEM-WORKER_CONTROL_PLANE-WORKER_RESULT_DETAIL_READ-CCB547F5DD6142F828B7",
       "reason": null,
       "state": "RESULT_READY"
@@ -54,8 +54,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-28T08:22:21Z",
-    "last_receive_utc": "2026-11-28T08:22:15Z",
+    "last_cycle_utc": "2026-11-28T08:23:36Z",
+    "last_receive_utc": "2026-11-28T08:23:31Z",
     "last_terminal_utc": "2026-11-28T08:17:55Z",
     "pid": "2811319",
     "runtime_fingerprint": {
