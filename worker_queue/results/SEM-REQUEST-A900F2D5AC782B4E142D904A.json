@@ -1,0 +1,1123 @@
+{
+  "base_sha": "abced72a05f89ce18d4a71d49e317b258086f3e2",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-28T07:08:31Z",
+  "execution_base_sha": "abced72a05f89ce18d4a71d49e317b258086f3e2",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-A900F2D5AC782B4E142D904A",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-28T07:09:53Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.core.server_registry.py",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.connections.operational_scope",
+              "core.db",
+              "core.secret_manager",
+              "core.sql_first.db",
+              "core.system_type_utils",
+              "datetime",
+              "json",
+              "logging",
+              "os",
+              "pymssql",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "create_server",
+              "server_registry",
+              "tipo_conexion",
+              "update_server"
+            ],
+            "path": "backend/core/server_registry.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_execute_sql_write",
+              "_get_server_by_id_from_sql",
+              "_get_servers_from_sql",
+              "_get_unidades_from_sql",
+              "_parse_json_field",
+              "_parse_tipos_movimiento",
+              "_serialize_catalog_field",
+              "_sql_row_to_server_dict",
+              "create_server",
+              "delete_server",
+              "filter_servers_by_user_permissions",
+              "get_connection_config",
+              "get_decrypted_credentials",
+              "get_server_by_id",
+              "get_server_by_unidad_codigo",
+              "get_server_connection_info",
+              "get_server_connection_info_with_secrets",
+              "get_server_sucursales",
+              "get_visible_servers_for_operaciones",
+              "list_operational_servers",
+              "list_servers",
+              "list_unidades_negocio",
+              "map_sql_to_api_server_response",
+              "mask_sensitive_fields",
+              "normalize_server_record",
+              "normalize_system_type",
+              "normalize_unidad_codigo",
+              "resolve_server_context",
+              "resolve_unidad_by_server_sucursal",
+              "update_server",
+              "validate_registry_integrity",
+              "validate_server_payload"
+            ],
+            "tables_referenced": [
+              "Servidores_Conexiones"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection",
+              "resolver_canonico"
+            ],
+            "imports": [
+              "core.inventarios.resolver_canonico",
+              "core.inventarios.sync_movimientos_canonico",
+              "core.scheduler.jobs.sync_compras_job",
+              "core.secret_manager",
+              "core.sql_first.db",
+              "datetime",
+              "dotenv",
+              "modules.compras.sync_service",
+              "sys",
+              "time"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "tipo_conexion"
+            ],
+            "path": "backend/tests/backfill_inventario.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "log",
+              "main"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection",
+              "resolver_canonico"
+            ],
+            "imports": [
+              "core.inventarios.resolver_canonico",
+              "core.server_registry",
+              "core.sql_first.db",
+              "dotenv",
+              "os",
+              "sys"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "server_registry",
+              "tipo_conexion"
+            ],
+            "path": "backend/tests/diag_bridge_resolucion.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.db",
+              "core.secret_manager",
+              "core.sql_first.db",
+              "dotenv",
+              "os",
+              "pymssql",
+              "sys",
+              "time"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "tipo_conexion"
+            ],
+            "path": "backend/tests/diag_pos_connect_real.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.secret_manager",
+              "core.sql_first.db",
+              "dotenv",
+              "os",
+              "socket",
+              "sys",
+              "time"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "tipo_conexion"
+            ],
+            "path": "backend/tests/diag_pos_connectivity.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.db",
+              "core.secret_manager",
+              "core.sql_first.db",
+              "dotenv",
+              "os",
+              "sys"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "tipo_conexion"
+            ],
+            "path": "backend/tests/diag_pos_schema.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "cols_of",
+              "tables_like"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.scheduler.jobs.sync_compras_job",
+              "core.secret_manager",
+              "core.sql_first.db",
+              "dotenv",
+              "modules.compras.sync_service",
+              "os",
+              "sys"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "tipo_conexion"
+            ],
+            "path": "backend/tests/diag_sync_almacenes_e2e.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "count_alm"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.inventarios.sync_movimientos_canonico",
+              "core.scheduler.jobs.sync_compras_job",
+              "core.secret_manager",
+              "core.sql_first.db",
+              "dotenv",
+              "os",
+              "sys"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "tipo_conexion"
+            ],
+            "path": "backend/tests/diag_sync_movimientos_e2e.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "counts"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.db",
+              "core.secret_manager",
+              "core.sql_first.db",
+              "dotenv",
+              "os",
+              "sys"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "tipo_conexion"
+            ],
+            "path": "backend/tests/diag_sync_realpath.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "tipo_conexion"
+            ],
+            "path": "backend/tests/test_api_connection_operational_assignments_contract.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/{api_id}/assignments",
+              "/{api_id}/assignments/{empresa_id}/{rol_conexion}"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_assignment_removal_is_soft_not_delete",
+              "test_assignment_repository_uses_canonical_tables_and_writer",
+              "test_assignment_routes_are_explicitly_admin_guarded"
+            ],
+            "tables_referenced": [
+              "SISTEMA_EMPRESASSERVIDORES"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "modules.api_connections.repository"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "tipo_conexion"
+            ],
+            "path": "backend/tests/test_api_connections_canonical_semantics.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_queries_configured_is_derived_from_real_query_fields",
+              "test_role_derived_solo_ventas_is_independent_from_queries"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.db",
+              "core.server_registry",
+              "dotenv",
+              "os",
+              "pytest"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "server_registry"
+            ],
+            "path": "backend/tests/test_catalogo_filtros_nolive.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_q",
+              "test_mpro_categoria_poblada_en_sync_productos",
+              "test_mpro_dimensiones_distintas_no_vacias",
+              "test_sr_categorias_son_clasificacion_venta_canonica",
+              "test_sr_filtros_tres_niveles_por_unidad"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "tipo_conexion"
+            ],
+            "path": "backend/tests/test_connection_resolver_api_local_canonical_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_text",
+              "test_api_local_resolution_does_not_match_legacy_host_or_url_substrings",
+              "test_api_local_resolution_uses_canonical_company_role_and_server_id",
+              "test_resolved_api_url_comes_from_canonical_api_url_field"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "pymongo",
+              "pyodbc"
+            ],
+            "helpers": [],
+            "imports": [
+              "asyncio",
+              "datetime",
+              "decimal",
+              "fastapi",
+              "importlib",
+              "os",
+              "pathlib",
+              "pytest",
+              "sys",
+              "unittest.mock"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "tipo_conexion"
+            ],
+            "path": "backend/tests/test_economia_backend_offline.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/series/{serie_id}/backfill"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "Client",
+              "Connection",
+              "Context",
+              "Cursor",
+              "Response",
+              "_EconomiaBatchFakeConnection",
+              "_EconomiaBatchFakeContext",
+              "__aenter__",
+              "__aexit__",
+              "__enter__",
+              "__exit__",
+              "__init__",
+              "close",
+              "commit",
+              "cursor",
+              "execute",
+              "fake_backfill",
+              "fake_contract",
+              "fake_decoder",
+              "fake_execute",
+              "fake_http",
+              "fake_observaciones",
+              "fake_persist",
+              "fake_query",
+              "fake_resolved",
+              "fake_resolver",
+              "fetchone",
+              "forbidden_sql_connection",
+              "get",
+              "json",
+              "raise_for_status",
+              "rollback",
+              "run",
+              "test_backfill_rechaza_proveedor_no_autorizado",
+              "test_backfill_rechaza_rango_superior_configurado",
+              "test_backfill_serie_configurable_offline",
+              "test_backfill_serie_transaccion_unica_por_lote",
+              "test_cliente_http_auth_path_no_expone_secreto",
+              "test_cliente_http_auth_query_configurable",
+              "test_cliente_http_auth_tipo_desconocido_fail_closed",
+              "test_cliente_http_generico_offline",
+              "test_cliente_http_metadata_puede_desactivar_auth_del_proveedor",
+              "test_cliente_http_metadata_requires_auth_true_mantiene_auth",
+              "test_cliente_http_no_contiene_logica_especifica_inegi",
+              "test_cliente_http_no_ejecuta_auth_hardcodeada",
+              "test_cliente_http_rechaza_endpoint_ausente",
+              "test_cliente_http_rechaza_requires_auth_no_booleano",
+              "test_cliente_http_response_format_json_default",
+              "test_cliente_http_response_format_xml_configurable",
+              "test_cliente_http_sin_override_conserva_auth_proveedor",
+              "test_consultar_observaciones_proveedor_offline",
+              "test_contrato_http_base_url_metadata_prevalece_sobre_conexion",
+              "test_contrato_http_proveedor_es_configurable",
+              "test_contrato_http_rechaza_metadata_invalida",
+              "test_contrato_http_sin_base_url_metadata_conserva_conexion",
+              "test_contrato_http_usa_url_publica_sin_conexion",
+              "test_no_real_io_modules_used",
+              "test_normalizacion_rechaza_indice_lista_fuera_rango",
+              "test_normalizacion_soporta_lista_anidada_estilo_api",
+              "test_normalizar_observaciones_generico",
+              "test_normalizar_observaciones_rechaza_mapping_incompleto",
+              "test_persistir_valor_versionado_mismo_valor_no_duplica",
+              "test_persistir_valor_versionado_nuevo",
+              "test_persistir_valor_versionado_revision",
+              "test_persistir_valor_versionado_rollback",
+              "test_query_fails_closed_when_config_missing",
+              "test_query_uses_canonical_helper_without_real_io",
+              "test_repository_contextos_contract",
+              "test_repository_listar_series_all_statuses",
+              "test_repository_listar_series_parameter_contract",
+              "test_repository_listar_valores_full_range",
+              "test_repository_listar_valores_without_optional_dates",
+              "test_repository_obtener_serie_none",
+              "test_repository_obtener_serie_parameter_contract",
+              "test_resolver_proveedor_serie_none",
+              "test_resolver_proveedor_serie_usa_cadena_canonica",
+              "test_route_backfill_delega_service",
+              "test_route_contextos_success",
+              "test_route_listar_series_success",
+              "test_route_listar_valores_rejects_invalid_range",
+              "test_route_listar_valores_success",
+              "test_route_obtener_serie_404",
+              "test_route_obtener_serie_success",
+              "test_routes_backfill_no_contiene_proveedor_hardcodeado",
+              "test_routes_backfill_usa_permiso_explicito",
+              "test_routes_expose_exact_permission_dependencies",
+              "test_service_delegates_listar_series",
+              "test_service_delegates_listar_valores",
+              "test_service_resuelve_conexion_api_canonica",
+              "test_service_resuelve_proveedor_sin_conexion",
+              "test_service_resuelve_serie_inexistente",
+              "test_sincronizar_serie_integra_normalizacion_y_versionado",
+              "test_sincronizar_serie_rollback_si_falla_observacion_intermedia",
+              "test_sincronizar_serie_transaccion_unica_por_lote",
+              "test_sincronizar_serie_vacia"
+            ],
+            "tables_referenced": [
+              "Economia_ContextoOperativo",
+              "Economia_Proveedores",
+              "Economia_Series",
+              "Economia_Valores",
+              "Servidores_Conexiones"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "modules.api_connections",
+              "modules.integrations_center.routes",
+              "modules.integrations_center.service"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "server_registry",
+              "tipo_conexion"
+            ],
+            "path": "backend/tests/test_integrations_center_gate5b.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_active_flag_does_not_invent_connection_health",
+              "test_canonical_scope_contract_is_not_hardcoded",
+              "test_connection_homologation_is_fail_closed_by_default",
+              "test_gate5b_facade_is_mounted_on_existing_root_api_router",
+              "test_gate5b_never_projects_secret_values",
+              "test_gate5b_projects_persisted_inventory_filters_from_server_registry",
+              "test_gate5b_router_is_read_only",
+              "test_gate5b_unconfigured_api_connection_keeps_empty_catalog_defaults",
+              "test_health_is_attached_only_from_canonical_evidence"
+            ],
+            "tables_referenced": [
+              "Servidores_ConexionEstado",
+              "Servidores_Conexiones"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "asyncio",
+              "modules.integrations_runtime.api_local_sync",
+              "pytest",
+              "requests"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "tipo_conexion"
+            ],
+            "path": "backend/tests/test_integrations_runtime_api_local_sync.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "FakeResponse",
+              "__init__",
+              "fake_get",
+              "fake_get_server_by_id",
+              "json",
+              "test_config_repr_does_not_expose_api_key",
+              "test_execute_readonly_select_contract",
+              "test_http_500_classifier_distinguishes_connectivity_and_query",
+              "test_http_500_classifier_never_returns_raw_error_text",
+              "test_resolver_rejects_non_api_local",
+              "test_resolver_uses_canonical_registry_and_decryption",
+              "test_transport_fail_closed_on_timeout",
+              "test_transport_rejects_invalid_payload",
+              "test_transport_rejects_non_read_only_sql_before_http"
+            ],
+            "tables_referenced": [
+              "Missing",
+              "Sucursales",
+              "X",
+              "Y"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "tipo_conexion"
+            ],
+            "path": "backend/tests/test_mpro_closed_api_isolation_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_text",
+              "test_closed_sales_has_no_central2020_fallback",
+              "test_closed_sales_uses_canonical_local_api_role",
+              "test_incremental_mpro_closed_sync_uses_local_api_helper",
+              "test_mpro_units_share_final_header_authority_and_select_only",
+              "test_protected_job_still_declares_local_api_contract",
+              "test_softrestaurant_closed_path_remains_present"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "get_sql_connection",
+              "pymongo",
+              "pyodbc"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "__future__",
+              "core.connections.pos_connection_readonly_service",
+              "inspect",
+              "pathlib",
+              "pytest",
+              "typing"
+            ],
+            "integrations": [
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "server_registry"
+            ],
+            "path": "backend/tests/test_pos_connection_readonly_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "connection_factory",
+              "metadata_repository",
+              "permission_repository",
+              "resolver",
+              "test_composes_permission_scope_and_metadata",
+              "test_metadata_cache_is_request_scoped",
+              "test_permission_denial_stops_before_scope_and_metadata",
+              "test_public_api_and_runtime_dependencies",
+              "test_rejects_non_mapping_metadata",
+              "test_rejects_non_mapping_resolver_result",
+              "test_requires_callable_dependencies",
+              "test_scope_denial_stops_before_metadata",
+              "unidad_scope_resolver"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "get_sql_connection",
+              "pymongo",
+              "pyodbc"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "__future__",
+              "core.connections.rbac_explicit_permission_repository",
+              "pathlib",
+              "pytest",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "server_registry"
+            ],
+            "path": "backend/tests/test_rbac_explicit_permission_repository.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "FakeConnection",
+              "FakeCursor",
+              "__init__",
+              "close",
+              "connection_factory",
+              "cursor",
+              "execute",
+              "fetchone",
+              "reject_identity",
+              "test_aborts_when_factory_returns_none",
+              "test_closes_connection_when_identity_validation_fails",
+              "test_grants_explicit_permission_after_identity",
+              "test_production_module_has_no_legacy_dependencies",
+              "test_rejects_missing_authenticated_email_before_opening",
+              "test_rejects_missing_permission_before_opening",
+              "test_requires_callable_connection_factory",
+              "test_returns_false_when_permission_is_absent",
+              "test_uses_parameters_without_interpolating_input",
+              "validate_identity"
+            ],
+            "tables_referenced": [
+              "Usuario_Catalogo",
+              "Usuario_Roles"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "asyncio",
+              "core"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "server_registry",
+              "tipo_conexion",
+              "update_server"
+            ],
+            "path": "backend/tests/test_server_registry_inactive_update.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "fake_get",
+              "fake_validate",
+              "fake_write",
+              "test_update_server_can_resolve_inactive_record_without_activating_it"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "server_registry"
+            ],
+            "path": "backend/tests/test_server_registry_operational_scope_fail_closed.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_operational_scope_exposes_single_refresh_server_set",
+              "test_operational_server_list_fails_closed_without_scope",
+              "test_visible_operational_list_requires_flag_and_scope"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "server_registry",
+              "tipo_conexion"
+            ],
+            "path": "backend/tests/test_server_registry_sql_listing_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_sql_server_registry_excludes_api_local_from_generic_servers_listing"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "ast",
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "create_server",
+              "tipo_conexion",
+              "update_server"
+            ],
+            "path": "backend/tests/test_servers_crud_explicit_rbac_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_function",
+              "_segment",
+              "_source",
+              "_tree",
+              "test_bypass_test_local_no_se_modifica_en_este_parche",
+              "test_get_server_conserva_scope_individual",
+              "test_listado_conserva_sql_first",
+              "test_mutaciones_conservan_no_mongo",
+              "test_no_role_hardcode_en_mutaciones",
+              "test_server_access_accepts_exact_branch_scope_without_global_bypass",
+              "test_servers_crud_usa_rbac_explicito",
+              "test_update_delete_conservan_core_guard"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.scheduler.jobs.sync_comercial_v2_job",
+              "datetime",
+              "pytest",
+              "sys",
+              "types",
+              "unittest.mock"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "tipo_conexion"
+            ],
+            "path": "backend/tests/test_sync_comercial_v2_detail_runtime_no_dml.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "FakeSistemaOrigen",
+              "FakeSyncResult",
+              "FakeUnidadNegocioConfig",
+              "__init__",
+              "_fake_units",
+              "_load_runtime_rows",
+              "_runtime_for",
+              "fail_detail",
+              "fake_detail_module",
+              "fake_schema_module",
+              "fake_sync_module",
+              "get_pos_config_for_unidad",
+              "get_unidades_negocio_pos",
+              "sync_detalle_producto_canonico_dia",
+              "test_detail_failure_does_not_invalidate_successful_header",
+              "test_failed_header_does_not_run_detail",
+              "test_header_success_runs_detail_with_commit_false"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.scheduler.jobs.sync_comercial_v2_job",
+              "datetime",
+              "pytest",
+              "sys",
+              "types",
+              "unittest.mock"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "tipo_conexion"
+            ],
+            "path": "backend/tests/test_sync_comercial_v2_multi_operational_date_no_dml.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "FakeSistemaOrigen",
+              "FakeSyncResult",
+              "FakeUnidadNegocioConfig",
+              "__init__",
+              "_fake_units",
+              "_load_runtime_rows",
+              "_runtime_for",
+              "fake_get_fecha_operacion",
+              "fake_header_sync",
+              "get_pos_config_for_unidad",
+              "get_unidades_negocio_pos",
+              "sync_detalle_producto_canonico_dia",
+              "test_each_unit_uses_its_own_operational_end_date"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "fastapi",
+              "modules.finanzas",
+              "os",
+              "pathlib",
+              "pytest",
+              "subprocess",
+              "sys"
+            ],
+            "integrations": [
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "server_registry"
+            ],
+            "path": "backend/tests/test_tesoreria_access_fail_closed.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_context",
+              "_unit",
+              "fail_context",
+              "fail_permission",
+              "has_global_access",
+              "test_empresa_asignada_limita_a_sus_unidades",
+              "test_fallo_lookup_permiso_funcional_falla_cerrado",
+              "test_fallo_sql_rbac_cierra_acceso",
+              "test_filtrado_es_exacto_y_no_por_substring",
+              "test_import_no_requiere_configuracion_sql",
+              "test_permiso_funcional_incompleto_falla_cerrado",
+              "test_permiso_restringido_no_otorga_alcance_global",
+              "test_permiso_sin_restriccion_otorga_alcance_global",
+              "test_permission_code_se_propaga_al_scope",
+              "test_record_no_autorizado_no_coincide_por_empresa",
+              "test_record_solo_con_empresa_se_deniega",
+              "test_rol_superadmin_sin_permiso_funcional_se_deniega",
+              "test_scope_global_con_decision_funcional",
+              "test_server_compartido_acepta_alcance_completo",
+              "test_server_compartido_requiere_alcance_completo",
+              "test_server_id_fuera_del_alcance_se_deniega",
+              "test_servidor_compartido_exige_sucursal_exacta",
+              "test_servidor_compartido_solo_por_servidor_se_deniega",
+              "test_sucursales_exponen_id_unico_de_unidad",
+              "test_tesoreria_routes_usan_permiso_por_operacion",
+              "test_usuario_sin_asignaciones_no_obtiene_acceso_global"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "importlib.util",
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "server_registry"
+            ],
+            "path": "backend/tests/test_worker_pos_sql_readonly_audit.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "load_helper",
+              "test_pos_readonly_has_no_job_supplied_connection_or_shell_contract",
+              "test_pos_readonly_rejects_mutation_sql_before_connection",
+              "test_pos_readonly_reuses_canonical_resolver_and_connection_factory",
+              "test_server_readonly_contract_has_no_job_supplied_credentials"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "server_registry",
+              "update_server"
+            ],
+            "path": "backend/tests/test_worker_server_registry_metadata_update_capability.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_api_local_health_dispatcher_requires_post_audit_rows",
+              "test_bridge_accepts_governed_api_local_health_test",
+              "test_bridge_does_not_require_inline_post_checks_for_server_registry_metadata_update",
+              "test_bridge_rejects_secret_or_inline_execution_fields_for_api_local_health_test",
+              "test_health_writer_uses_validated_canonical_writer_connection",
+              "test_mode_is_closed_and_forbids_secrets_and_inline_sql",
+              "test_mode_requires_readonly_preflight_and_post_audit",
+              "test_operational_mode_does_not_require_git_writer_lock",
+              "test_runtime_allows_disable_operations_only_and_never_enables_it",
+              "test_runtime_uses_canonical_server_registry_helper_and_preserves_active"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 28,
+          "scanned_files": 707,
+          "skipped_sensitive": 11
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-28T07:08:31Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
