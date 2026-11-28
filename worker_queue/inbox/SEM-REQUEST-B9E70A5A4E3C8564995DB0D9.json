@@ -1,0 +1,46 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 50,
+        "paths": [
+          "backend/modules/finanzas/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "RepositorioExpedientesCaja",
+          "idempotencia_ambito",
+          "incidencias_caja",
+          "Finanzas_IncidenciasCaja"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-B9E70A5A4E3C8564995DB0D9",
+  "mode": "READ_ONLY",
+  "objective": "CAJAS-V1-GATE12 auditoria diferencial y limitada del contrato de persistencia de expedientes de incidencias: detectar implementaciones existentes de RepositorioExpedientesCaja, idempotencia_ambito y migraciones SQL de incidencias, sin repetir metadata SQL de CortesCaja/CuadresZ ni auditoria HTTP. READ_ONLY sin cambios.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMERCIAL_POS",
+    "conflict_domains": [
+      "COMERCIAL_POS"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
