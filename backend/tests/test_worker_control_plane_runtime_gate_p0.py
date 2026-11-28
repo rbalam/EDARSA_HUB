@@ -111,3 +111,37 @@ def test_read_only_preflight_does_not_require_runtime_convergence(monkeypatch):
 
     assert result["ok"] is True
     assert result["production_touched"] is False
+
+
+
+def test_mcp_backend_identity_tracks_shared_mirror_sync(monkeypatch):
+    from types import SimpleNamespace
+    from tools.mirror_sync import worker_control_plane as wcp
+
+    shared_sha = ["a" * 40]
+    def fake_run(args, **kwargs):
+        sha = shared_sha[0] if args[-1] == "HEAD:tools/mirror_sync" else "b" * 40
+        return SimpleNamespace(returncode=0, stdout=sha)
+
+    monkeypatch.setattr(wcp, "run", fake_run)
+    before = wcp._compute_mcp_backend_tree_identity()
+    shared_sha[0] = "c" * 40
+    after = wcp._compute_mcp_backend_tree_identity()
+    assert before and after and before != after
+    assert wcp._dirty_paths_overlap_prefixes({"tools/mirror_sync/worker_lifecycle_recovery.py"}, wcp.MCP_BACKEND_IDENTITY_PATHS)
+
+
+def test_bounded_recovery_uses_canonical_report_signature(monkeypatch, tmp_path):
+    from tools.mirror_sync import worker_control_plane as wcp
+    from tools.mirror_sync import worker_runtime_fingerprint as fp
+
+    queue = tmp_path / "queue"
+    monkeypatch.setattr(wcp, "_is_production_env", lambda: False)
+    monkeypatch.setattr(fp, "ROOT", tmp_path)
+    monkeypatch.setattr(fp, "RUNTIME", queue / "runtime")
+    monkeypatch.setattr(fp, "build_mcp_runtime_convergence_report", lambda: {"overall_converged": True})
+    result = wcp.execute_bounded_runtime_convergence_recovery(incident_id="TEST-P0", requester_email="admin@example.invalid", repo_root=tmp_path, state_root=queue, dry_run=True)
+    assert result["status"] == "ALREADY_CONVERGED"
+    assert result["production_touched"] is False
+    with pytest.raises(ValueError, match="RUNTIME_RECOVERY_NON_CANONICAL_ROOT"):
+        wcp.execute_bounded_runtime_convergence_recovery(incident_id="TEST-P0", requester_email="admin@example.invalid", repo_root=tmp_path / "other", state_root=queue, dry_run=True)

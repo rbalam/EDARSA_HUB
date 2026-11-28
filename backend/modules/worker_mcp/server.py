@@ -764,6 +764,9 @@ def submit_objective_tool(
     - CROSS_DOMAIN_HANDOFF_REGISTER (mode=READ_ONLY|MUTATION, any valid source bounded_context, requires request_key):
       constraints={"target_domain": "...", "requested_capability": "...", "requested_constraints": {...}, "source_job_id": "...", "incident_id": "...", "dependency_id": "...", "authorization_ref": "...", "acceptance_criteria": [...], "delegation_chain": [...], "priority_class": "...", "auto_dispatch": true|false, "resolution_job_id": "..."}
       Registers a structured cross-domain need without granting permissions to target_domain; classifies, deduplicates, and returns certified evidence in get_go_context.
+    - CROSS_DOMAIN_HANDOFF_SUPERSEDE (mode=MUTATION, any valid domain bounded_context):
+      constraints={"handoff_id": "...", "superseded_by_job_id": "...", "expected_source_job_id": "...", "authorization_ref": "...", "reason": "...", "notification_only": true|false, "expected_notice_request_key": "...", "expected_notice_gate_id": "...", "certified_job_authorization_ref": "..."}
+      Applies governed handoff supersession; does not certify repair or grant permissions.
     - GATE_AUTHORIZATION_LIFECYCLE (mode=READ_ONLY|MUTATION, any valid domain bounded_context):
       constraints={"action": "REQUEST_CONSENT|CONSENT_STATUS|PREFLIGHT|MATERIALIZE|INSPECT|REVOKE", "gate_id": "...", "authorization_id": "...", "authorized_operations": [...], "allowed_paths": [...], "source_sha256": {...}, "base_head_sha": "...", "ttl_hours": 1..168, "verification_tests": [...], "rollback_plan": ..., "consent_request_id": "...", "consent_ttl_minutes": 5..120, "consent_evidence": {...}, "handoff_id": "...", "revocation_reason": "..."}
       Canonical verifiable human consent bridge and Gate authorization lifecycle without agent self-authorization or Production access.

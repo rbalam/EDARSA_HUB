@@ -210,7 +210,8 @@ ACTIVE_MCP_BACKEND_TREE = RUNTIME / "active_mcp_backend_tree_sha"
 MCP_BACKEND_IDENTITY_PATHS = (
     "backend/modules/worker_ingress",
     "backend/modules/worker_mcp",
-    "tools/mirror_sync/worker_runtime_fingerprint.py",
+    # Shared runtime dependencies can be imported transitively by MCP/backend.
+    "tools/mirror_sync",
 )
 AUTOCONVERGENCE_WORKER_COOLDOWN_SECONDS = int(
     os.environ.get("EDARSAHUB_AUTOCONVERGENCE_WORKER_COOLDOWN_SECONDS", "45")
@@ -2120,9 +2121,12 @@ def execute_bounded_runtime_convergence_recovery(
     root = repo_root or ROOT
     qroot = state_root or (root / ".git" / "universal-worker-queue")
     from tools.mirror_sync import git_divergence_guard as gdg
-    from tools.mirror_sync.worker_runtime_fingerprint import build_mcp_runtime_convergence_report
+    from tools.mirror_sync import worker_runtime_fingerprint as runtime_fp
 
-    before = build_mcp_runtime_convergence_report(repo_root=root, state_root=qroot)
+    # The canonical report reads its configured repository and queue only.
+    if root.resolve() != runtime_fp.ROOT.resolve() or qroot.resolve() != runtime_fp.RUNTIME.parent.resolve():
+        raise ValueError("RUNTIME_RECOVERY_NON_CANONICAL_ROOT")
+    before = runtime_fp.build_mcp_runtime_convergence_report()
     if before.get("overall_converged") is True:
         outcome = {
             "schema": "edarsahub.runtime-convergence-recovery.v1",
@@ -2237,7 +2241,7 @@ def execute_bounded_runtime_convergence_recovery(
         except Exception as exc:  # noqa: BLE001
             runtime_autoconv = {"status": "AUTOCONVERGENCE_ERROR", "error": type(exc).__name__}
 
-    after = build_mcp_runtime_convergence_report(repo_root=root, state_root=qroot)
+    after = runtime_fp.build_mcp_runtime_convergence_report()
     converged_now = bool(after.get("overall_converged") is True)
     outcome = {
         "schema": "edarsahub.runtime-convergence-recovery.v1",
