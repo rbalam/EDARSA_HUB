@@ -1,0 +1,54 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 15,
+        "paths": [
+          "backend/modules/rh/integridad_access_policy.py",
+          "backend/tests/test_rh_integridad_access_policy.py",
+          "backend/core/rbac/middleware.py",
+          "backend/core/rbac_sql/service.py",
+          "backend/core/access_context/sql_context.py"
+        ],
+        "search_terms": [
+          "CaseAccessContext",
+          "authorize_integrity_case",
+          "identity_verified",
+          "assignment_verified",
+          "conflict_check_verified",
+          "sql_permissions_verified",
+          "RBACExplicitDependency",
+          "can_access_empresa",
+          "can_access_unidad"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-69F270267F953C03E9192414",
+  "mode": "READ_ONLY",
+  "objective": "Gate8C READ_ONLY: validate exactly the newly certified RH integridad_access_policy.py and regression test contract, then map future trusted SQL-backed caller boundary. Identify risks of caller-controlled *_verified bools, missing binding to canonical effective SQL RBAC, per-case assignment, independent conflict checks and revocation, separate identity/evidence access, audit-on-read and notifications generic exposure. Produce exact contract and negative tests for next authorized implementation, WITHOUT building routes, database tables, reading cases or changing Production. Gate8B integrated certified commit f2b363c65cc0d4115b3f3680a7bba2208f732db1, do not repeat prior audits.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "RH",
+    "conflict_domains": [
+      "RH"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
