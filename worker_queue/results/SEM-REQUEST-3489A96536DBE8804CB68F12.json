@@ -1,0 +1,598 @@
+{
+  "base_sha": "cf5250556818e2044aa3b7fefd58a1bf004505a9",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-28T08:36:58Z",
+  "execution_base_sha": "cf5250556818e2044aa3b7fefd58a1bf004505a9",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-3489A96536DBE8804CB68F12",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-28T08:38:58Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.rh",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.security",
+              "core.unidades_service",
+              "core.user_access_context",
+              "fastapi",
+              "fastapi.responses",
+              "io",
+              "modules.rh.schemas",
+              "modules.rh.service",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "get_current_user",
+              "rh_incidencias_nomina"
+            ],
+            "path": "backend/modules/rh/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/asistencia",
+              "/asistencia/{check_id}/validar",
+              "/auditoria-fiscal",
+              "/candidatos",
+              "/candidatos/{candidato_id}",
+              "/catalogos/puestos",
+              "/catalogos/puestos/{puesto_id}",
+              "/catalogos/script-inicializacion",
+              "/catalogos/sucursales",
+              "/catalogos/tipos-incidencias",
+              "/catalogos/tipos-incidencias/{tipo_id}",
+              "/colaboradores",
+              "/colaboradores/{colaborador_id}",
+              "/dashboard",
+              "/incidencias",
+              "/incidencias/importar-excel",
+              "/incidencias/plantilla-excel",
+              "/nominas/flujo",
+              "/nominas/flujo/{flujo_id}/autorizar-dg",
+              "/nominas/flujo/{flujo_id}/enviar-rh",
+              "/nominas/flujo/{flujo_id}/enviar-tesoreria",
+              "/nominas/flujo/{flujo_id}/marcar-pagado",
+              "/nominas/flujo/{flujo_id}/validar-gerente",
+              "/reclutamiento/dashboard",
+              "/reclutamiento/script-inicializacion",
+              "/vacantes",
+              "/vacantes/{vacante_id}"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_empresas_codigos_sql",
+              "get_user_sucursales_permitidas_rh",
+              "resolve_rh_allowed_sucursal_ids",
+              "rrhh_actualizar_candidato",
+              "rrhh_actualizar_colaborador",
+              "rrhh_actualizar_puesto",
+              "rrhh_actualizar_tipo_incidencia",
+              "rrhh_actualizar_vacante",
+              "rrhh_autorizar_nomina_dg",
+              "rrhh_catalogos_script",
+              "rrhh_crear_candidato",
+              "rrhh_crear_colaborador",
+              "rrhh_crear_flujo_nomina",
+              "rrhh_crear_incidencia",
+              "rrhh_crear_puesto",
+              "rrhh_crear_tipo_incidencia",
+              "rrhh_crear_vacante",
+              "rrhh_dar_baja_colaborador",
+              "rrhh_dashboard",
+              "rrhh_eliminar_candidato",
+              "rrhh_eliminar_puesto",
+              "rrhh_eliminar_tipo_incidencia",
+              "rrhh_eliminar_vacante",
+              "rrhh_enviar_nomina_rh",
+              "rrhh_enviar_nomina_tesoreria",
+              "rrhh_importar_incidencias_excel",
+              "rrhh_listar_asistencias",
+              "rrhh_listar_auditoria_fiscal",
+              "rrhh_listar_candidatos",
+              "rrhh_listar_colaboradores",
+              "rrhh_listar_flujos_nomina",
+              "rrhh_listar_incidencias",
+              "rrhh_listar_puestos",
+              "rrhh_listar_sucursales",
+              "rrhh_listar_tipos_incidencias",
+              "rrhh_listar_vacantes",
+              "rrhh_marcar_nomina_pagada",
+              "rrhh_obtener_colaborador",
+              "rrhh_plantilla_incidencias_excel",
+              "rrhh_reclutamiento_dashboard",
+              "rrhh_reclutamiento_script",
+              "rrhh_registrar_asistencia",
+              "rrhh_validar_asistencia",
+              "rrhh_validar_nomina_gerente"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.rh",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "fastapi",
+              "io",
+              "logging",
+              "modules.rh.repository",
+              "modules.rh.schemas",
+              "openpyxl",
+              "openpyxl.styles",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "rh_incidencias_nomina"
+            ],
+            "path": "backend/modules/rh/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RHAsistenciaService",
+              "RHAuditoriaService",
+              "RHCatalogosService",
+              "RHColaboradoresService",
+              "RHFlujoNominaService",
+              "RHIncidenciasService",
+              "RHReclutamientoService",
+              "_check_admin_role",
+              "_enforce_incidencia_scope",
+              "_enforce_sucursal_in_scope",
+              "_get_server",
+              "_transicion_estado",
+              "_validar_tipo_incidencia",
+              "_validar_transicion",
+              "actualizar_candidato",
+              "actualizar_colaborador",
+              "actualizar_puesto",
+              "actualizar_tipo_incidencia",
+              "actualizar_vacante",
+              "autorizar_dg",
+              "crear_candidato",
+              "crear_colaborador",
+              "crear_flujo",
+              "crear_incidencia",
+              "crear_puesto",
+              "crear_tipo_incidencia",
+              "crear_vacante",
+              "dar_baja_colaborador",
+              "eliminar_candidato",
+              "eliminar_puesto",
+              "eliminar_tipo_incidencia",
+              "eliminar_vacante",
+              "enviar_a_rh",
+              "enviar_tesoreria",
+              "generar_plantilla_excel",
+              "get_dashboard",
+              "get_script_inicializacion",
+              "importar_desde_excel",
+              "listar_asistencias",
+              "listar_auditoria",
+              "listar_candidatos",
+              "listar_colaboradores",
+              "listar_flujos",
+              "listar_incidencias",
+              "listar_puestos",
+              "listar_sucursales",
+              "listar_tipos_incidencias",
+              "listar_vacantes",
+              "marcar_pagado",
+              "obtener_colaborador_detalle",
+              "obtener_script_inicializacion",
+              "registrar_asistencia",
+              "validar_asistencia",
+              "validar_gerente"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.rh",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.db",
+              "core.unidades_service",
+              "logging",
+              "os",
+              "re",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "rh_incidencias_nomina"
+            ],
+            "path": "backend/modules/rh/repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "escape_sql_string",
+              "execute_hub_query",
+              "execute_hub_query_params",
+              "get_db",
+              "get_edarsa_hub_server",
+              "get_edarsa_hub_server_sync",
+              "get_script_reclutamiento",
+              "init_rh_repository",
+              "query_actualizar_candidato",
+              "query_actualizar_colaborador",
+              "query_actualizar_estatus_flujo",
+              "query_actualizar_puesto",
+              "query_actualizar_tipo_incidencia",
+              "query_actualizar_vacante",
+              "query_asistencias_colaborador",
+              "query_auditoria_colaborador",
+              "query_crear_candidato",
+              "query_crear_colaborador",
+              "query_crear_flujo_nomina",
+              "query_crear_incidencia",
+              "query_crear_puesto",
+              "query_crear_tipo_incidencia",
+              "query_crear_vacante",
+              "query_dar_baja_colaborador",
+              "query_dashboard_reclutamiento",
+              "query_dashboard_rh",
+              "query_desactivar_tipo_incidencia",
+              "query_eliminar_candidato",
+              "query_eliminar_puesto",
+              "query_eliminar_vacante",
+              "query_incidencias_colaborador",
+              "query_insertar_incidencia_importacion",
+              "query_listar_asistencias",
+              "query_listar_auditoria_fiscal",
+              "query_listar_candidatos",
+              "query_listar_colaboradores",
+              "query_listar_flujos_nomina",
+              "query_listar_incidencias",
+              "query_listar_puestos",
+              "query_listar_sucursales",
+              "query_listar_tipos_incidencias",
+              "query_listar_vacantes",
+              "query_obtener_colaborador",
+              "query_obtener_colaboradores_activos_para_importacion",
+              "query_obtener_estatus_flujo",
+              "query_obtener_tipos_incidencias_validos",
+              "query_registrar_asistencia",
+              "query_validar_asistencia",
+              "query_verificar_colaboradores_puesto",
+              "query_verificar_flujo_existente",
+              "validate_identifier"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.rbac",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.rbac_helper_sql",
+              "core.security",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "fastapi",
+              "fastapi.security",
+              "functools",
+              "logging",
+              "service",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "get_current_user",
+              "get_sql_connection",
+              "rbacexplicitdependency",
+              "usuario_catalogo",
+              "usuario_permisosrolmodulo"
+            ],
+            "path": "backend/core/rbac/middleware.py",
+            "rbac_contracts": [
+              "Usuario_Roles",
+              "get_current_user"
+            ],
+            "routes": [
+              "/cargos/{id}/aplicar",
+              "/endpoint"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RBACAllDependency",
+              "RBACAnyDependency",
+              "RBACDependency",
+              "RBACExplicitDependency",
+              "RBACExplicitDualDependency",
+              "__call__",
+              "__init__",
+              "_get_db",
+              "get_current_user_from_token",
+              "get_current_user_with_permissions",
+              "require_all_permissions",
+              "require_any_permission",
+              "require_explicit_permission",
+              "require_explicit_permission_dual",
+              "require_permission"
+            ],
+            "tables_referenced": [
+              "Usuario_Acciones",
+              "Usuario_Catalogo",
+              "Usuario_Modulos",
+              "Usuario_PermisosRolModulo",
+              "Usuario_Roles",
+              "Usuario_RolesAsignacion"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.rbac_sql",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.sql_first.db"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "can_access_empresa",
+              "can_access_unidad",
+              "usuario_permisosrolmodulo"
+            ],
+            "path": "backend/core/rbac_sql/service.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RBACSQLService",
+              "_has_superadmin_role",
+              "build_context",
+              "can_access_empresa",
+              "can_access_permission",
+              "can_access_servidor",
+              "can_access_sucursal",
+              "can_access_unidad",
+              "can_access_unit_metadata",
+              "get_effective_permissions",
+              "get_empresas",
+              "get_permission_scope_by_code",
+              "get_roles",
+              "get_scope_assignment_state",
+              "get_servidores",
+              "get_sucursales",
+              "get_unidades"
+            ],
+            "tables_referenced": [
+              "Servidores_Conexiones",
+              "Sistema_SucursalServidorMapeo",
+              "Sistema_Sucursales",
+              "Unidades_Negocio",
+              "Usuario_Acciones",
+              "Usuario_EmpresasAsignacion",
+              "Usuario_Modulos",
+              "Usuario_PermisosRolModulo",
+              "Usuario_Roles",
+              "Usuario_RolesAsignacion",
+              "Usuario_ServidoresAsignacion",
+              "Usuario_SucursalesAsignacion"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.access_context",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.rbac_sql.service"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "can_access_empresa",
+              "can_access_unidad"
+            ],
+            "path": "backend/core/access_context/sql_context.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "build_user_access_context",
+              "can_access_empresa",
+              "can_access_sucursal",
+              "can_access_unidad"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.centro_control",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.sql_first.connection_factory",
+              "core.unidades_service",
+              "datetime",
+              "json",
+              "logging",
+              "os",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "get_email_recipients",
+              "usuario_catalogo"
+            ],
+            "path": "backend/core/centro_control/recipients_manager.py",
+            "rbac_contracts": [
+              "Usuario_Roles",
+              "Usuario_RolesContexto"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_conn",
+              "_created_at_iso",
+              "_merge_dedup",
+              "_normalizar_tel",
+              "_parse_payload",
+              "_role_based_recipients",
+              "_row_to_recipient",
+              "add_recipient",
+              "delete_recipient",
+              "get_all_recipients",
+              "get_email_recipients",
+              "get_recipients_summary",
+              "get_whatsapp_recipients",
+              "update_recipient"
+            ],
+            "tables_referenced": [
+              "Sistema_AlertasDestinatarios",
+              "Usuario_Catalogo",
+              "vw_Usuario_RolesContexto_Efectivo"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "email_service",
+              "logging",
+              "repositories.sql_base_repository",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "notificar_tarea_asignada"
+            ],
+            "path": "backend/modules/fase2_operativo/services/notification_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "NotificationService",
+              "__init__",
+              "_generar_html_cargo_aplicado",
+              "_generar_html_tarea_asignada",
+              "_generar_html_tarea_vencida",
+              "_generar_html_workflow_creado",
+              "_registrar_notificacion",
+              "get_notification_service",
+              "notificar_cargo_aplicado",
+              "notificar_tarea_asignada",
+              "notificar_tarea_vencida",
+              "notificar_workflow_creado"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.fase2_operativo",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "api_schemas",
+              "core.corporate_filters.request_resolver",
+              "core.corporate_filters.service",
+              "core.security",
+              "core.unidades_service",
+              "db_utils",
+              "fastapi",
+              "schemas.enums",
+              "services.tarea_service",
+              "services.workflow_service",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "get_current_user"
+            ],
+            "path": "backend/modules/fase2_operativo/routes/tarea_routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/marcar-vencidas",
+              "/{tarea_id}",
+              "/{tarea_id}/asignar",
+              "/{tarea_id}/completar",
+              "/{tarea_id}/en-progreso",
+              "/{tarea_id}/historial",
+              "/{tarea_id}/reasignar"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "asignar_tarea",
+              "completar_tarea",
+              "crear_tarea",
+              "get_db",
+              "listar_tareas",
+              "marcar_en_progreso",
+              "marcar_tareas_vencidas",
+              "obtener_historial_tarea",
+              "obtener_tarea",
+              "reasignar_tarea"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 9,
+          "scanned_files": 10,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-28T08:36:58Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
