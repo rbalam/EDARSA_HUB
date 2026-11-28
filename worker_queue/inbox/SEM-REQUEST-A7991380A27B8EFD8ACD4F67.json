@@ -1,0 +1,74 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "old_text": "def validate_handoff_constraints(\n    request: Mapping[str, Any],\n    *,\n    current_user: Mapping[str, Any] | None = None,\n    requester: Mapping[str, Any] | None = None,\n    state_root: Path | None = None,\n    now_utc: datetime | None = None,\n    now_epoch: float | None = None,\n    dry_run: bool = True,\n) -> dict[str, Any]:\n    \"\"\"Validate cross-domain handoff request fail-closed (used by preflight & registration).\"\"\"\n    qroot = state_root or _default_state_root()\n    _assert_no_secrets(request, \"request\")\n    _assert_no_untrusted_prompt(request, \"request\")\n\n    source_domain = validate_domain_token(request.get(\"bounded_context\"), field_name=\"source_domain\")\n    handoff_mode = _clean(request.get(\"mode\") or \"READ_ONLY\").upper()\n    if handoff_mode not in {\"READ_ONLY\", \"MUTATION\"}:\n        raise HandoffError(\"HANDOFF_MODE_INVALID\")\n\n    source_objective = _clean(request.get(\"objective\"))\n    if not source_objective or len(source_objective) < 5 or len(source_objective) > MAX_OBJECTIVE_CHARS:\n        raise HandoffError(\"HANDOFF_OBJECTIVE_INVALID\")\n\n    constraints = request.get(\"constraints\")\n    if not isinstance(constraints, Mapping):\n        raise HandoffError(\"SEMANTIC_CONSTRAINTS_INVALID\")\n\n    allowed_keys = {\n        \"target_domain\",\n        \"source_job_id\",\n        \"incident_id\",\n        \"dependency_id\",\n        \"authorization_ref\",\n        \"acceptance_criteria\",\n        \"requested_capability\",\n        \"requested_constraints\",\n        \"delegation_chain\",\n        \"priority_class\",\n        \"auto_dispatch\",\n        \"resolution_job_id\",\n        \"successor_spec\",\n    }\n    extra = sorted(set(constraints.keys()) - allowed_keys)\n    if extra:\n        raise HandoffError(f\"SEMANTIC_CONSTRAINTS_UNSUPPORTED:{','.join(extra)}\")\n\n",
+      "path": "tools/mirror_sync/worker_cross_domain_handoff.py",
+      "replacement": "def validate_handoff_constraints(\n    request: Mapping[str, Any],\n    *,\n    current_user: Mapping[str, Any] | None = None,\n    requester: Mapping[str, Any] | None = None,\n    state_root: Path | None = None,\n    now_utc: datetime | None = None,\n    now_epoch: float | None = None,\n    dry_run: bool = True,\n) -> dict[str, Any]:\n    \"\"\"Validate cross-domain handoff request fail-closed (used by preflight & registration).\"\"\"\n    qroot = state_root or _default_state_root()\n    _assert_no_secrets(request, \"request\")\n    _assert_no_untrusted_prompt(request, \"request\")\n\n    source_domain = validate_domain_token(request.get(\"bounded_context\"), field_name=\"source_domain\")\n    handoff_mode = _clean(request.get(\"mode\") or \"READ_ONLY\").upper()\n    if handoff_mode not in {\"READ_ONLY\", \"MUTATION\"}:\n        raise HandoffError(\"HANDOFF_MODE_INVALID\")\n\n    source_objective = _clean(request.get(\"objective\"))\n    if not source_objective or len(source_objective) < 5 or len(source_objective) > MAX_OBJECTIVE_CHARS:\n        raise HandoffError(\"HANDOFF_OBJECTIVE_INVALID\")\n\n    constraints = request.get(\"constraints\")\n    if not isinstance(constraints, Mapping):\n        raise HandoffError(\"SEMANTIC_CONSTRAINTS_INVALID\")\n\n    allowed_keys = {\n        \"target_domain\",\n        \"source_job_id\",\n        \"incident_id\",\n        \"dependency_id\",\n        \"authorization_ref\",\n        \"acceptance_criteria\",\n        \"requested_capability\",\n        \"requested_constraints\",\n        \"delegation_chain\",\n        \"priority_class\",\n        \"auto_dispatch\",\n        \"resolution_job_id\",\n        \"successor_spec\",\n        \"existing_handoff_id\",\n    }\n    extra = sorted(set(constraints.keys()) - allowed_keys)\n    if extra:\n        raise HandoffError(f\"SEMANTIC_CONSTRAINTS_UNSUPPORTED:{','.join(extra)}\")\n\n    if \"existing_handoff_id\" in constraints:\n        # A narrow ID-based continuation, never a new handoff or mutation successor.\n        if set(constraints) != {\"existing_handoff_id\", \"successor_spec\"}:\n            raise HandoffSecurityError(\"HANDOFF_SUCCESSOR_ID_FIELDS_INVALID\")\n        if handoff_mode != \"READ_ONLY\":\n            raise HandoffSecurityError(\"HANDOFF_SUCCESSOR_ID_READ_ONLY_REQUIRED\")\n        hid = _validate_optional_token(constraints.get(\"existing_handoff_id\"), field_name=\"existing_handoff_id\", job_id_style=True)\n        if not hid:\n            raise HandoffError(\"HANDOFF_ID_INVALID\")\n        existing = load_handoff(hid, state_root=qroot)\n        if existing is None:\n            raise HandoffError(\"HANDOFF_NOT_FOUND\")\n        if existing.get(\"handoff_id\") != hid or existing.get(\"source_domain\") != source_domain:\n            raise HandoffSecurityError(\"HANDOFF_SUCCESSOR_DOMAIN_MISMATCH\")\n        target = validate_domain_token(existing.get(\"target_domain\"), field_name=\"target_domain\")\n        if existing.get(\"production_allowed\") is not False or existing.get(\"production_touched\") is not False:\n            raise HandoffSecurityError(\"HANDOFF_PRODUCTION_FORBIDDEN\")\n        if existing.get(\"handoff_mode\") != \"READ_ONLY\":\n            raise HandoffSecurityError(\"HANDOFF_SUCCESSOR_ID_READ_ONLY_REQUIRED\")\n        _verify_caller_rbac_and_scope(\n            current_user=current_user, requester=requester, source_domain=source_domain,\n            target_domain=target, handoff_mode=\"READ_ONLY\",\n        )\n        spec = _validate_successor_spec(constraints.get(\"successor_spec\"), source_domain=source_domain)\n        if spec is None or spec[\"mode\"] != \"READ_ONLY\" or spec.get(\"authorization_ref\"):\n            raise HandoffSecurityError(\"HANDOFF_SUCCESSOR_ID_READ_ONLY_REQUIRED\")\n        fingerprint = existing.get(\"payload_fingerprint\")\n        if not fingerprint:\n            raise HandoffSecurityError(\"HANDOFF_SUCCESSOR_PAYLOAD_CONFLICT\")\n        prior = existing.get(\"successor_spec\")\n        if prior is not None and prior != spec:\n            raise HandoffConflictError(\"HANDOFF_SUCCESSOR_ALREADY_DEFINED\")\n        if prior is None:\n            _validate_existing_successor_registration(existing, spec, current_user=current_user)\n        return {\n            \"duplicate\": prior is not None, \"pending_update\": False,\n            \"successor_update\": prior is None, \"existing_handoff\": existing,\n            \"successor_spec\": spec, \"handoff_id\": hid,\n            \"dependency_id\": existing[\"dependency_id\"], \"source_domain\": source_domain,\n            \"target_domain\": target, \"request_key\": existing[\"request_key\"],\n            \"payload_fingerprint\": fingerprint, \"production_touched\": False,\n        }\n\n",
+      "source_sha256": "064122cd2036f08c3caff125a20ef60abfcf1527b2b4250e175f39a8cf8167e6",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "_CROSS_DOMAIN_HANDOFF_ALLOWED_CONSTRAINTS: tuple[str, ...] = (\n    \"acceptance_criteria\",",
+      "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+      "replacement": "_CROSS_DOMAIN_HANDOFF_ALLOWED_CONSTRAINTS: tuple[str, ...] = (\n    \"existing_handoff_id\",\n    \"acceptance_criteria\",",
+      "source_sha256": "40a6ec44b701c32375d71f4f1ff1481a128b71afb6407c290ea3565f95a7c940",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "path": "backend/tests/test_worker_universal_multichat_handoff_p2.py",
+      "replacement": "\n\n\ndef test_aap05_successor_by_id_preserves_original(tmp_path):\n    qroot = _setup_queue(tmp_path)\n    actor = _canonical_actor()\n    request = {\n        \"objective\": \"Existing dependency for ID based continuation\",\n        \"bounded_context\": \"SQL_RBAC_019\", \"mode\": \"READ_ONLY\",\n        \"capability\": \"CROSS_DOMAIN_HANDOFF_REGISTER\",\n        \"request_key\": \"aap05-original\",\n        \"constraints\": {\"target_domain\": \"WORKER_CONTROL_PLANE\", \"auto_dispatch\": False},\n    }\n    initial = handoff_mod.validate_handoff_constraints(request, current_user=actor, state_root=qroot)\n    record = dict(initial[\"candidate\"])\n    record.update(lifecycle_state=\"RETURNED_TO_SOURCE\", dependency_satisfied=True,\n                  certification=\"CERTIFIED_READ_ONLY\", resolution_job_id=\"CERTIFIED-ORIGINAL\")\n    handoff_mod.save_handoff(record, state_root=qroot)\n    hid = record[\"handoff_id\"]\n    spec = {\"objective\": \"Read existing certified evidence\", \"bounded_context\": \"SQL_RBAC_019\",\n            \"mode\": \"READ_ONLY\", \"capability\": \"WORKER_RESULT_DETAIL_READ\",\n            \"request_key\": \"aap05-successor\", \"constraints\": {\"source_job_id\": \"CERTIFIED-ORIGINAL\"}}\n    req = {**request, \"objective\": \"Continue by persistent handoff identifier\",\n           \"request_key\": \"aap05-continuation\",\n           \"constraints\": {\"existing_handoff_id\": hid, \"successor_spec\": spec}}\n    pf = handoff_mod.validate_handoff_constraints(req, current_user=actor, state_root=qroot)\n    assert pf[\"successor_update\"] is True\n    assert handoff_mod.load_handoff(hid, state_root=qroot) == record\n    for invalid in (\n        {**req, \"bounded_context\": \"FINANZAS\"},\n        {**req, \"mode\": \"MUTATION\"},\n        {**req, \"constraints\": {**req[\"constraints\"], \"auto_dispatch\": True}},\n        {**req, \"constraints\": {**req[\"constraints\"], \"successor_spec\": {**spec, \"mode\": \"MUTATION\"}}},\n    ):\n        with pytest.raises(handoff_mod.HandoffError):\n            handoff_mod.validate_handoff_constraints(invalid, current_user=actor, state_root=qroot)\n    result = handoff_mod.register_cross_domain_handoff(req, current_user=actor, state_root=qroot)\n    assert result[\"status\"] == \"SUCCESSOR_REGISTERED\"\n    saved = handoff_mod.load_handoff(hid, state_root=qroot)\n    for key in (\"payload_fingerprint\", \"request_key\", \"certification\", \"resolution_job_id\", \"dependency_satisfied\"):\n        assert saved[key] == record[key]\n    assert handoff_mod.validate_handoff_constraints(req, current_user=actor, state_root=qroot)[\"duplicate\"] is True\n    assert handoff_mod.register_cross_domain_handoff(req, current_user=actor, state_root=qroot)[\"status\"] == \"EXISTS\"\n    conflict = {**req, \"constraints\": {**req[\"constraints\"], \"successor_spec\": {**spec, \"request_key\": \"different-successor\"}}}\n    with pytest.raises(handoff_mod.HandoffConflictError):\n        handoff_mod.validate_handoff_constraints(conflict, current_user=actor, state_root=qroot)\n",
+      "source_sha256": "0ebd5b7aea536fe4519828567fbce64bd2c4dbd83366180e4c7939e49caf38c4",
+      "type": "append_once"
+    }
+  ],
+  "authorization_ref": "GO-WK70-AAP-05-SUCCESSOR-BY-ID-R1",
+  "checks": [
+    {
+      "paths": [
+        "tools/mirror_sync/worker_cross_domain_handoff.py",
+        "backend/modules/worker_ingress/semantic_capabilities.py",
+        "backend/tests/test_worker_universal_multichat_handoff_p2.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_universal_multichat_handoff_p2.py",
+        "backend/tests/test_worker_runtime_convergence_gate_b1.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-A7991380A27B8EFD8ACD4F67",
+  "mode": "MUTATION",
+  "objective": "Implementar AAP-05 registro de sucesor READ_ONLY por identificador persistido, con validación canónica e idempotencia.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
