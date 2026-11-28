@@ -1,0 +1,666 @@
+{
+  "base_sha": "bd73924f9f4f1691d9224daa122263ba8033061e",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-28T06:15:55Z",
+  "execution_base_sha": "bd73924f9f4f1691d9224daa122263ba8033061e",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-B9E70A5A4E3C8564995DB0D9",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-28T06:17:03Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.rbac_sql.service",
+              "dataclasses",
+              "modules.finanzas.incidencias_caja_context",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "incidencias_caja"
+            ],
+            "path": "backend/modules/finanzas/incidencias_caja_access.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AccesoCajaDenegado",
+              "AccesoCajaValidado",
+              "validar_acceso_creacion_caja"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "modules.finanzas.incidencias_caja_context",
+              "modules.finanzas.incidencias_caja_contracts",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "idempotencia_ambito",
+              "incidencias_caja",
+              "repositorioexpedientescaja"
+            ],
+            "path": "backend/modules/finanzas/incidencias_caja_application.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "DependenciasCrearCaja",
+              "PersistenciaCajaNoDisponible",
+              "RepositorioExpedientesCaja",
+              "crear_si_no_existe",
+              "preparar_expediente_v1",
+              "registrar_expediente_v1"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "modules.finanzas.incidencias_caja_workflow",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "incidencias_caja"
+            ],
+            "path": "backend/modules/finanzas/incidencias_caja_authorization_adapter.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AutorizacionCajaNoVerificable",
+              "EstadoAutorizacionCajaCanonica",
+              "proyectar_autorizacion_caja"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "modules.finanzas.incidencias_caja_authorization_adapter",
+              "modules.finanzas.incidencias_caja_workflow",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "incidencias_caja"
+            ],
+            "path": "backend/modules/finanzas/incidencias_caja_authorization_followup.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "evaluar_seguimiento_con_autorizacion_sql"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "hashlib",
+              "modules.finanzas.incidencias_caja_contracts",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "idempotencia_ambito",
+              "incidencias_caja"
+            ],
+            "path": "backend/modules/finanzas/incidencias_caja_context.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AlcanceCaja",
+              "CajasContextError",
+              "MotivoCajaCatalogo",
+              "RegistroCajaValidado",
+              "preparar_registro_caja"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "decimal",
+              "enum",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "incidencias_caja"
+            ],
+            "path": "backend/modules/finanzas/incidencias_caja_contracts.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "IncidenciaCajaCreate",
+              "IncidenciaCajaRead",
+              "TipoIncidenciaCaja"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.communications.notifications.schemas",
+              "dataclasses",
+              "enum",
+              "urllib.parse"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "incidencias_caja"
+            ],
+            "path": "backend/modules/finanzas/incidencias_caja_notifications.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "EventoCajaNotificable",
+              "IntencionComunicacion",
+              "NotificacionCajaNoAutorizada",
+              "SolicitudNotificacionCaja",
+              "preparar_intencion_whatsapp_caja"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "modules.finanzas.incidencias_caja_access",
+              "modules.finanzas.incidencias_caja_application",
+              "modules.finanzas.incidencias_caja_context",
+              "modules.finanzas.incidencias_caja_contracts",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "incidencias_caja"
+            ],
+            "path": "backend/modules/finanzas/incidencias_caja_orchestration.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CatalogoCajaNoVerificable",
+              "ResolutoresCajaCanonicos",
+              "preparar_caja_autenticada_v1"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "enum"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "incidencias_caja"
+            ],
+            "path": "backend/modules/finanzas/incidencias_caja_policy.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "DecisionOperacionCaja",
+              "MomentoAutorizacion",
+              "PermisoOrigen",
+              "evaluar_operacion",
+              "validar_alcance_empresa_unidad"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.rbac_sql.service",
+              "core.security",
+              "fastapi",
+              "modules.finanzas.incidencias_caja_access",
+              "modules.finanzas.incidencias_caja_contracts"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "incidencias_caja"
+            ],
+            "path": "backend/modules/finanzas/incidencias_caja_routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/bootstrap"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "obtener_bootstrap_cajas"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "enum",
+              "modules.finanzas.incidencias_caja_policy"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "incidencias_caja"
+            ],
+            "path": "backend/modules/finanzas/incidencias_caja_workflow.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "EstadoAutorizacion",
+              "EstadoConciliacion",
+              "EstadoOperacion",
+              "EstadoVistoBueno",
+              "SeguimientoIncidenciaCaja",
+              "SituacionIncidenciaCaja",
+              "evaluar_seguimiento_v1"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "dataclasses",
+              "modules.finanzas.incidencias_caja_access",
+              "modules.finanzas.incidencias_caja_context",
+              "pytest",
+              "unittest.mock"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "incidencias_caja"
+            ],
+            "path": "backend/tests/test_incidencias_caja_access.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "resolver",
+              "scope",
+              "test_error_rbac_sql_denegado",
+              "test_no_acepta_sucursal_ajena",
+              "test_no_autorizado_por_defecto",
+              "test_no_confunde_usuario_o_id_invalido",
+              "test_no_convierte_error_canonico_en_acceso_global",
+              "test_permite_solo_scope_sql_y_relacion_canonica",
+              "verificar"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "dataclasses",
+              "modules.finanzas.incidencias_caja_application",
+              "modules.finanzas.incidencias_caja_context",
+              "modules.finanzas.incidencias_caja_contracts",
+              "pytest"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "idempotencia_ambito",
+              "incidencias_caja"
+            ],
+            "path": "backend/tests/test_incidencias_caja_application.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "Nunca",
+              "RepositorioPrueba",
+              "SinConfirmacion",
+              "__init__",
+              "crear_si_no_existe",
+              "fixtures",
+              "test_delega_clave_al_repositorio_transaccional_sin_generar_folio_local",
+              "test_no_acepta_repositorio_que_devuelve_folio_vacio",
+              "test_no_llama_repositorio_si_rls_rechaza",
+              "test_no_simula_exito_si_sql_falta",
+              "test_preparar_expediente_no_persiste"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "dataclasses",
+              "modules.finanzas.incidencias_caja_authorization_adapter",
+              "modules.finanzas.incidencias_caja_workflow",
+              "pytest"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "incidencias_caja"
+            ],
+            "path": "backend/tests/test_incidencias_caja_authorization_adapter.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "fila",
+              "proyectar",
+              "test_en_proceso_nunca_se_considera_aprobada",
+              "test_estados_canonicos",
+              "test_falla_cerrado_si_evidencia_invalida",
+              "test_no_interpreta_ausencia_como_no_requerida"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "dataclasses",
+              "modules.finanzas.incidencias_caja_authorization_adapter",
+              "modules.finanzas.incidencias_caja_authorization_followup",
+              "modules.finanzas.incidencias_caja_policy",
+              "modules.finanzas.incidencias_caja_workflow",
+              "pytest"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "incidencias_caja"
+            ],
+            "path": "backend/tests/test_incidencias_caja_authorization_followup.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "evaluar",
+              "expediente",
+              "row",
+              "test_autorizada_canonica_permite_cierre_si_todo_resuelto",
+              "test_cliente_no_puede_forzar_aprobada",
+              "test_en_proceso_no_cierra",
+              "test_fila_ajena_no_autoriza",
+              "test_pendiente_no_cierra",
+              "test_rechazada_no_cierra_ni_continua",
+              "test_rls_falla_antes_de_proyectar_autorizacion",
+              "test_sin_fila_no_infiere_no_requerida"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "modules.finanzas.incidencias_caja_context",
+              "modules.finanzas.incidencias_caja_contracts",
+              "pytest"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "idempotencia_ambito",
+              "incidencias_caja"
+            ],
+            "path": "backend/tests/test_incidencias_caja_context.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_context",
+              "_motivo",
+              "_preparar",
+              "_solicitud",
+              "test_catalogo_especifico_prevalece_sobre_global",
+              "test_duplicidad_equivalencia_ambigua_bloquea",
+              "test_idempotencia_estable_y_aislada_por_usuario_y_contexto",
+              "test_identidad_invalida_rechazada",
+              "test_motivo_de_otro_origen_no_se_puede_utilizar",
+              "test_motivo_inactivo_rechazado",
+              "test_registro_validado_preserva_equivalencia_y_solicitud",
+              "test_sucursal_ajena_se_rechaza_aunque_empresa_y_unidad_coincidan"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "dataclasses",
+              "modules.finanzas.incidencias_caja_notifications",
+              "pytest"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "incidencias_caja"
+            ],
+            "path": "backend/tests/test_incidencias_caja_notifications.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "preparar",
+              "request",
+              "test_bloquea_url_no_canonica",
+              "test_denegacion_por_precondiciones",
+              "test_intencion_reutiliza_esquema_canonico_no_envia",
+              "test_rechaza_falta_destinatario"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "dataclasses",
+              "modules.finanzas.incidencias_caja_access",
+              "modules.finanzas.incidencias_caja_context",
+              "modules.finanzas.incidencias_caja_contracts",
+              "modules.finanzas.incidencias_caja_orchestration",
+              "pytest",
+              "unittest.mock"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "idempotencia_ambito",
+              "incidencias_caja"
+            ],
+            "path": "backend/tests/test_incidencias_caja_orchestration.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "catalogo",
+              "datos",
+              "ejecutar",
+              "test_catalogo_de_empresa_ajena_rechazado",
+              "test_catalogo_error_falla_cerrado",
+              "test_catalogo_vacio_falla_cerrado",
+              "test_orquestacion_prepara_sin_guardar",
+              "test_rango_sucursal_no_autorizado",
+              "test_rbac_denegado_no_consulta_catalogos"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "modules.finanzas.incidencias_caja_policy"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "incidencias_caja"
+            ],
+            "path": "backend/tests/test_incidencias_caja_policy.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_evaluar",
+              "test_autorizacion_previa_obligatoria_bloquea_continuidad",
+              "test_ejecucion_origen_solo_autorizada_en_v2",
+              "test_operacion_posterior_permite_continuidad_sin_ejecutar_origen",
+              "test_origen_denegado_no_se_suple",
+              "test_origen_desconocido_no_se_suple",
+              "test_permiso_edarsahub_y_rls_son_obligatorios",
+              "test_permiso_inexistente_usa_suplencia_sin_escritura_externa",
+              "test_rls_rechaza_unidad_ajena",
+              "test_visto_bueno_antecede_autorizacion"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "ast",
+              "fastapi",
+              "fastapi.testclient",
+              "modules.finanzas",
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "incidencias_caja"
+            ],
+            "path": "backend/tests/test_incidencias_caja_routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "current_user",
+              "permission",
+              "test_bootstrap_http_rbac_fail_closed",
+              "test_bootstrap_requires_canonical_auth_and_rbac"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "dataclasses",
+              "modules.finanzas.incidencias_caja_policy",
+              "modules.finanzas.incidencias_caja_workflow"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "incidencias_caja"
+            ],
+            "path": "backend/tests/test_incidencias_caja_workflow.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "base",
+              "test_autorizacion_aprobada_sin_referencia_bloquea",
+              "test_autorizacion_posterior_no_es_aprobacion_ni_cierre",
+              "test_autorizacion_rechazada_no_se_convierte_en_aprobacion",
+              "test_cierre_solo_si_verificado_y_conciliado",
+              "test_diferencia_no_conciliada_impide_cerrar",
+              "test_no_requerida_es_estado_explicito",
+              "test_origen_desconocido_no_es_inexistente",
+              "test_previa_pendiente_bloquea_continuidad",
+              "test_resultado_origen_no_confirmado_impide_cerrar",
+              "test_rls_denegado_niega_hasta_lectura",
+              "test_v1_nunca_ejecuta_pos_externo",
+              "test_vobo_otorgado_sin_evidencia_bloquea",
+              "test_vobo_rechazado_bloquea_cierre"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 21,
+          "scanned_files": 756,
+          "skipped_sensitive": 38
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-28T06:15:53Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
