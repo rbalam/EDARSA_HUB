@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "00bdee84b7895f59c2cdb3c46183636bed366eda",
-  "generated_at_utc": "2026-11-28T09:38:38Z",
+  "generated_at_utc": "2026-11-28T09:40:00Z",
   "history": {
     "done_total_local": 2443,
     "pending_total_local": 0,
@@ -16,56 +16,44 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3575,
-      "job_id": "SEM-REQUEST-1A7D2AFE5FCE551397771CD5",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2165,
+      "age_seconds": 2248,
       "job_id": "SEM-REQUEST-69F270267F953C03E9192414",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2762,
+      "age_seconds": 2845,
       "job_id": "SEM-REQUEST-899CA4D3606168D499D40A68",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2115,
+      "age_seconds": 2197,
       "job_id": "SEM-REQUEST-8AB12BBD26C0B346291BFD52",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2303,
+      "age_seconds": 2386,
       "job_id": "SEM-REQUEST-8B179508F482A0420905E0AC",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3508,
+      "age_seconds": 3591,
       "job_id": "SEM-REQUEST-9D772115597A6A052E0DE03E",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2957,
+      "age_seconds": 3039,
       "job_id": "SEM-REQUEST-A7991380A27B8EFD8ACD4F67",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1902,
+      "age_seconds": 1985,
       "job_id": "SEM-REQUEST-A9FEDF8C93DC7F28F772EC60",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3573,
-      "job_id": "SEM-WORKER_CONTROL_PLANE-WORKER_RESULT_DETAIL_READ-F6F5E190C3B77A6EFD75",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -78,14 +66,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 9,
+  "queue_result_ready_recent": 7,
   "queue_running": 0,
   "remote_development_sha": "00bdee84b7895f59c2cdb3c46183636bed366eda",
   "runtime": {
     "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-28T09:38:27Z",
-    "last_receive_utc": "2026-11-28T09:38:22Z",
+    "last_cycle_utc": "2026-11-28T09:39:51Z",
+    "last_receive_utc": "2026-11-28T09:39:46Z",
     "last_terminal_utc": "2026-11-28T09:06:55Z",
     "pid": "3319459",
     "runtime_fingerprint": {
