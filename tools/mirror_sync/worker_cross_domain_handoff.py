@@ -2218,6 +2218,22 @@ def validate_handoff_constraints(
             and resolution_job_id != existing_res_jid
         )
 
+        if successor_spec is not None:
+            if not exact_payload_match or existing_core_fp != core_fp or wants_auto_dispatch_activation or wants_auth_upgrade or wants_resolution_link:
+                raise HandoffConflictError("HANDOFF_SUCCESSOR_PAYLOAD_CONFLICT")
+            if existing.get("successor_spec") is not None and existing.get("successor_spec") != successor_spec:
+                raise HandoffConflictError("HANDOFF_SUCCESSOR_ALREADY_DEFINED")
+            if existing.get("successor_spec") is None:
+                _validate_existing_successor_registration(existing, successor_spec, current_user=current_user)
+                return {
+                    "duplicate": False, "pending_update": False, "successor_update": True,
+                    "existing_handoff": existing, "successor_spec": successor_spec,
+                    "handoff_id": handoff_id, "dependency_id": dependency_id,
+                    "source_domain": source_domain, "target_domain": target_domain,
+                    "request_key": request_key, "payload_fingerprint": fingerprint,
+                    "production_touched": False,
+                }
+
         # Pure idempotent replay (exact same payload and no pending enrichment requested)
         if exact_payload_match and not (
             wants_auto_dispatch_activation or wants_auth_upgrade or wants_resolution_link
@@ -2943,6 +2959,31 @@ def evaluate_handoff_semantic_satisfaction(
     }
 
 
+def _validate_existing_successor_registration(
+    handoff: Mapping[str, Any], spec: Mapping[str, Any], *, current_user: Mapping[str, Any] | None
+) -> None:
+    if handoff.get("production_allowed") is not False or handoff.get("production_touched") is not False:
+        raise HandoffSecurityError("HANDOFF_PRODUCTION_FORBIDDEN")
+    if handoff.get("lifecycle_state") != "RETURNED_TO_SOURCE" or handoff.get("dependency_satisfied") is not True or handoff.get("certification") not in TERMINAL_CERTIFICATIONS:
+        raise HandoffConflictError("HANDOFF_SUCCESSOR_REQUIRES_CERTIFIED_RETURN")
+    if handoff.get("source_resumed") or handoff.get("resumed_job_id"):
+        raise HandoffConflictError("HANDOFF_SUCCESSOR_ALREADY_EXECUTED")
+    _resolve_canonical_dispatch_identity(
+        {**handoff, "target_domain": handoff["source_domain"],
+         "handoff_mode": "MUTATION" if spec["mode"] == "MUTATION" else "READ_ONLY"},
+        current_user=current_user,
+    )
+    compat = resolve_compatible_capabilities(
+        target_domain=handoff["source_domain"],
+        handoff_mode="MUTATION" if spec["mode"] == "MUTATION" else "READ_ONLY",
+        requested_capability=spec["capability"], requested_constraints=spec["constraints"],
+    )
+    if not compat.get("compatible"):
+        raise HandoffError("HANDOFF_SUCCESSOR_CAPABILITY_INCOMPATIBLE")
+    if spec["mode"] == "MUTATION" and not spec.get("authorization_ref"):
+        raise HandoffSecurityError("HANDOFF_SUCCESSOR_AUTHORIZATION_REQUIRED")
+
+
 def register_handoff_successor(
     handoff_id: str,
     successor_spec: Mapping[str, Any],
@@ -2967,23 +3008,34 @@ def register_handoff_successor(
     )
     validated_spec = _validate_successor_spec(successor_spec, source_domain=source_domain)
     assert validated_spec is not None
-    handoff["successor_spec"] = validated_spec
-    if not handoff.get("source_resumed"):
-        handoff["successor_status"] = "PENDING_RESOLUTION"
-    handoff["updated_at_utc"] = utc_now()
-    _append_history(
-        handoff,
-        "SUCCESSOR_REGISTERED",
-        actor_email=actor_email,
-        details={
-            "capability": validated_spec["capability"],
-            "mode": validated_spec["mode"],
-            "request_key": validated_spec["request_key"],
-            "authorization_ref": validated_spec.get("authorization_ref"),
-        },
-    )
-    save_handoff(handoff, state_root=qroot)
-    return handoff
+    import fcntl
+    lock_path = handoffs_dir(qroot) / f"{handoff_id}.successor.lock"
+    with open(lock_path, "a+", encoding="utf-8") as lock_fh:
+        fcntl.flock(lock_fh.fileno(), fcntl.LOCK_EX)
+        try:
+            handoff = load_handoff(handoff_id, state_root=qroot)
+            if handoff is None:
+                raise HandoffError("HANDOFF_NOT_FOUND")
+            existing_spec = handoff.get("successor_spec")
+            if existing_spec is not None:
+                if existing_spec == validated_spec:
+                    return handoff
+                raise HandoffConflictError("HANDOFF_SUCCESSOR_ALREADY_DEFINED")
+            _validate_existing_successor_registration(handoff, validated_spec, current_user=current_user)
+            handoff["successor_spec"] = validated_spec
+            if not handoff.get("source_resumed"):
+                handoff["successor_status"] = "PENDING_RESOLUTION"
+            handoff["updated_at_utc"] = utc_now()
+            _append_history(
+                handoff, "SUCCESSOR_REGISTERED", actor_email=actor_email,
+                details={"capability": validated_spec["capability"], "mode": validated_spec["mode"],
+                         "request_key": validated_spec["request_key"],
+                         "authorization_ref": validated_spec.get("authorization_ref")},
+            )
+            save_handoff(handoff, state_root=qroot)
+            return handoff
+        finally:
+            fcntl.flock(lock_fh.fileno(), fcntl.LOCK_UN)
 
 
 def execute_handoff_successor(
@@ -3878,6 +3930,20 @@ def register_cross_domain_handoff(
         now_epoch=now_epoch,
         dry_run=False,
     )
+
+    if validated.get("successor_update") is True:
+        updated = register_handoff_successor(
+            validated["handoff_id"], validated["successor_spec"],
+            current_user=current_user, requester=requester, state_root=qroot,
+        )
+        return {
+            "status": "SUCCESSOR_REGISTERED", "handoff_updated": True,
+            "duplicate_prevented": True, "handoff_id": updated["handoff_id"],
+            "job_id": updated.get("resolution_job_id") or updated["handoff_id"],
+            "dependency_id": updated["dependency_id"], "lifecycle_state": updated["lifecycle_state"],
+            "certification": updated["certification"], "successor_status": updated["successor_status"],
+            "production_touched": False, "handoff": updated,
+        }
 
     if validated.get("duplicate") is True:
         existing = dict(validated["existing_handoff"])

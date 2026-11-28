@@ -748,3 +748,48 @@ def test_wk60_g2_unassigned_readonly_is_not_human_consent(tmp_path, monkeypatch)
     second = handoff_mod.reconcile_cross_domain_handoffs(state_root=qroot, max_dispatches=0, no_executor_stall_seconds=0)
     assert not second["isolated_errors"]
     assert not second["reclassified_this_cycle"]
+
+
+def test_wk60_successor_registration_idempotency(tmp_path, monkeypatch):
+    from concurrent.futures import ThreadPoolExecutor
+    qroot = _setup_queue(tmp_path)
+    actor = _canonical_actor()
+    request = {
+        "objective": "Existing certified dependency for successor registration",
+        "bounded_context": "SQL_RBAC_019", "mode": "READ_ONLY",
+        "capability": "CROSS_DOMAIN_HANDOFF_REGISTER",
+        "request_key": "wk60-successor-regression",
+        "constraints": {"target_domain": "WORKER_CONTROL_PLANE",
+                        "auto_dispatch": False,
+                        "acceptance_criteria": ["production_touched_false"]},
+    }
+    initial = handoff_mod.validate_handoff_constraints(request, current_user=actor, state_root=qroot)
+    record = dict(initial["candidate"])
+    record.update(lifecycle_state="RETURNED_TO_SOURCE", dependency_satisfied=True,
+                  certification="CERTIFIED_READ_ONLY", resolution_job_id="CERTIFIED-ORIGINAL")
+    handoff_mod.save_handoff(record, state_root=qroot)
+    spec = {"objective": "Read existing certified evidence", "bounded_context": "SQL_RBAC_019",
+            "mode": "READ_ONLY", "capability": "WORKER_RESULT_DETAIL_READ",
+            "request_key": "wk60-successor-evidence", "constraints": {"source_job_id": "CERTIFIED-ORIGINAL"}}
+    req = {**request, "constraints": {**request["constraints"], "successor_spec": spec}}
+    before = handoff_mod.load_handoff(record["handoff_id"], state_root=qroot)
+    pf = handoff_mod.validate_handoff_constraints(req, current_user=actor, state_root=qroot)
+    assert pf["successor_update"] is True
+    assert before == handoff_mod.load_handoff(record["handoff_id"], state_root=qroot)
+    def register():
+        return handoff_mod.register_cross_domain_handoff(req, current_user=actor, state_root=qroot)
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        results = list(executor.map(lambda _: register(), range(2)))
+    assert all(x["handoff_id"] == record["handoff_id"] for x in results)
+    after = handoff_mod.load_handoff(record["handoff_id"], state_root=qroot)
+    assert after["certification"] == "CERTIFIED_READ_ONLY"
+    assert after["resolution_job_id"] == "CERTIFIED-ORIGINAL"
+    assert after["dependency_satisfied"] is True
+    assert after["source_resumed"] is False
+    assert handoff_mod.validate_handoff_constraints(req, current_user=actor, state_root=qroot)["duplicate"] is True
+    conflict = {**req, "constraints": {**req["constraints"], "successor_spec": {**spec, "request_key": "different-successor"}}}
+    with pytest.raises(handoff_mod.HandoffConflictError):
+        handoff_mod.validate_handoff_constraints(conflict, current_user=actor, state_root=qroot)
+    cross = {**req, "constraints": {**req["constraints"], "successor_spec": {**spec, "bounded_context": "FINANZAS"}}}
+    with pytest.raises(handoff_mod.HandoffSecurityError):
+        handoff_mod.validate_handoff_constraints(cross, current_user=actor, state_root=qroot)

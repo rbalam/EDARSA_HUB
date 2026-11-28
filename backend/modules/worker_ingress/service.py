@@ -2968,6 +2968,19 @@ def preflight_semantic_objective(
                     )
                 except handoff_mod.HandoffError as exc:
                     raise WorkerIngressError(str(exc)) from exc
+                if checked.get("successor_update") is True:
+                    existing_h = checked["existing_handoff"]
+                    return {
+                        "schema": "edarsahub.worker-semantic-preflight.v1",
+                        "ok": True, "status": "PREFLIGHT_READY",
+                        "handoff_id": existing_h["handoff_id"],
+                        "dependency_id": existing_h["dependency_id"],
+                        "lifecycle_state": existing_h["lifecycle_state"],
+                        "handoff_update": True, "successor_update": True,
+                        "duplicate_detected": False, "capability": capability.code,
+                        "bounded_context": bounded_context, "mode": requested_mode,
+                        "production_allowed": False, "production_touched": False,
+                    }
                 if checked.get("duplicate") is True and not checked.get("pending_update"):
                     existing_h = checked["existing_handoff"]
                     return {
