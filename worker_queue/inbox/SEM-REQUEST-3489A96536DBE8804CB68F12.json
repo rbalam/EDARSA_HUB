@@ -1,0 +1,61 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 25,
+        "paths": [
+          "backend/modules/rh/routes.py",
+          "backend/modules/rh/service.py",
+          "backend/modules/rh/repository.py",
+          "backend/core/rbac/middleware.py",
+          "backend/core/rbac_sql/service.py",
+          "backend/core/access_context/sql_context.py",
+          "backend/core/centro_control/recipients_manager.py",
+          "backend/modules/fase2_operativo/services/notification_service.py",
+          "backend/modules/fase2_operativo/routes/tarea_routes.py",
+          "backend/tests/test_bos_transversal_agent_capabilities.py"
+        ],
+        "search_terms": [
+          "RBACExplicitDependency",
+          "get_current_user",
+          "Usuario_PermisosRolModulo",
+          "can_access_empresa",
+          "can_access_unidad",
+          "Sistema_Tareas",
+          "notificar_tarea_asignada",
+          "get_email_recipients",
+          "RH_Incidencias_Nomina",
+          "get_sql_connection",
+          "Usuario_Catalogo"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-3489A96536DBE8804CB68F12",
+  "mode": "READ_ONLY",
+  "objective": "Gate8A READ_ONLY diseño de contrato mínimo para denuncias laborales confidenciales en RH. Gates0-7 certificados; COA_Expedientes creado para administración, no demostró servicio CRUD ni aislamiento case-level. Auditar únicamente contratos de seguridad efectiva RBAC SQL, acceso por empresa/unidad, tareas y notificaciones y RH en archivos concretos; detectar ausencias de case-scoped access, conflicto de interés, confidencialidad y trazabilidad. Definir criterios de aceptación negativos para un bounded context RH especializado sin tablas ni motor de expedientes paralelos. No publicar mensajes, denuncias, datos personales, SQL LIVE, ni cambiar Producción o código.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "RH",
+    "conflict_domains": [
+      "RH"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
