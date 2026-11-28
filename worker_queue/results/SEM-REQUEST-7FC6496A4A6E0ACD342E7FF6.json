@@ -1,0 +1,132 @@
+{
+  "base_sha": "a3aed5927d6e75fe6c3c8773dc20317d1a30710b",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-28T06:31:22Z",
+  "execution_base_sha": "a3aed5927d6e75fe6c3c8773dc20317d1a30710b",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-7FC6496A4A6E0ACD342E7FF6",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-28T06:32:22Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "sys.tables"
+            ],
+            "path": "tools/mirror_sync/readonly_audit_profiles.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "build_readonly_audit_checks",
+              "is_allowed_readonly_audit_profile"
+            ],
+            "tables_referenced": [
+              "Servidores_ConexionEstado",
+              "Servidores_Conexiones",
+              "Sistema_Empresas",
+              "Sistema_EmpresasServidores",
+              "Sistema_Modulos",
+              "Sistema_ModulosMenus",
+              "Sistema_Sucursales",
+              "Sistema_VersionesSistemas",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "argparse",
+              "core.config.env_bootstrap",
+              "core.sql_first.connection_factory",
+              "datetime",
+              "json",
+              "os",
+              "pathlib",
+              "re",
+              "subprocess",
+              "sys",
+              "tools.mirror_sync",
+              "tools.mirror_sync.worker_result_integrity",
+              "tools.mirror_sync.worker_result_status",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "sys.tables"
+            ],
+            "path": "tools/mirror_sync/worker_sql_projection.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "WorkerSqlProjectionError",
+              "_apply_batches",
+              "_clean_sha",
+              "_clean_str",
+              "_clear_pending_projection",
+              "_load_json_dict",
+              "_parse_published_marker",
+              "_parse_utc_timestamp",
+              "_query_table_counts",
+              "_record_pending_projection",
+              "_stream_git_tree_json",
+              "_verify_dev_database_identity",
+              "collect_canonical_backfill_dataset",
+              "execute_backfill",
+              "main",
+              "normalize_job_record",
+              "project_single_job_best_effort"
+            ],
+            "tables_referenced": [
+              "Sys_Worker_",
+              "Sys_Worker_Jobs",
+              "sp_Worker_RecordRecoveryEvent",
+              "sp_Worker_UpsertCapability",
+              "sp_Worker_UpsertIncident",
+              "sp_Worker_UpsertJobState"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 2,
+          "scanned_files": 65,
+          "skipped_sensitive": 34
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-28T06:31:22Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
