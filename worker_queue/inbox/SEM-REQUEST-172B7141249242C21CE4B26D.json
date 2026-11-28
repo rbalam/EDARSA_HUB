@@ -1,0 +1,65 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "old_text": "        description=\"Metadatos de cinco tablas de incidencias de caja, sin filas de negocio.\",\n        bounded_contexts=(\"COMERCIAL_POS\",),\n        queries=(\n            {\"name\": \"cajas_identity\", \"sql\": \"SELECT DB_NAME() AS database_name, SUSER_SNAME() AS login_name, USER_NAME() AS database_user\"},",
+      "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+      "replacement": "        description=\"Metadatos SQL de caja e incidencias; descubrimiento de expedientes sin filas de negocio.\",\n        bounded_contexts=(\"COMERCIAL_POS\",),\n        queries=(\n            {\"name\": \"cajas_identity\", \"sql\": \"SELECT DB_NAME() AS database_name, SUSER_SNAME() AS login_name, USER_NAME() AS database_user\"},\n            {\"name\":\"cajas_expedientes_tables\",\"sql\":\"SELECT s.name AS schema_name,t.name AS table_name FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE s.name = 'dbo' AND (t.name LIKE '%Caja%' OR t.name LIKE '%Incidenc%' OR t.name LIKE '%Expedient%') ORDER BY t.name\"},\n            {\"name\":\"cajas_expedientes_columns\",\"sql\":\"SELECT t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS type_name,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE s.name = 'dbo' AND (t.name LIKE '%Caja%' OR t.name LIKE '%Incidenc%' OR t.name LIKE '%Expedient%') ORDER BY t.name,c.column_id\"},\n            {\"name\":\"cajas_expedientes_indexes\",\"sql\":\"SELECT t.name AS table_name,i.name AS index_name,i.is_unique,i.is_primary_key,ic.key_ordinal,c.name AS column_name FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.indexes i ON i.object_id=t.object_id JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE s.name = 'dbo' AND (t.name LIKE '%Caja%' OR t.name LIKE '%Incidenc%' OR t.name LIKE '%Expedient%') ORDER BY t.name,i.index_id,ic.key_ordinal\"},\n            {\"name\":\"cajas_expedientes_relationships\",\"sql\":\"SELECT t.name AS table_name,fk.name AS foreign_key_name,c.name AS column_name,rt.name AS referenced_table,rc.name AS referenced_column,fk.is_disabled FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.foreign_keys fk ON fk.parent_object_id=t.object_id JOIN sys.foreign_key_columns fc ON fc.constraint_object_id=fk.object_id JOIN sys.columns c ON c.object_id=t.object_id AND c.column_id=fc.parent_column_id JOIN sys.tables rt ON rt.object_id=fc.referenced_object_id JOIN sys.columns rc ON rc.object_id=rt.object_id AND rc.column_id=fc.referenced_column_id WHERE s.name = 'dbo' AND (t.name LIKE '%Caja%' OR t.name LIKE '%Incidenc%' OR t.name LIKE '%Expedient%') ORDER BY t.name,fk.name,fc.constraint_column_id\"},",
+      "source_sha256": "2a7fa618e86ed9048c8d89e1c87e861f53442eaa3731928e22fcabcdb38ef646",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "    assert len(p.queries) == 5\n    for q in p.queries:\n        assert q[\"sql\"].startswith(\"SELECT \")\n        if q[\"name\"] != \"cajas_identity\":\n            assert \"FROM sys.tables\" in q[\"sql\"]\n            for name in [\"Finanzas_CortesCaja\",\"Finanzas_CuadresZ\",\"Usuario_Autorizaciones\",\"Sistema_Tareas\",\"Operativo_Notificaciones_Queue\"]:\n                assert name in q[\"sql\"]",
+      "path": "backend/tests/test_worker_cajas_schema_metadata_profile.py",
+      "replacement": "    assert len(p.queries) == 9\n    discovery = {q[\"name\"] for q in p.queries if q[\"name\"].startswith(\"cajas_expedientes_\")}\n    assert discovery == {\"cajas_expedientes_tables\", \"cajas_expedientes_columns\", \"cajas_expedientes_indexes\", \"cajas_expedientes_relationships\"}\n    for q in p.queries:\n        assert q[\"sql\"].startswith(\"SELECT \")\n        assert \"FROM dbo.\" not in q[\"sql\"]\n        if q[\"name\"] != \"cajas_identity\":\n            assert \"FROM sys.tables\" in q[\"sql\"]\n            if q[\"name\"].startswith(\"cajas_expedientes_\"):\n                assert \"t.name LIKE\" in q[\"sql\"]\n            else:\n                for name in [\"Finanzas_CortesCaja\",\"Finanzas_CuadresZ\",\"Usuario_Autorizaciones\",\"Sistema_Tareas\",\"Operativo_Notificaciones_Queue\"]:\n                    assert name in q[\"sql\"]",
+      "source_sha256": "b74da9d7e6e746248cac4adfb608f14475d3054629a76ad44641a4dc085872d0",
+      "type": "replace_text"
+    }
+  ],
+  "authorization_ref": "GO-CAJAS-V1-GATE12-SQL-METADATA-DEV-R3-20261128",
+  "checks": [
+    {
+      "paths": [
+        "backend/modules/worker_ingress/semantic_capabilities.py",
+        "backend/tests/test_worker_cajas_schema_metadata_profile.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_cajas_schema_metadata_profile.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-172B7141249242C21CE4B26D",
+  "mode": "MUTATION",
+  "objective": "CAJAS Gate12: ampliar exclusivamente perfil SQL preaprobado de metadata de expedientes y regresiones; NO datos negocio, NO DDL/DML y NO produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
