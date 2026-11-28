@@ -1,0 +1,56 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 50,
+        "paths": [
+          "backend/modules/rh/",
+          "backend/core/rbac_sql/",
+          "backend/core/centro_control/sql_store.py",
+          "backend/modules/fase2_operativo/",
+          "backend/tests/test_rh_modular.py"
+        ],
+        "search_terms": [
+          "CREATE_TABLE",
+          "RH_Incidencias_Nomina",
+          "denuncia",
+          "investigacion",
+          "expediente",
+          "queja",
+          "Evidencia",
+          "Usuario_Catalogo",
+          "UnidadNegocioID",
+          "EmpresaID",
+          "audit"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-3227FF59BED2F47498DB724C",
+  "mode": "READ_ONLY",
+  "objective": "Gate3 READ_ONLY schema ownership y diseño implementacion confidencial para denuncias laborales: identificar exclusivamente contratos SQL, tablas y migraciones EXISTENTES de quejas, expedientes RH, denuncias, investigaciones, evidencias y auditoría, y relaciones canónicas de RRHH/Unidad/Usuario. Distinguir RH_Incidencias_Nomina de expedientes de integridad; no inventar existencia de tablas ni abrir expedientes ni ejecutar SQL ad hoc. Entregar brechas para perfil SQL metadata formal, criterios RBAC fail-closed, minimizacion PII, SQL Server EDARSAHUB fuente unica. NO LIVE, no produccion, sin cambios y no repetir Gates anteriores.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "RH",
+    "conflict_domains": [
+      "RH"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
