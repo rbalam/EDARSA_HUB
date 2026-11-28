@@ -699,7 +699,7 @@ def submit_objective(
     if capability.submitter is not None:
         submit_payload = (
             {**payload, "_current_user": dict(current_user)}
-            if capability_code in {"CROSS_DOMAIN_HANDOFF_REGISTER", "GATE_AUTHORIZATION_LIFECYCLE"}
+            if capability_code in {"CROSS_DOMAIN_HANDOFF_REGISTER", "CROSS_DOMAIN_HANDOFF_SUPERSEDE", "GATE_AUTHORIZATION_LIFECYCLE"}
             else payload
         )
         try:
@@ -766,6 +766,19 @@ def submit_objective(
                 "production_touched": False,
                 "capability": capability_code,
                 "bounded_context": bounded_context,
+            }
+
+        if capability_code == "CROSS_DOMAIN_HANDOFF_SUPERSEDE":
+            return {
+                "status": result.get("status"),
+                "job_id": result.get("handoff_id"),
+                "handoff_id": result.get("handoff_id"),
+                "superseded_by_job_id": result.get("superseded_by_job_id"),
+                "dependency_satisfied": False,
+                "certification": "NOT_CERTIFIED",
+                "duplicate_prevented": bool(result.get("duplicate_prevented")),
+                "production_touched": False,
+                "capability": capability_code, "bounded_context": bounded_context,
             }
 
         if capability_code == "CROSS_DOMAIN_HANDOFF_REGISTER":
@@ -2956,6 +2969,24 @@ def preflight_semantic_objective(
                     if extra_key in pf_auth:
                         pf_out[extra_key] = pf_auth.get(extra_key)
                 return pf_out
+            if capability.code == "CROSS_DOMAIN_HANDOFF_SUPERSEDE":
+                from tools.mirror_sync import worker_cross_domain_handoff as hm
+                try:
+                    checked = hm.preflight_supersede_cross_domain_handoff(
+                        payload, current_user=current_user, state_root=STATE_ROOT,
+                    )
+                except hm.HandoffError as exc:
+                    raise WorkerIngressError(str(exc)) from exc
+                return {
+                    "schema": "edarsahub.worker-semantic-preflight.v1",
+                    "ok": True, "status": checked["status"],
+                    "handoff_id": checked["handoff_id"],
+                    "superseded_by_job_id": checked["superseded_by_job_id"],
+                    "duplicate_detected": bool(checked.get("duplicate_prevented")),
+                    "capability": capability.code, "bounded_context": bounded_context,
+                    "mode": requested_mode,
+                    "production_allowed": False, "production_touched": False,
+                }
             if capability.code == "CROSS_DOMAIN_HANDOFF_REGISTER":
                 from tools.mirror_sync import worker_cross_domain_handoff as handoff_mod
 

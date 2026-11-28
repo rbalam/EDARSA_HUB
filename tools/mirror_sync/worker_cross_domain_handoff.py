@@ -71,6 +71,7 @@ HANDOFF_LIFECYCLE_STATES = frozenset({
     "BLOCKED_POLICY",
     "BLOCKED_CYCLE",
     "ESCALATED_HUMAN_REQUIRED",
+    "SUPERSEDED",
 })
 
 ACTIVE_HANDOFF_STATES = frozenset({
@@ -4095,6 +4096,141 @@ def register_cross_domain_handoff(
     }
 
 
+def preflight_supersede_cross_domain_handoff(
+    request: Mapping[str, Any],
+    *,
+    current_user: Mapping[str, Any] | None = None,
+    requester: Mapping[str, Any] | None = None,
+    state_root: Path | None = None,
+) -> dict[str, Any]:
+    """Fail-closed administrative supersession, distinct from certified resolution."""
+    qroot = state_root or _default_state_root()
+    if _clean(request.get("mode")).upper() != "MUTATION":
+        raise HandoffSecurityError("HANDOFF_SUPERSEDE_MUTATION_MODE_REQUIRED")
+    c = request.get("constraints")
+    if not isinstance(c, Mapping):
+        raise HandoffError("SEMANTIC_CONSTRAINTS_INVALID")
+    _assert_no_secrets(c, "handoff_supersede")
+    _assert_no_untrusted_prompt(c, "handoff_supersede")
+    hid = _validate_optional_token(c.get("handoff_id"), field_name="handoff_id", job_id_style=True)
+    jid = _validate_optional_token(c.get("superseded_by_job_id"), field_name="superseded_by_job_id", job_id_style=True)
+    source_id = _validate_optional_token(c.get("expected_source_job_id"), field_name="expected_source_job_id", job_id_style=True)
+    auth = _validate_optional_token(c.get("authorization_ref"), field_name="authorization_ref", job_id_style=False)
+    reason = _clean(c.get("reason"))
+    if not all((hid, jid, source_id, auth)):
+        raise HandoffSecurityError("HANDOFF_SUPERSEDE_PROOFS_REQUIRED")
+    if not 12 <= len(reason) <= 500:
+        raise HandoffError("HANDOFF_SUPERSEDE_REASON_INVALID")
+    handoff = load_handoff(hid, state_root=qroot)
+    if handoff is None:
+        raise HandoffError("HANDOFF_NOT_FOUND")
+    if handoff.get("production_allowed") is not False or handoff.get("production_touched") is not False:
+        raise HandoffSecurityError("HANDOFF_PRODUCTION_FORBIDDEN")
+    source = _clean(handoff.get("source_domain")).upper()
+    owner = _clean(handoff.get("target_domain")).upper()
+    if _clean(request.get("bounded_context")).upper() != owner:
+        raise HandoffSecurityError("HANDOFF_SUPERSEDE_OWNER_DOMAIN_MISMATCH")
+    if _clean(handoff.get("source_job_id")) != source_id:
+        raise HandoffSecurityError("HANDOFF_SUPERSEDE_SOURCE_JOB_MISMATCH")
+    try:
+        actor = lifecycle_rec._validate_authorized_actor_identity(current_user)
+    except lifecycle_rec.GateAuthorizationError as exc:
+        raise HandoffSecurityError(f"HANDOFF_SUPERSEDE_SQL_RBAC_DENIED:{exc}") from exc
+    _verify_caller_rbac_and_scope(
+        current_user=current_user, requester=requester,
+        source_domain=source, target_domain=owner, handoff_mode="MUTATION",
+    )
+    auth_check = _verify_authorization_ref(
+        auth, source_domain=owner, target_domain=owner,
+        handoff_mode="MUTATION", state_root=qroot,
+    )
+    if auth_check.get("verified") is not True:
+        raise HandoffSecurityError("HANDOFF_SUPERSEDE_AUTHORIZATION_UNVERIFIED")
+    evidence = _verify_terminal_result_certification(jid, state_root=qroot)
+    if evidence is None or evidence.get("status") != "INTEGRATED" or evidence.get("certification") != "CERTIFIED":
+        raise HandoffSecurityError("HANDOFF_SUPERSEDE_SOURCE_NOT_CERTIFIED")
+    raw = _read_json_safe(qroot / "results" / f"{jid}.json") or {}
+    if _extract_result_bounded_context(raw, jid, qroot) != source:
+        raise HandoffSecurityError("HANDOFF_SUPERSEDE_SOURCE_DOMAIN_MISMATCH")
+    state = _clean(handoff.get("lifecycle_state")).upper()
+    if state == "SUPERSEDED":
+        if (_clean(handoff.get("superseded_by_job_id")) != jid
+            or _clean(handoff.get("supersession_reason")) != reason
+            or _clean(handoff.get("supersession_authorization_ref")) != auth):
+            raise HandoffConflictError("HANDOFF_SUPERSEDE_IDEMPOTENCY_CONFLICT")
+        return {"status": "EXISTS", "handoff_id": hid, "superseded_by_job_id": jid,
+                "duplicate_prevented": True, "production_touched": False}
+    if (state not in UPDATABLE_HANDOFF_STATES or handoff.get("dependency_satisfied") is True
+        or _clean(handoff.get("resolution_job_id")) or handoff.get("source_resumed") is True):
+        raise HandoffConflictError("HANDOFF_SUPERSEDE_STATE_NOT_ELIGIBLE")
+    return {"status": "PREFLIGHT_READY", "handoff_id": hid, "superseded_by_job_id": jid,
+            "actor_email": actor["email"], "authorization_ref": auth,
+            "reason": reason, "evidence": evidence, "production_touched": False}
+
+
+def supersede_cross_domain_handoff(
+    request: Mapping[str, Any],
+    *,
+    current_user: Mapping[str, Any] | None = None,
+    requester: Mapping[str, Any] | None = None,
+    state_root: Path | None = None,
+) -> dict[str, Any]:
+    """Retire a stale handoff atomically; preserve NOT_CERTIFIED and original history."""
+    import fcntl
+    qroot = state_root or _default_state_root()
+    initial = preflight_supersede_cross_domain_handoff(
+        request, current_user=current_user, requester=requester, state_root=qroot,
+    )
+    if initial["status"] == "EXISTS":
+        return initial
+    hid = initial["handoff_id"]
+    with open(handoffs_dir(qroot) / f"{hid}.supersede.lock", "a+", encoding="utf-8") as fh:
+        fcntl.flock(fh.fileno(), fcntl.LOCK_EX)
+        try:
+            pf = preflight_supersede_cross_domain_handoff(
+                request, current_user=current_user, requester=requester, state_root=qroot,
+            )
+            if pf["status"] == "EXISTS":
+                return pf
+            record = load_handoff(hid, state_root=qroot)
+            if record is None:
+                raise HandoffError("HANDOFF_NOT_FOUND")
+            ev = pf["evidence"]
+            _ensure_history(record)
+            record.update(
+                lifecycle_state="SUPERSEDED",
+                superseded_by_job_id=pf["superseded_by_job_id"],
+                supersession_reason=pf["reason"],
+                supersession_authorization_ref=pf["authorization_ref"],
+                supersession_evidence={
+                    "job_id": ev["job_id"], "certification": ev["certification"],
+                    "certification_source": ev["certification_source"],
+                    "commit_sha": ev.get("commit_sha"),
+                    "published_result_commit": ev.get("published_result_commit"),
+                    "production_touched": False,
+                },
+                superseded_at_utc=utc_now(), next_allowed_action="NONE",
+                requires_human_intervention=False, human_intervention_reason=None,
+                has_executor=False, executor_status="SUPERSEDED",
+                dependency_satisfied=False, certification="NOT_CERTIFIED",
+                resolution_job_id=None, source_resumed=False,
+                exception_code=None, exception_reason=None,
+            )
+            record["updated_at_utc"] = record["superseded_at_utc"]
+            _append_history(record, "ADMINISTRATIVELY_SUPERSEDED",
+                            actor_email=pf["actor_email"],
+                            details={"superseded_by_job_id": pf["superseded_by_job_id"],
+                                     "authorization_ref": pf["authorization_ref"],
+                                     "reason": pf["reason"]})
+            save_handoff(record, state_root=qroot)
+            return {"status": "SUPERSEDED", "handoff_id": hid,
+                    "superseded_by_job_id": pf["superseded_by_job_id"],
+                    "lifecycle_state": "SUPERSEDED", "dependency_satisfied": False,
+                    "certification": "NOT_CERTIFIED", "production_touched": False}
+        finally:
+            fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
+
+
 def reconcile_cross_domain_handoffs(
     *,
     state_root: Path | None = None,
@@ -4123,7 +4259,7 @@ def reconcile_cross_domain_handoffs(
     for record in handoffs:
         hid = _clean(record.get("handoff_id"))
         state = _clean(record.get("lifecycle_state")).upper()
-        if state in {"BLOCKED_CYCLE", "BLOCKED_POLICY"}:
+        if state in {"BLOCKED_CYCLE", "BLOCKED_POLICY", "SUPERSEDED"}:
             continue
         if state == "RETURNED_TO_SOURCE":
             try:

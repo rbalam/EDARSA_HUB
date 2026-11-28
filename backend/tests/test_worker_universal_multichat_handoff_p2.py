@@ -793,3 +793,66 @@ def test_wk60_successor_registration_idempotency(tmp_path, monkeypatch):
     cross = {**req, "constraints": {**req["constraints"], "successor_spec": {**spec, "bounded_context": "FINANZAS"}}}
     with pytest.raises(handoff_mod.HandoffSecurityError):
         handoff_mod.validate_handoff_constraints(cross, current_user=actor, state_root=qroot)
+
+
+
+def test_supersede_handoff_preserves_certification_history_and_idempotency(tmp_path, monkeypatch):
+    repo, _head, _sha = _init_git_repo(tmp_path)
+    qroot = _setup_queue(repo)
+    actor = _canonical_actor()
+    h = handoff_mod.register_cross_domain_handoff(
+        {"objective": "Auditar historico Gate RBAC sin repetirlo.",
+         "bounded_context": "SEC_RBAC", "mode": "READ_ONLY",
+         "request_key": "supersede-rbac-test",
+         "constraints": {"target_domain": "WORKER_CONTROL_PLANE",
+                         "source_job_id": "RBAC-GATE-HISTORICO", "auto_dispatch": False}},
+        current_user=actor, state_root=qroot,
+    )
+    hid = h["handoff_id"]
+    _write_certified_result(qroot, "SEM-CERT-RBAC-TEST", domain="SEC_RBAC",
+                            status="INTEGRATED", certification="CERTIFIED")
+    result_path = qroot / "results" / "SEM-CERT-RBAC-TEST.json"
+    result_doc = json.loads(result_path.read_text(encoding="utf-8"))
+    result_doc["development_sha"] = "c" * 40
+    result_doc["git_sync_status"] = "CERTIFIED_GIT_SYNC"
+    result_doc["files_changed"] = ["backend/modules/seguridad/rbac_gate_1d.py"]
+    result_path.write_text(json.dumps(result_doc), encoding="utf-8")
+    req = {"objective": "Cerrar administrativamente Gate historico con evidencia.",
+           "bounded_context": "WORKER_CONTROL_PLANE", "mode": "MUTATION",
+           "capability": "CROSS_DOMAIN_HANDOFF_SUPERSEDE",
+           "constraints": {
+               "handoff_id": hid, "expected_source_job_id": "RBAC-GATE-HISTORICO",
+               "superseded_by_job_id": "SEM-CERT-RBAC-TEST",
+               "authorization_ref": "GO-TEST-SUPERSEDE",
+               "reason": "El trabajo posterior ya fue integrado y certificado."}}
+    assert "CROSS_DOMAIN_HANDOFF_SUPERSEDE" in sem_caps.registered_capabilities()
+    with pytest.raises(handoff_mod.HandoffSecurityError, match="AUTHORIZATION"):
+        handoff_mod.preflight_supersede_cross_domain_handoff(
+            req, current_user=actor, state_root=qroot)
+    monkeypatch.setattr(handoff_mod, "_verify_authorization_ref",
+                        lambda *args, **kwargs: {"verified": True})
+    assert handoff_mod.preflight_supersede_cross_domain_handoff(
+        req, current_user=actor, state_root=qroot)["status"] == "PREFLIGHT_READY"
+    assert handoff_mod.supersede_cross_domain_handoff(
+        req, current_user=actor, state_root=qroot)["status"] == "SUPERSEDED"
+    saved = handoff_mod.load_handoff(hid, state_root=qroot)
+    assert saved["lifecycle_state"] == "SUPERSEDED"
+    assert saved["dependency_satisfied"] is False
+    assert saved["certification"] == "NOT_CERTIFIED"
+    assert saved["resolution_job_id"] is None
+    assert saved["source_resumed"] is False
+    assert saved["supersession_evidence"]["certification"] == "CERTIFIED"
+    assert saved["history"][-1]["event"] == "ADMINISTRATIVELY_SUPERSEDED"
+    n = len(saved["history"])
+    assert handoff_mod.supersede_cross_domain_handoff(
+        req, current_user=actor, state_root=qroot)["status"] == "EXISTS"
+    assert len(handoff_mod.load_handoff(hid, state_root=qroot)["history"]) == n
+    handoff_mod.reconcile_cross_domain_handoffs(state_root=qroot, max_dispatches=0)
+    assert handoff_mod.load_handoff(hid, state_root=qroot)["lifecycle_state"] == "SUPERSEDED"
+    with pytest.raises(handoff_mod.HandoffSecurityError, match="SOURCE_JOB_MISMATCH"):
+        handoff_mod.preflight_supersede_cross_domain_handoff(
+            {**req, "constraints": {**req["constraints"], "expected_source_job_id": "OTHER-GATE"}},
+            current_user=actor, state_root=qroot)
+    with pytest.raises(handoff_mod.HandoffSecurityError, match="SQL_RBAC_DENIED"):
+        handoff_mod.preflight_supersede_cross_domain_handoff(
+            req, current_user={**actor, "permissions": ["worker:submit"]}, state_root=qroot)

@@ -2178,6 +2178,43 @@ _CAPABILITY_METADATA["CROSS_DOMAIN_HANDOFF_REGISTER"] = {
 }
 
 
+# Administrative supersession remains distinct from terminal certification.
+_SUPERSEDE_CONSTRAINTS = (
+    "handoff_id", "superseded_by_job_id", "expected_source_job_id",
+    "authorization_ref", "reason",
+)
+
+
+def _handoff_supersede_submitter(
+    request: Mapping[str, Any], requester: Mapping[str, Any],
+) -> dict[str, Any]:
+    from tools.mirror_sync import worker_cross_domain_handoff as hm
+    from . import service as ingress
+    user = request.get("_current_user") if isinstance(request.get("_current_user"), Mapping) else None
+    clean = {k: v for k, v in request.items() if not str(k).startswith("_")}
+    try:
+        return hm.supersede_cross_domain_handoff(
+            clean, current_user=user, requester=dict(requester), state_root=ingress.STATE_ROOT,
+        )
+    except hm.HandoffError as exc:
+        raise SemanticCapabilityError(str(exc)) from exc
+
+
+register_capability(
+    SemanticCapability(
+        code="CROSS_DOMAIN_HANDOFF_SUPERSEDE",
+        modes=("MUTATION",),
+        submitter=_handoff_supersede_submitter,
+    )
+)
+_CAPABILITY_METADATA["CROSS_DOMAIN_HANDOFF_SUPERSEDE"] = {
+    "bounded_context_rule": "ANY_VALID_TOKEN",
+    "required_constraints": _SUPERSEDE_CONSTRAINTS,
+    "allowed_constraints": _SUPERSEDE_CONSTRAINTS,
+    "allowed_path_roots": (),
+}
+
+
 # P2A: Autonomous Gate Authorization Lifecycle capability (preserves the 6 authorized MCP tools).
 # Fail-closed: requires verifiable consent attestation bound to SQL identity & exact scope digest.
 _GATE_AUTH_LIFECYCLE_ALLOWED_CONSTRAINTS: tuple[str, ...] = (
