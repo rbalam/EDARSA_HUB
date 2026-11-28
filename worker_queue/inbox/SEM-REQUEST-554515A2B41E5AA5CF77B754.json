@@ -1,0 +1,49 @@
+{
+  "actions": [
+    {
+      "content": "# EDARSA Connect — Master Design V1.0\n\nStatus: design baseline; not operational certification. Owner: Conexiones y Comunicaciones / integrations_center. Gate 0 SEM-REQUEST-7C569884347F874DFCD73708; Gate 1A READ_ONLY SEM-REQUEST-91BDBCE4A11CF92A095C6FBE. Reuse certified Servidores_Conexiones, Servidores_ConexionEstado, server_registry, integrations_runtime, canonical SQL Server EDARSAHUB, RBAC, Secret Manager, navigation registry, Scheduler and Centro de Control. No parallel catalog, Mongo dependency, hardcoded tenant data or external LIVE business database access.\n\n## Purpose\nPreserve authorized human operation of external systems (Soft Restaurant, ManagementPro and others) indefinitely without mandatory migration. First pilot: existing Cienfuegos RDP connection, imported without changing its endpoint or interrupting support. Separate business authorization from session access and reconcile operations via approved synchronization. Never treat DNS as a security boundary.\n\n## Product families\nDNS/DDNS and domain lifecycle; private DNS; VPN/ZTNA/tunnels/SD-WAN; remote desktop, applications and attended/unattended support; APN/SIM/eSIM and IoT/OT; telecom and multi-WAN; routers, Wi-Fi, VLAN, IPAM/DHCP; RMM/MDM; NOC/SOC/security; continuity; automation and integrations; partner/white label. Fabric Cloud owns infrastructure; Marketplace owns distribution; Finance owns subscriptions, metering, invoicing and profitability; existing communications owns voice/video/chat; existing tasks own support commitments. Product families are catalog groupings, not independent engines. Own-brand DNS/DDNS/VPN feasible subject to license and operational validation; APN/mobile capacity requires operator agreements and jurisdiction-specific legal review. No purchases or regulatory approvals implied.\n\n## Architecture and security\nBOS is control plane; specialized isolated gateway and provider adapters carry remote traffic outside ERP backend. Reuse established protocols (RDP/VNC/SSH/HTTPS, WireGuard/IPsec/OpenVPN as candidates); do not invent cryptography. Outbound authenticated tunnels preferred; DDNS compatibility and fallback only where authorized. No new public RDP exposure. Per-device identity, signed agents and updates, least privilege, MFA, JIT, PAM, explicit tenant scope, fail-closed, bounded discovery, session revocation, secret references not plaintext, audit and consent-aware recording, file/clipboard/printing policies. Protect supply chain, rate limits, abuse reporting, recovery, privacy and retention. No arbitrary remote commands or changes without separate permission. Existing sessions and control-plane outage behavior must have bounded revocation and expiry policies. Design for IPv4/IPv6, CGNAT, redundant providers and geographic isolation; no requirement to own ASN or cellular network initially.\n\n## UX acceptance\nDefault simple mode: select objective, customer/site/device, discover or import, verify, connect. Reuse context; never ask for safely discoverable data. Search button for missing values; distinguish local and target OS/version/model; show exact menu path, authorized direct navigation to record, specific official article and full versioned EDARSA manual, localized steps, screenshots/video where available, AI guidance and support ticket. Preserve form progress. Advanced mode restricted by RBAC. Do not claim discovery without authorized agent or channel. No technical mandatory fields for ordinary users where safely avoidable; target one-click routine connection. Plain-language errors with uncertainty, actionable recovery and no false online status.\n\n## Continuity\nAgent starts at boot, authenticates device, detects IP changes, updates authorized DDNS and restores tunnels with bounded retries/backoff. DHCP reservation as appropriate. Diagnose offline, DNS, network, gateway and service independently. Failover only with contracted alternate link. No guarantee of uninterrupted sessions during reboot. Signed rollback for network changes; avoid lockout. Tests must cover IP changes, reboot, gateway/DNS/provider failure, revocation, tenant isolation, stale telemetry, concurrent sessions, agent update rollback, control-plane outage, performance and preservation of existing RDP. No automatic weakening of firewall or credentials.\n\n## Commercial and operational governance\nVersioned service catalog, provider terms, licensing (including RDS CAL where applicable), metering, quotas, SLA, proration, renewals, suspension, export/portability, cancellation, abuse controls, jurisdiction and data residency, costs and margins. Partner tenancy and brand white labeling only when licensed. No approved prices or providers yet. Customer access revocation and audit. Human approval for privileged actions; no unsafe automation of external business operations. Use canonical incident, task, alert and Knowledge Loop flows.\n\n## Roadmap\nG0 certified repository audit; G1 design baseline; G2A import existing RDP metadata safely (no credential extraction); G2B launch authorized native client; G3 DDNS and DNS; G4 VPN; G5 signed agent/gateway; G6 security and continuity; G7 discovery and assistance; G8 authorized pilot; G9 commercial services; G10 APN/SIM/eSIM; G11 expansion. Each gate independently preflighted, authorized, tested, reversible and certified. No production changes without explicit authorization. Technical choices, costs, provider contracts, legal review, real inventory and pilot remain pending. No operational functionality is delivered by this document.\n",
+      "path": "backend/modules/integrations_center/EDARSA_CONNECT_MASTER_DESIGN.md",
+      "type": "write_file"
+    }
+  ],
+  "authorization_ref": "GO-EDARSA-CONNECT-MASTER-DESIGN-G1A-R1",
+  "checks": [
+    {
+      "paths": [
+        "backend/tests/test_integrations_center_gate5b.py",
+        "backend/tests/test_integrations_runtime_gate5c.py",
+        "backend/tests/test_server_registry_operational_scope_fail_closed.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-554515A2B41E5AA5CF77B754",
+  "mode": "MUTATION",
+  "objective": "Registrar Master Design EDARSA Connect V1 exclusivamente documental en Desarrollo; preservar infraestructura y conexiones actuales.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMUNICACIONES_DNS_REMOTE",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "COMUNICACIONES_DNS_REMOTE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
