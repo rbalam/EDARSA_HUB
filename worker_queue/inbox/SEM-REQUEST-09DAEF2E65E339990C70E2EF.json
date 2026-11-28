@@ -1,0 +1,60 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 80,
+        "paths": [
+          "backend/core/",
+          "backend/modules/rh/",
+          "backend/modules/sistema_users_sql/",
+          "backend/modules/fase2_operativo/",
+          "backend/tests/test_anonymizer_service.py",
+          "backend/tests/test_bos_usuarios_rbac_implementation_r1.py",
+          "frontend/src/pages/RecursosHumanos.js"
+        ],
+        "search_terms": [
+          "confidencialidad",
+          "AnonymizerService",
+          "get_current_user",
+          "require_explicit_permission",
+          "empresa_id",
+          "sucursal_id",
+          "UsuarioID",
+          "audit",
+          "bitacora",
+          "notificar_tarea",
+          "acoso",
+          "denuncia",
+          "conflicto_interes"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-09DAEF2E65E339990C70E2EF",
+  "mode": "READ_ONLY",
+  "objective": "Gate 1 READ_ONLY de diseno tecnico seguridad para Integridad Laboral: localizar contratos reales de core.confidencialidad, RBAC/alcance empresa-unidad, registros auditables, proteccion de identidad en vistas y notificaciones, control de conflictos de interes y fail-closed. Diferenciar anonimización para analítica de custodia de expediente; determinar brechas y ownership, sin buscar nombres de individuos ni abrir casos, no SQL LIVE, no Produccion, no cambios. Reutilizar Gate0 y 0B certificados.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "RH",
+    "conflict_domains": [
+      "RH"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
