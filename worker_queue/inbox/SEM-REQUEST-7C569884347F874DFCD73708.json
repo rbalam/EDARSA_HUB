@@ -1,0 +1,50 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 80,
+        "paths": [
+          "backend/modules/",
+          "backend/core/",
+          "frontend/src/"
+        ],
+        "search_terms": [
+          "ddns",
+          "no-ip",
+          "guacamole",
+          "remote_desktop",
+          "RDP",
+          "tailscale",
+          "DNS"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-7C569884347F874DFCD73708",
+  "mode": "READ_ONLY",
+  "objective": "Gate 0 READ_ONLY: auditar componentes existentes DNS/DDNS/RDP, gateway, agentes de reconexión, permisos y soporte remoto; identificar reutilización, brechas y riesgos sin conexiones LIVE ni cambios.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMUNICACIONES_DNS_REMOTE",
+    "conflict_domains": [
+      "COMUNICACIONES_DNS_REMOTE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
