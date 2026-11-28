@@ -1,0 +1,50 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 30,
+        "paths": [
+          "backend/modules/agent_harness/coa_communications_adapter.py",
+          "backend/modules/agent_harness/",
+          "backend/tests/",
+          "frontend/src/pages/satelites/COAHome.jsx"
+        ],
+        "search_terms": [
+          "COA_Expedientes",
+          "COA_ExpedienteEventos",
+          "COA_ExpedienteReferencias",
+          "COACommunicationRequest",
+          "COA",
+          "require_explicit_permission"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-866E690AD6095E8F9665CF09",
+  "mode": "READ_ONLY",
+  "objective": "[HANDOFF HO-RH-COA-889AE8339C942E1B RH->COA] Gate7 RH -> COA ownership: determinar contrato real de runtime de COA_Expedientes/COA_ExpedienteEventos/COA_ExpedienteReferencias y si existe implementacion CRUD de expedientes administrativos o solo DDL y bootstrap COAHome. No dar por seguro su uso para denuncias sensibles. Validar dominio propietario, componentes y pruebas de seguridad y proponer extensión mínima especializada Integridad Laboral con RBAC por expediente/independencia, sin duplicar motor ni permitir exposición mediante COA general. READ_ONLY, no SQL LIVE, no datos personales ni Produccion. NO repetir Gates previos.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COA",
+    "conflict_domains": [
+      "COA"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
