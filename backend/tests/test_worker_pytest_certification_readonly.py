@@ -281,3 +281,28 @@ def test_hermetic_pytest_dispatcher_blocks_credentials_network_and_sql(tmp_path)
     )
     assert res["status"] == "PASS", res.get("output")
     assert res["isolation"] == "HERMETIC_READONLY"
+
+
+def test_sec_rbac_hermetic_readonly_fixed_suite():
+    result = expand(bounded_context="SEC_RBAC")
+    assert result["actions"] == []
+    assert result["checks"] == [{
+        "type": "pytest",
+        "paths": [
+            "backend/tests/test_bos_usuarios_rbac_implementation_r1.py",
+            "backend/tests/test_catalogos_workflow_privileged_routes_rbac.py",
+        ],
+        "isolation": "HERMETIC_READONLY",
+    }]
+    assert result["scheduling"]["bounded_context"] == "SEC_RBAC"
+
+
+@pytest.mark.parametrize("unsafe", [
+    {"paths": ["backend/tests/test_auth_session_revocation_p1_2.py"]},
+    {"actions": []},
+    {"checks": []},
+    {"production_allowed": True},
+])
+def test_sec_rbac_rejects_caller_controlled_tests(unsafe):
+    with pytest.raises(SemanticCapabilityError):
+        expand(bounded_context="SEC_RBAC", constraints=unsafe)

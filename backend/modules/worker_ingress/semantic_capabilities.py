@@ -667,6 +667,17 @@ register_pytest_certification_suite(
         isolation="HERMETIC_READONLY",
     )
 )
+register_pytest_certification_suite(
+    PytestCertificationSuite(
+        bounded_context="SEC_RBAC",
+        paths=(
+            "backend/tests/test_bos_usuarios_rbac_implementation_r1.py",
+            "backend/tests/test_catalogos_workflow_privileged_routes_rbac.py",
+        ),
+        isolation="HERMETIC_READONLY",
+    )
+)
+
 
 
 def _worker_pytest_certification_readonly_builder(request):
