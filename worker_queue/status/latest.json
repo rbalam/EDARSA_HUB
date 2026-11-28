@@ -4,107 +4,113 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "cf5250556818e2044aa3b7fefd58a1bf004505a9",
-  "generated_at_utc": "2026-11-28T08:38:11Z",
+  "generated_at_utc": "2026-11-28T08:39:34Z",
   "history": {
-    "done_total_local": 2433,
-    "pending_total_local": 1,
-    "processing_total_local": 1,
-    "rejected_total_local": 1416,
-    "results_total_local": 3608
+    "done_total_local": 2436,
+    "pending_total_local": 0,
+    "processing_total_local": 0,
+    "rejected_total_local": 1417,
+    "results_total_local": 3612
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 5,
-      "job_id": "SEM-REQUEST-71E18E69777D3F2F5B91D37D",
-      "reason": null,
-      "state": "PENDING"
-    },
-    {
-      "age_seconds": 552,
+      "age_seconds": 635,
       "job_id": "SEM-REQUEST-033FA2B2F914FE3EF9DCF7C8",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 368,
+      "age_seconds": 451,
       "job_id": "SEM-REQUEST-172B7141249242C21CE4B26D",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 72,
+      "age_seconds": 32,
+      "job_id": "SEM-REQUEST-1A7D2AFE5FCE551397771CD5",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 79,
+      "job_id": "SEM-REQUEST-1F130672B1819257530A0007",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 155,
       "job_id": "SEM-REQUEST-3489A96536DBE8804CB68F12",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 34,
+      "age_seconds": 77,
+      "job_id": "SEM-REQUEST-71E18E69777D3F2F5B91D37D",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 118,
       "job_id": "SEM-REQUEST-7E55CB34C3974853A1AA338A",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3543,
-      "job_id": "SEM-REQUEST-7ED87E560B0E0EF4ABB40540",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 732,
+      "age_seconds": 815,
       "job_id": "SEM-REQUEST-866E690AD6095E8F9665CF09",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1216,
+      "age_seconds": 1299,
       "job_id": "SEM-REQUEST-8FFA3DE58A513136C6EE599C",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2042,
+      "age_seconds": 2126,
       "job_id": "SEM-REQUEST-A470B4B03D6C262497B445F7",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 719,
+      "age_seconds": 802,
       "job_id": "SEM-REQUEST-F8FF23FABD6494D785CA39C2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3438,
+      "age_seconds": 3521,
       "job_id": "SEM-WORKER_CONTROL_PLANE-WORKER_RESULT_DETAIL_READ-CCB547F5DD6142F828B7",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 6,
-      "job_id": "SEM-REQUEST-1F130672B1819257530A0007",
+      "age_seconds": 29,
+      "job_id": "SEM-WORKER_CONTROL_PLANE-WORKER_RESULT_DETAIL_READ-F6F5E190C3B77A6EFD75",
       "reason": null,
-      "state": "RUNNING"
+      "state": "RESULT_READY"
     }
   ],
   "local_development_sha": "cf5250556818e2044aa3b7fefd58a1bf004505a9",
-  "oldest_pending_age_seconds": 5,
+  "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 2,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
-  "queue_pending": 1,
+  "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 10,
-  "queue_running": 1,
+  "queue_result_ready_recent": 13,
+  "queue_running": 0,
   "remote_development_sha": "cf5250556818e2044aa3b7fefd58a1bf004505a9",
   "runtime": {
-    "current_job_id": "SEM-REQUEST-1F130672B1819257530A0007",
+    "current_job_id": null,
     "generation": "20261117-universal-job-worker-lifecycle-v4",
-    "last_cycle_utc": "2026-11-28T08:37:52Z",
-    "last_receive_utc": "2026-11-28T08:38:08Z",
-    "last_terminal_utc": "2026-11-28T08:37:36Z",
+    "last_cycle_utc": "2026-11-28T08:39:23Z",
+    "last_receive_utc": "2026-11-28T08:39:18Z",
+    "last_terminal_utc": "2026-11-28T08:39:04Z",
     "pid": "2924057",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "312fe90847becf79d9d2b8d098ec180a9a773da8",
