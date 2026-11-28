@@ -1,0 +1,45 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 25,
+        "paths": [
+          "tools/mirror_sync/",
+          "backend/modules/worker_mcp/"
+        ],
+        "search_terms": [
+          "PENDING_AUDIT_EVIDENCE",
+          "certification_basis",
+          "certified_source_sha"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-839C57325737BB28E253BAF9",
+  "mode": "READ_ONLY",
+  "objective": "[HANDOFF HO-COMUNICACIONES-WORKERCONTROLP-2A69256A47211F3A COMUNICACIONES_DNS_REMOTE->WORKER_CONTROL_PLANE] WK Worker 6.0: resolver discrepancia de certificación del Master Design EDARSA Connect integrado SEM-REQUEST-554515A2B41E5AA5CF77B754 al 95% PENDING_AUDIT_EVIDENCE; auditoría de detalle SEM-REQUEST-88B10277DF0824776ED4739D certificada pero evidence_status ABSENT. Identificar mecanismo canónico de cierre y evidencia faltante, sin repetir escritura ni auditoría de detalle, sin mutar código ni Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
