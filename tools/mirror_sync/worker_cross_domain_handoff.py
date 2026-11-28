@@ -1331,9 +1331,14 @@ def resolve_compatible_capabilities(
     allowed_modes = {"READ_ONLY", "READ_ONLY_SQL"} if mode == "READ_ONLY" else {"MUTATION"}
 
     try:
-        from modules.worker_ingress import semantic_capabilities as sem_caps
-
+        try:
+            from tools.mirror_sync.worker_runtime_fingerprint import load_semantic_capability_catalog_module
+        except ModuleNotFoundError:
+            from worker_runtime_fingerprint import load_semantic_capability_catalog_module
+        sem_caps = load_semantic_capability_catalog_module()
         catalog_entries = list(sem_caps.capability_catalog())
+        if not catalog_entries:
+            raise RuntimeError("CAPABILITY_CATALOG_EMPTY")
     except Exception as exc:
         return {
             "compatible": False,

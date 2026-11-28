@@ -159,46 +159,45 @@ def diagnose_capability_failure(
     }
 
 
-def _load_registered_capabilities() -> tuple[tuple[str, ...], str | None]:
-    """Load registered semantic capabilities fail-closed without requiring SQL bootstrap."""
+def load_semantic_capability_catalog_module():
+    """Load the canonical registry for metadata inspection, without HTTP bootstrap."""
     import importlib.util
     import sys
 
     try:
-        from modules.worker_ingress.semantic_capabilities import (
-            registered_capabilities as _reg_caps,
-        )
-
-        caps = tuple(sorted(str(c).strip().upper() for c in _reg_caps() if str(c).strip()))
-        if caps:
-            return caps, None
-        return (), "CAPABILITY_CATALOG_EMPTY"
-    except Exception as primary_exc:
+        from modules.worker_ingress import semantic_capabilities
+        return semantic_capabilities
+    except ModuleNotFoundError:
         cap_file = ROOT / "backend" / "modules" / "worker_ingress" / "semantic_capabilities.py"
         if not cap_file.is_file():
-            return (), f"CAPABILITY_CATALOG_MISSING:{type(primary_exc).__name__}"
+            raise RuntimeFingerprintError("CAPABILITY_CATALOG_MISSING")
+        spec = importlib.util.spec_from_file_location(
+            "_edarsahub_standalone_semantic_capabilities", cap_file,
+        )
+        if spec is None or spec.loader is None:
+            raise RuntimeFingerprintError("CAPABILITY_CATALOG_SPEC_INVALID")
+        mod = importlib.util.module_from_spec(spec)
+        previous = sys.modules.get(spec.name)
+        sys.modules[spec.name] = mod
         try:
-            spec = importlib.util.spec_from_file_location(
-                "_edarsahub_standalone_semantic_capabilities",
-                cap_file,
-            )
-            if spec is None or spec.loader is None:
-                return (), "CAPABILITY_CATALOG_SPEC_INVALID"
-            mod = importlib.util.module_from_spec(spec)
-            sys.modules[spec.name] = mod
             spec.loader.exec_module(mod)
-            caps = tuple(
-                sorted(
-                    str(c).strip().upper()
-                    for c in mod.registered_capabilities()
-                    if str(c).strip()
-                )
-            )
-            if not caps:
-                return (), "CAPABILITY_CATALOG_EMPTY"
-            return caps, None
-        except Exception as fallback_exc:
-            return (), f"CAPABILITY_CATALOG_LOAD_FAILED:{type(fallback_exc).__name__}"
+        except Exception:
+            if previous is None:
+                sys.modules.pop(spec.name, None)
+            else:
+                sys.modules[spec.name] = previous
+            raise
+        return mod
+
+
+def _load_registered_capabilities() -> tuple[tuple[str, ...], str | None]:
+    """Load registered semantic capabilities fail-closed without requiring SQL bootstrap."""
+    try:
+        mod = load_semantic_capability_catalog_module()
+        caps = tuple(sorted(str(c).strip().upper() for c in mod.registered_capabilities() if str(c).strip()))
+        return (caps, None) if caps else ((), "CAPABILITY_CATALOG_EMPTY")
+    except Exception as exc:
+        return (), f"CAPABILITY_CATALOG_LOAD_FAILED:{type(exc).__name__}"
 
 
 def build_mcp_runtime_convergence_report(

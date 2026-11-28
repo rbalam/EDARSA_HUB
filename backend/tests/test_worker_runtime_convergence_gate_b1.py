@@ -250,3 +250,47 @@ def test_gate_m4_preserves_capability_restrictions_fail_closed():
         sem_caps.resolve_capability("WORKER_PYTEST_CERTIFICATION_READONLY").builder(
             {"bounded_context": "RH", "constraints": {}}
         )
+
+
+
+def test_aap04_isolated_registry_and_lazy_http_import():
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[2]
+    code = """
+import sys
+from pathlib import Path
+root = Path.cwd()
+sys.path.insert(0, str(root))
+from tools.mirror_sync import worker_runtime_fingerprint as fp
+fp.ROOT = root
+sys.path[:] = [p for p in sys.path if p and Path(p).resolve() != root / 'backend']
+from tools.mirror_sync import worker_cross_domain_handoff as handoffs
+mod = fp.load_semantic_capability_catalog_module()
+assert 'READ_ONLY_CANARY' in mod.registered_capabilities()
+assert mod.capability_catalog()
+assert 'modules.worker_ingress.routes' not in sys.modules
+result = handoffs.resolve_compatible_capabilities(target_domain='WORKER_CONTROL_PLANE', handoff_mode='READ_ONLY', requested_capability='READ_ONLY_CANARY')
+assert result['resolution_source'] != 'CAPABILITY_REGISTRY_UNAVAILABLE'
+sys.path.insert(0, str(root / 'backend'))
+from modules.worker_ingress import semantic_capabilities
+assert 'modules.worker_ingress.routes' not in sys.modules
+assert set(semantic_capabilities.registered_capabilities()) == set(mod.registered_capabilities())
+"""
+    proc = subprocess.run([sys.executable, "-I", "-c", code], cwd=root, capture_output=True, text=True, timeout=45)
+    assert proc.returncode == 0, proc.stderr
+
+
+def test_aap04_handoff_catalog_failure_is_closed(monkeypatch):
+    from tools.mirror_sync import worker_cross_domain_handoff as handoffs
+
+    def unavailable():
+        raise ModuleNotFoundError("test catalog unavailable")
+
+    monkeypatch.setattr(fp, "load_semantic_capability_catalog_module", unavailable)
+    result = handoffs.resolve_compatible_capabilities(target_domain="WORKER_CONTROL_PLANE")
+    assert result["compatible"] is False
+    assert result["executable"] is False
+    assert result["exception_code"] == "NO_COMPATIBLE_CAPABILITY_REGISTRY_UNAVAILABLE"
