@@ -1,0 +1,36 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "job_id": "SEM-REQUEST-554515A2B41E5AA5CF77B754"
+      },
+      "type": "worker_result_detail_read"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-88B10277DF0824776ED4739D",
+  "mode": "READ_ONLY",
+  "objective": "Auditoría final READ_ONLY de evidencia del Master Design integrado SEM-REQUEST-554515A2B41E5AA5CF77B754; verificar resultado terminal, pruebas, Git sync y alcance documental sin repetir escritura ni tocar Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMUNICACIONES_DNS_REMOTE",
+    "conflict_domains": [
+      "COMUNICACIONES_DNS_REMOTE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
