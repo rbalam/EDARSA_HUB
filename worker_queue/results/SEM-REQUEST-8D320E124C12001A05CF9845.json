@@ -1,0 +1,1398 @@
+{
+  "base_sha": "d8dfabfd0f99c2de1de12e8ac2010b4aaa730a02",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-28T06:54:05Z",
+  "execution_base_sha": "d8dfabfd0f99c2de1de12e8ac2010b4aaa730a02",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-REQUEST-8D320E124C12001A05CF9845",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-28T06:55:01Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "budgetenvelope"
+            ],
+            "path": "backend/modules/agent_harness/control_plane.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "BudgetEnvelope",
+              "ControlPlane",
+              "ControlPlaneError",
+              "ControlPlaneSnapshot",
+              "EvidenceSummary",
+              "GateState",
+              "__post_init__",
+              "_required",
+              "blockers",
+              "certified_gates",
+              "healthy",
+              "remaining",
+              "snapshot"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "control_plane",
+              "dataclasses",
+              "evidence",
+              "planner",
+              "registry",
+              "router",
+              "typing",
+              "worker_compiler"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "budgetenvelope"
+            ],
+            "path": "backend/modules/agent_harness/e2e_simulation.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AgentHarnessSimulation",
+              "SimulationError",
+              "SimulationResult",
+              "run"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.agent_execution_gate",
+              "core.agent_runtime_activation",
+              "dataclasses",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "runtimeactivationmode"
+            ],
+            "path": "backend/modules/agent_harness/local_runtime.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "LocalRuntime",
+              "LocalRuntimeEnvelope",
+              "LocalRuntimeError",
+              "prepare"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.ai_gateway_policy_adapter.py",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.agent_capability_policy",
+              "core.agent_procedure_policy",
+              "dataclasses",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "authorize_model_route",
+              "modelrouterequest"
+            ],
+            "path": "backend/core/ai_gateway_policy_adapter.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ModelCandidate",
+              "ModelRouteDecision",
+              "ModelRouteRequest",
+              "PreparedModelRoute",
+              "_candidate_scope",
+              "_estimate_cost",
+              "authorize_model_route"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.agent_execution_gate.py",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.agent_capability_policy",
+              "core.agent_reach_policy_adapter",
+              "core.ai_gateway_policy_adapter",
+              "dataclasses",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "authorize_ai_inference_execution",
+              "authorize_model_route",
+              "modelrouterequest"
+            ],
+            "path": "backend/core/agent_execution_gate.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ExecutionGateDecision",
+              "_requester_reasons",
+              "authorize_ai_inference_execution",
+              "authorize_external_research_execution",
+              "authorize_internal_capability_execution"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.agent_runtime_activation.py",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.agent_execution_gate",
+              "dataclasses",
+              "enum"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "runtimeactivationmode"
+            ],
+            "path": "backend/core/agent_runtime_activation.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RuntimeActivationDecision",
+              "RuntimeActivationMode",
+              "RuntimeActivationRequest",
+              "RuntimeEnvironment",
+              "authorize_runtime_activation"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "canary"
+            ],
+            "path": "backend/tests/agent_reach_live_network_diagnostic_evidence.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "canary"
+            ],
+            "path": "backend/tests/fixtures/worker_mutation_v2_canary.txt",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "canary"
+            ],
+            "path": "backend/tests/live_canary_requests/gate5g_worker_autotrigger_20260914.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.scheduler.jobs.sync_comercial_abiertas_v2_job",
+              "datetime",
+              "modules.comercial_v2",
+              "modules.comercial_v2.ticket_contract",
+              "pytest",
+              "re",
+              "requests",
+              "tools.mirror_sync.sql_readonly_audit",
+              "zoneinfo"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "canary"
+            ],
+            "path": "backend/tests/live_canary_requests/ticket_sources_readonly_r9.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "read_api",
+              "test_real_local_customer_and_ticket_schema"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.agent_capability_policy",
+              "core.agent_execution_gate",
+              "core.ai_gateway_policy_adapter"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "authorize_ai_inference_execution",
+              "modelrouterequest"
+            ],
+            "path": "backend/tests/test_agent_execution_gate_e2e.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "policy_context",
+              "test_e2e_private_data_and_privilege_expansion_fail_closed",
+              "test_e2e_rbac_denial_stops_before_downstream",
+              "test_e2e_rbac_to_agent_reach_prepared_request",
+              "test_e2e_rbac_to_ai_gateway_authorized_route"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.agent_capability_policy",
+              "core.agent_execution_gate",
+              "core.agent_reach_egress_canary",
+              "core.agent_reach_policy_adapter",
+              "core.agent_runtime_activation",
+              "inspect",
+              "pathlib",
+              "pytest",
+              "types"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "canary",
+              "runtimeactivationmode"
+            ],
+            "path": "backend/tests/test_agent_reach_egress_canary.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "activation",
+              "execution_gate",
+              "fake_run",
+              "policy_context",
+              "reach_decision",
+              "test_canary_fails_closed_on_runtime_and_timeout",
+              "test_canary_requires_policy_and_exactly_one_call",
+              "test_canary_uses_fixed_https_target_and_hardened_argv",
+              "test_no_user_url_or_arbitrary_command_surface",
+              "test_production_remains_denied",
+              "write_lock"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "canary"
+            ],
+            "path": "backend/tests/test_agent_reach_live_canary_workflow_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_live_canary_workflow_is_sha_bound_and_worker_autotrigger_is_one_path_only"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.agent_capability_policy",
+              "core.agent_external_research_service",
+              "json",
+              "pathlib",
+              "shutil"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "canary"
+            ],
+            "path": "backend/tests/test_agent_reach_live_network_canary.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_context",
+              "_request",
+              "test_agent_reach_live_network_canary"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.agent_external_research_service",
+              "json",
+              "pathlib",
+              "shutil",
+              "tests.test_agent_external_research_service"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "canary"
+            ],
+            "path": "backend/tests/test_agent_reach_live_network_diagnostic.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_diag"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.agent_capability_policy",
+              "core.agent_execution_gate",
+              "core.agent_reach_policy_adapter",
+              "core.agent_reach_public_search_executor",
+              "core.agent_runtime_activation",
+              "inspect",
+              "pathlib",
+              "pytest",
+              "types"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "runtimeactivationmode"
+            ],
+            "path": "backend/tests/test_agent_reach_public_search_executor.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "activation",
+              "execution_gate",
+              "fake_run",
+              "policy_context",
+              "reach_decision",
+              "test_executor_has_no_arbitrary_surface",
+              "test_policy_denial_and_runtime_denial_fail_closed",
+              "test_policy_rejects_over_budget_before_executor",
+              "test_production_and_timeout_remain_fail_closed",
+              "test_query_drives_only_fixed_search_target",
+              "test_requires_canonical_scope",
+              "write_lock"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.agent_execution_gate",
+              "core.agent_reach_runtime_executor",
+              "core.agent_runtime_activation",
+              "pathlib",
+              "pytest",
+              "types"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "runtimeactivationmode"
+            ],
+            "path": "backend/tests/test_agent_reach_runtime_executor.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "fake_run",
+              "gate",
+              "local_activation",
+              "test_executor_fail_closed",
+              "test_executor_uses_fixed_networkless_argv",
+              "test_image_loaded_from_lock",
+              "test_local_execute_is_ready_and_execute_contract_stays_denied",
+              "test_production_local_execute_is_denied",
+              "write_lock"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.agent_execution_gate",
+              "core.agent_runtime_activation"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "runtimeactivationmode"
+            ],
+            "path": "backend/tests/test_agent_runtime_activation.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "gate",
+              "test_development_dry_run_is_allowed_but_never_executor_ready",
+              "test_execute_mode_is_not_enabled_in_gate5a",
+              "test_execution_gate_denial_is_propagated",
+              "test_external_execution_switch_is_not_enabled_in_gate5a",
+              "test_production_is_fail_closed",
+              "test_staging_dry_run_is_allowed_but_never_executor_ready"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.agent_capability_policy",
+              "core.ai_gateway_policy_adapter"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "authorize_model_route",
+              "modelrouterequest"
+            ],
+            "path": "backend/tests/test_ai_gateway_policy_adapter.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "candidates",
+              "context",
+              "request",
+              "route",
+              "test_cannot_route_to_provider_without_effective_scope",
+              "test_cost_budget_blocks_expensive_route",
+              "test_private_data_is_blocked_by_global_policy_before_provider_choice",
+              "test_risk_overreach_is_blocked",
+              "test_selects_lowest_cost_authorized_model_deterministically",
+              "test_skill_or_procedure_cannot_grant_missing_ai_capability"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "modules.agent_harness.control_plane",
+              "pytest"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "budgetenvelope"
+            ],
+            "path": "backend/tests/test_bos_agent_harness_control_plane.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_blocked_gate_surfaces_blockers_and_health",
+              "test_budget_overrun_is_fail_closed",
+              "test_certified_gate_must_be_complete_and_blocker_free",
+              "test_duplicate_gate_and_budget_names_are_rejected",
+              "test_nonterminal_gate_is_rejected",
+              "test_production_touched_is_fail_closed",
+              "test_snapshot_is_deterministic_and_read_only_composition"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.agent_execution_gate",
+              "core.agent_runtime_activation",
+              "modules.agent_harness.local_runtime",
+              "pytest"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "runtimeactivationmode"
+            ],
+            "path": "backend/tests/test_bos_agent_harness_local_runtime.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "allowed_gate",
+              "denied_gate",
+              "test_dry_run_is_allowed_but_not_ready_for_executor",
+              "test_execute_mode_fails_closed",
+              "test_execution_gate_denied_fails_closed",
+              "test_external_execution_fails_closed",
+              "test_identity_and_payload_validation",
+              "test_local_execute_is_ready_only_after_execution_gate_allows",
+              "test_production_fails_closed_before_activation",
+              "test_staging_is_not_local_runtime"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [
+              "sap",
+              "twilio"
+            ],
+            "matched_terms": [
+              "canary"
+            ],
+            "path": "backend/tests/test_catalogo_ampliado_gate8h_b_canary.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_gate8h_b_canary_has_no_hardcoded_recipient",
+              "test_gate8h_b_canary_service_is_bounded_and_fail_closed"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.sql_first.connection_factory",
+              "fastapi",
+              "modules.cava_socios",
+              "modules.cava_socios.report_service",
+              "modules.cava_socios.service",
+              "pytest",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "canary"
+            ],
+            "path": "backend/tests/test_cava_socios_gate13b_e2e_controlled.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_assert_charge_trace",
+              "_assert_no_residue",
+              "_cleanup",
+              "_conn",
+              "_contains_value",
+              "_snapshot",
+              "test_gate13b_e2e_controlled_r2_instrumented"
+            ],
+            "tables_referenced": [
+              "CavaSocios_Botellas",
+              "CavaSocios_Cargos",
+              "CavaSocios_Movimientos",
+              "CavaSocios_Socios",
+              "Gobierno_Persona",
+              "Gobierno_PersonaVinculo"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.sql_first.connection_factory",
+              "modules.cava_socios",
+              "os",
+              "pytest",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "canary"
+            ],
+            "path": "backend/tests/test_cava_socios_persona_link_gate12m_canary.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_cleanup_canary",
+              "_enabled_here",
+              "_fetch_canary_context",
+              "fake_enrich",
+              "fake_get_user_context",
+              "test_gate12m_single_controlled_persona_link_canary"
+            ],
+            "tables_referenced": [
+              "CavaSocios_Socios",
+              "Gobierno_Persona",
+              "Gobierno_PersonaVinculo",
+              "Usuario_Catalogo"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "importlib.util",
+              "pathlib",
+              "subprocess",
+              "sys"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "canary"
+            ],
+            "path": "backend/tests/test_universal_job_dispatcher_scope_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "load_dispatcher",
+              "test_changed_files_reports_exact_untracked_file",
+              "test_dispatcher_uses_untracked_files_all"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "fastapi",
+              "fastapi.testclient",
+              "hashlib",
+              "importlib.util",
+              "json",
+              "modules.worker_ingress",
+              "modules.worker_mcp",
+              "pathlib",
+              "pytest",
+              "subprocess",
+              "sys",
+              "threading",
+              "tools.mirror_sync",
+              "types"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "canary"
+            ],
+            "path": "backend/tests/test_worker_autonomous_runtime_recovery_g1.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_actor",
+              "_fake_dual",
+              "_init_repo_with_origin",
+              "_setup_queue",
+              "test_phase1_phase2_platform_local_ahead_recovery_preserves_commits_and_blocks_code_commits",
+              "test_phase2_breaks_circular_convergence_dependency_only_for_bounded_recovery_and_preserves_6_mcp_tools",
+              "test_phase3_consent_bridge_g1b_origin_separation_and_canonical_stale_invalidation",
+              "test_phase4_bitacoras_semantic_blocker_reassignment_without_409_or_duplication",
+              "test_phase5_knowledge_loop_superseded_never_certifies_learned_capability"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "hashlib",
+              "importlib.util",
+              "modules.worker_ingress",
+              "modules.worker_mcp",
+              "modules.worker_mcp.config",
+              "pathlib",
+              "pytest",
+              "sys",
+              "urllib.error"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "canary"
+            ],
+            "path": "backend/tests/test_worker_contract_stabilization_preflight.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_admin",
+              "_fake_503",
+              "_fake_ok",
+              "_fake_rec",
+              "_fake_urlopen",
+              "_fake_urlopen_refused",
+              "_operator",
+              "test_agentes_ia_gate5_authorized_preflight_dedup_and_mcp_schema_diagnostic",
+              "test_bos_v1_gate_e_contractual_rejection_and_rls_gate0_unknown_capability",
+              "test_cavas_constraints_and_bounded_context_diagnostics",
+              "test_cxp_pcid_stale_sha_and_services_forbidden_paths_and_sql_rbac_019_security_denial",
+              "test_gate_b_mcp_503_timeout_and_observability_no_duplicate_retries",
+              "test_gate_b_precise_diagnostics_for_dev_mutation_and_semantic_extract",
+              "test_mcp_submit_objective_handles_409_unreachable_and_timeout_budget",
+              "test_rejected_preflight_keeps_reserved_fields_over_diagnostics"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "copy",
+              "json",
+              "modules.worker_ingress",
+              "pytest"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "canary"
+            ],
+            "path": "backend/tests/test_worker_control_plane_idempotency_gate_p0.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_admin",
+              "_forbidden_publish",
+              "_request",
+              "_state",
+              "test_exact_legacy_retry_resolves_existing_legacy_job",
+              "test_request_key_owns_stable_semantic_identity_across_payload_drift",
+              "test_same_request_key_different_payload_fails_closed",
+              "test_same_request_key_same_payload_returns_exists",
+              "test_submit_conflict_never_reaches_publisher",
+              "test_unpublished_draft_conflict_fails_closed_before_publisher",
+              "test_unpublished_draft_exact_retry_reports_recovery_ready"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "modules.worker_ingress",
+              "pytest",
+              "tools.mirror_sync"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "canary"
+            ],
+            "path": "backend/tests/test_worker_control_plane_runtime_gate_p0.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_admin",
+              "_forbidden_publish",
+              "_must_not_run",
+              "_mutation_request",
+              "test_mutation_preflight_fails_closed_when_runtime_not_converged",
+              "test_mutation_submission_never_reaches_publisher_when_runtime_stale",
+              "test_read_only_preflight_does_not_require_runtime_convergence"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "base64",
+              "datetime",
+              "fastapi",
+              "fastapi.testclient",
+              "hashlib",
+              "httpx",
+              "httpx2",
+              "importlib.util",
+              "mcp.client.auth.utils",
+              "mcp.shared.auth",
+              "modules.worker_ingress",
+              "modules.worker_mcp",
+              "modules.worker_mcp.config",
+              "modules.worker_mcp.oauth_discovery",
+              "pathlib",
+              "pytest",
+              "sys",
+              "typing",
+              "urllib.parse"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "canary"
+            ],
+            "path": "backend/tests/test_worker_mcp_oauth_discovery_canonical_v2.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_InMemorySesionesStore",
+              "__init__",
+              "_pkce_pair",
+              "canonical_v2_stack",
+              "consume",
+              "fake_async_client",
+              "fake_current_user_dual",
+              "fake_get_job_status",
+              "fake_submit_objective",
+              "fake_worker_admin_dep",
+              "in_memory_request_json",
+              "insert",
+              "mint_token",
+              "resolve_active_mcp_service",
+              "test_all_oauth_discovery_routes_fail_closed_503_without_https_proof_or_on_header_injection",
+              "test_all_oauth_discovery_routes_return_identical_canonical_metadata_and_options_204",
+              "test_e2e_canonical_v2_discovery_dcr_pkce_rbac_and_mcp_compatibility"
+            ],
+            "tables_referenced": [
+              "Sesiones"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "asyncio",
+              "base64",
+              "concurrent.futures",
+              "datetime",
+              "fastapi",
+              "fastapi.testclient",
+              "hashlib",
+              "importlib.util",
+              "mcp.server.auth.provider",
+              "modules.worker_ingress",
+              "modules.worker_mcp",
+              "modules.worker_mcp.config",
+              "modules.worker_mcp.oauth_pkce",
+              "modules.worker_mcp.oauth_security",
+              "pathlib",
+              "pytest",
+              "sys",
+              "time",
+              "typing",
+              "urllib.parse"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "canary"
+            ],
+            "path": "backend/tests/test_worker_mcp_oauth_scope_enforcement_gate3i.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_InMemorySesionesStore",
+              "__init__",
+              "_pkce_pair",
+              "_rbac_admin_non_superadmin_user",
+              "_superadmin_user",
+              "consume",
+              "exchange_pair",
+              "fake_current_user_dual",
+              "fake_get_job_status",
+              "fake_submit_job",
+              "fake_submit_objective",
+              "fake_worker_admin_dep",
+              "in_memory_request_json",
+              "insert",
+              "isolated_oauth_and_ingress",
+              "issue_oauth_tokens",
+              "resolve_active_mcp_service",
+              "revoke",
+              "test_idempotency_and_concurrent_scope_verification",
+              "test_legacy_opaque_superadmin_and_admin_sessions_preserve_emergent_compatibility",
+              "test_mint_scoped_internal_token_rejects_empty_or_unknown_scopes",
+              "test_non_superadmin_rbac_admin_cannot_consent_or_escalate_to_submit",
+              "test_refresh_token_allows_downscoping_and_blocks_upscoping",
+              "test_sql_session_revocation_tampering_and_expiration_fail_closed",
+              "test_status_only_oauth_token_allows_get_job_status_and_blocks_submit_objective",
+              "test_submit_only_oauth_token_allows_submit_and_blocks_get_job_status"
+            ],
+            "tables_referenced": [
+              "Sesiones"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "asyncio",
+              "base64",
+              "datetime",
+              "fastapi",
+              "fastapi.testclient",
+              "hashlib",
+              "httpx",
+              "importlib.util",
+              "modules.worker_ingress",
+              "modules.worker_ingress.service",
+              "modules.worker_mcp",
+              "modules.worker_mcp.config",
+              "pathlib",
+              "pytest",
+              "sys",
+              "typing",
+              "urllib.parse"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "canary"
+            ],
+            "path": "backend/tests/test_worker_mcp_oauth_stepup_gate3l.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_InMemorySesionesStore",
+              "__init__",
+              "_pkce_pair",
+              "consume",
+              "fake_async_client",
+              "fake_current_user_dual",
+              "fake_get_job_status",
+              "fake_submit_objective",
+              "fake_worker_admin_dep",
+              "in_memory_request_json",
+              "insert",
+              "isolated_full_gateway_stack",
+              "mint_token_via_pkce",
+              "resolve_active_mcp_service",
+              "test_e2e_chatgpt_stepup_401_403_reconsent_submit_status_and_422_separation",
+              "test_register_advertises_available_scopes_without_granting_automatically"
+            ],
+            "tables_referenced": [
+              "Sesiones"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "importlib.util",
+              "modules.worker_ingress",
+              "modules.worker_mcp",
+              "pathlib",
+              "pytest",
+              "sys",
+              "types"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "canary"
+            ],
+            "path": "backend/tests/test_worker_mcp_r2_b_autonomous_tools_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_configure_server",
+              "_mock_token",
+              "fake_request",
+              "test_r2_b_1_dynamic_capability_catalog_covers_contract_fields",
+              "test_r2_b_2_mcp_submit_tool_error_exposes_sanitized_category_job_id_and_recoverability",
+              "test_r2_b_2_publication_diagnostics_classify_and_sanitize_secrets",
+              "test_r2_b_four_new_readonly_tools_work_with_status_only_and_delegate_to_existing_endpoints",
+              "test_r2_b_readonly_tools_fail_closed_without_worker_status_scope",
+              "test_r2_b_status_only_token_still_denied_submit_objective",
+              "test_r2_b_tool_required_scopes_keep_least_privilege",
+              "test_r2_d_status_exposes_maintenance_history_with_read_scope"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "importlib.util",
+              "pathlib",
+              "pytest",
+              "sys",
+              "tools.mirror_sync"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "canary"
+            ],
+            "path": "backend/tests/test_worker_pytest_certification_readonly.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "expand",
+              "test_arbitrary_constraints_fail_closed",
+              "test_bos_executive_readonly_fixed_suite",
+              "test_bos_executive_rejects_caller_controlled_checks",
+              "test_cava_domains_reject_caller_constraints",
+              "test_cava_socios_hermetic_readonly_suite",
+              "test_cavas_corporativas_hermetic_readonly_suite",
+              "test_context_is_bounded",
+              "test_fixed_target_and_no_actions",
+              "test_hermetic_pytest_dispatcher_blocks_credentials_network_and_sql",
+              "test_ia_global_rbac_readonly_fixed_suite",
+              "test_ia_global_rbac_rejects_caller_controlled_checks",
+              "test_no_mutation_mode",
+              "test_registered_readonly_only",
+              "test_scheduling_is_bounded",
+              "test_sec_rbac_hermetic_readonly_fixed_suite",
+              "test_sec_rbac_rejects_caller_controlled_tests",
+              "test_suite_registry_rejects_unsafe_or_duplicate_registrations"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "ast",
+              "modules.worker_ingress",
+              "modules.worker_ingress.schemas",
+              "modules.worker_ingress.semantic_capabilities",
+              "pathlib",
+              "pydantic",
+              "pytest",
+              "tools.mirror_sync"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "canary"
+            ],
+            "path": "backend/tests/test_worker_remote_semantic_ingress_gate2a.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_objective",
+              "_repair_objective",
+              "_user",
+              "fake_declare",
+              "fake_publish",
+              "fake_submit",
+              "forbidden_generic_submit",
+              "not_committed",
+              "reject",
+              "test_capability_mode_mismatch_fails_closed",
+              "test_constraints_are_capability_owned_and_fail_closed",
+              "test_g3_r2_bounded_audit_allows_core_without_expanding_mutation_roots",
+              "test_g3_r2_capabilities_discovery_route_is_registered_and_status_scoped",
+              "test_g3_r2_capability_catalog_exposes_all_registered_capabilities_and_constraints",
+              "test_g4_maintenance_history_accepts_bounded_source_job_selector",
+              "test_g4_maintenance_history_capability_registered_and_bounded",
+              "test_g4_maintenance_history_fails_closed",
+              "test_g4_semantic_schema_rejects_raw_job_fields",
+              "test_g4_semantic_submission_uses_existing_publisher",
+              "test_objective_route_is_exposed_and_jobs_route_remains_internal",
+              "test_read_only_canary_capability_is_registered",
+              "test_request_key_changes_idempotency_identity",
+              "test_semantic_expansion_builds_internal_worker_contract",
+              "test_semantic_job_id_is_deterministic_and_requester_bound",
+              "test_semantic_schema_rejects_raw_worker_language",
+              "test_submit_objective_reuses_canonical_publisher",
+              "test_unknown_capability_fails_closed",
+              "test_worker_repair_bounded_capability_is_registered",
+              "test_worker_repair_bounded_declaration_rejects_unknown_incident",
+              "test_worker_repair_bounded_delegates_to_canonical_planner",
+              "test_worker_repair_bounded_fails_closed_on_production_violation",
+              "test_worker_repair_bounded_rejects_generic_builder_path",
+              "test_worker_repair_bounded_rejects_uncommitted_publication",
+              "test_worker_repair_bounded_rejects_unknown_constraints",
+              "test_worker_repair_bounded_rejects_wrong_context",
+              "unsafe_publish"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "ast",
+              "fastapi",
+              "modules.worker_ingress",
+              "pathlib",
+              "pytest",
+              "tools.mirror_sync"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "canary"
+            ],
+            "path": "backend/tests/test_worker_runtime_convergence_gate_b1.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "deny",
+              "test_build_mcp_runtime_convergence_report_detects_missing_runtime_capability",
+              "test_diagnose_capability_failure_differentiates_all_8_classes",
+              "test_gate_m4_capability_catalog_and_mcp_docstring_full_parity",
+              "test_gate_m4_convergence_report_fails_closed_when_catalog_unavailable",
+              "test_gate_m4_convergence_report_loads_catalog_standalone",
+              "test_gate_m4_preserves_capability_restrictions_fail_closed",
+              "test_runtime_convergence_route_enforces_rbac_scope"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "importlib.util",
+              "json",
+              "modules.worker_console",
+              "modules.worker_ingress",
+              "modules.worker_mcp",
+              "pathlib",
+              "pytest",
+              "subprocess",
+              "sys",
+              "time",
+              "tools.mirror_sync"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "canary"
+            ],
+            "path": "backend/tests/test_worker_universal_multichat_handoff.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/worker-handoffs"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_admin",
+              "_init_git_repo",
+              "_operator",
+              "_setup_queue",
+              "_write_certified_result",
+              "fake_submit",
+              "test_fase1_and_fase2_canonical_contract_capability_registry_and_6_mcp_tools",
+              "test_fase3_autonomous_classification_all_6_paths_and_orchestrator_gate_dependency",
+              "test_fase4_automatic_return_get_go_context_and_autoresume_without_second_go",
+              "test_fase5_security_and_stability_guards_fail_closed",
+              "test_fase6_and_fase7_control_center_visibility_and_3domain_acceptance"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "inspect",
+              "json",
+              "modules.worker_console",
+              "modules.worker_ingress",
+              "pathlib",
+              "pytest",
+              "sys",
+              "tools.mirror_sync"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "canary"
+            ],
+            "path": "backend/tests/test_worker_universal_multichat_handoff_p1.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_canonical_service_actor",
+              "_readonly_operator",
+              "_seed_legacy_gate0_handoff",
+              "_setup_queue",
+              "_write_certified_result",
+              "failing_resolver",
+              "test_p1_req1_2_3_assign_capability_and_activate_auto_dispatch_preserving_identity_and_history",
+              "test_p1_req4_no_executor_detection_never_indefinite_wait_in_reconcile_and_orchestrator",
+              "test_p1_req5_and_6_capability_registry_resolution_and_concrete_exceptions",
+              "test_p1_req7_no_artificial_superadmin_fallback_and_fail_closed_identity",
+              "test_p1_req8_revalidate_authorization_at_dispatch_time",
+              "test_p1_req9_and_10_link_certified_resolution_and_gate0_end_to_end_continuity"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "concurrent.futures",
+              "datetime",
+              "hashlib",
+              "importlib.util",
+              "json",
+              "modules.worker_ingress",
+              "modules.worker_mcp",
+              "pathlib",
+              "pytest",
+              "subprocess",
+              "sys",
+              "tools.mirror_sync"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "canary"
+            ],
+            "path": "backend/tests/test_worker_universal_multichat_handoff_p2.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_auth_request_and_consent",
+              "_canonical_actor",
+              "_init_git_repo",
+              "_setup_queue",
+              "_write_certified_result",
+              "fake_submit",
+              "register",
+              "test_p2_section7_semantic_validation_rejects_canary_and_preserves_unsatisfied_blockers",
+              "test_p2a_autonomous_authorization_lifecycle_and_6_mcp_tools_preserved",
+              "test_p2b_successor_negative_states_and_controlled_end_to_end_execution",
+              "test_p2d_security_negative_matrix_fail_closed",
+              "test_supersede_handoff_preserves_certification_history_and_idempotency",
+              "test_wk60_g2_unassigned_readonly_is_not_human_consent",
+              "test_wk60_successor_registration_idempotency"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 39,
+          "scanned_files": 719,
+          "skipped_sensitive": 4
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-28T06:54:05Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
