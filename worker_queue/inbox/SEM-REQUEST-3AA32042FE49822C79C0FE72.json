@@ -1,0 +1,113 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "old_text": "    reason = _clean(c.get(\"reason\"))\n    if not all((hid, jid, source_id, auth)):\n        raise HandoffSecurityError(\"HANDOFF_SUPERSEDE_PROOFS_REQUIRED\")\n",
+      "path": "tools/mirror_sync/worker_cross_domain_handoff.py",
+      "replacement": "    reason = _clean(c.get(\"reason\"))\n    notice_only = c.get(\"notification_only\") is True\n    if \"notification_only\" in c and type(c[\"notification_only\"]) is not bool:\n        raise HandoffSecurityError(\"HANDOFF_SUPERSEDE_NOTICE_FLAG_INVALID\")\n    notice_key = _clean(c.get(\"expected_notice_request_key\"))\n    notice_gate = _clean(c.get(\"expected_notice_gate_id\"))\n    evidence_auth = _clean(c.get(\"certified_job_authorization_ref\"))\n    if not all((hid, jid, auth)) or (not notice_only and not source_id):\n        raise HandoffSecurityError(\"HANDOFF_SUPERSEDE_PROOFS_REQUIRED\")\n    if notice_only and not all((notice_key, notice_gate, evidence_auth)):\n        raise HandoffSecurityError(\"HANDOFF_SUPERSEDE_NOTICE_PROOFS_REQUIRED\")\n    if not notice_only and any(k in c for k in (\n        \"expected_notice_request_key\", \"expected_notice_gate_id\",\n        \"certified_job_authorization_ref\",\n    )):\n        raise HandoffSecurityError(\"HANDOFF_SUPERSEDE_NOTICE_FIELDS_FORBIDDEN\")\n",
+      "source_sha256": "b55303d5bf9eff1a74f17bb8a57bd11ea9e9a0a0e2deaa5975c713a9f4b5e790",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "    if _clean(handoff.get(\"source_job_id\")) != source_id:\n        raise HandoffSecurityError(\"HANDOFF_SUPERSEDE_SOURCE_JOB_MISMATCH\")\n",
+      "path": "tools/mirror_sync/worker_cross_domain_handoff.py",
+      "replacement": "    if notice_only:\n        requested = handoff.get(\"requested_constraints\")\n        if not isinstance(requested, Mapping):\n            raise HandoffSecurityError(\"HANDOFF_SUPERSEDE_NOTICE_CONSTRAINTS_MISSING\")\n        if (\n            source_id is not None\n            or _clean(handoff.get(\"source_job_id\"))\n            or _clean(handoff.get(\"incident_id\"))\n            or _clean(handoff.get(\"resolution_job_id\"))\n            or _clean(handoff.get(\"handoff_mode\")).upper() != \"READ_ONLY\"\n            or handoff.get(\"auto_dispatch\") is not False\n            or handoff.get(\"has_executor\") is not False\n            or _clean(handoff.get(\"requested_capability\")).upper() != \"GATE_AUTHORIZATION_LIFECYCLE\"\n            or _clean(requested.get(\"action\")).upper() not in {\"CONSENT_STATUS\", \"INSPECT\"}\n            or _clean(requested.get(\"gate_id\")) != notice_gate\n            or _clean(handoff.get(\"request_key\")) != notice_key\n        ):\n            raise HandoffSecurityError(\"HANDOFF_SUPERSEDE_NOT_INFORMATIONAL_NOTICE\")\n    elif _clean(handoff.get(\"source_job_id\")) != source_id:\n        raise HandoffSecurityError(\"HANDOFF_SUPERSEDE_SOURCE_JOB_MISMATCH\")\n",
+      "source_sha256": "23000bcfe7c5486e43b997869c6c6bb1b3f08a3bc2b3b52d0e9fc139e8e3aec2",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "    raw = _read_json_safe(qroot / \"results\" / f\"{jid}.json\") or {}\n    if _extract_result_bounded_context(raw, jid, qroot) != source:\n        raise HandoffSecurityError(\"HANDOFF_SUPERSEDE_SOURCE_DOMAIN_MISMATCH\")\n",
+      "path": "tools/mirror_sync/worker_cross_domain_handoff.py",
+      "replacement": "    raw = _read_json_safe(qroot / \"results\" / f\"{jid}.json\") or {}\n    certified_domain = _extract_result_bounded_context(raw, jid, qroot)\n    if certified_domain != (owner if notice_only else source):\n        raise HandoffSecurityError(\"HANDOFF_SUPERSEDE_SOURCE_DOMAIN_MISMATCH\")\n    if notice_only:\n        certified_request = _read_json_safe(qroot / \"done\" / f\"{jid}.json\") or {}\n        if (\n            _clean(certified_request.get(\"authorization_ref\")) != evidence_auth\n            or not evidence_auth.startswith(f\"GO-{notice_gate}-\")\n            or not evidence_auth[len(f\"GO-{notice_gate}-\"):].isdigit()\n            or len(evidence_auth[len(f\"GO-{notice_gate}-\"):]) != 8\n        ):\n            raise HandoffSecurityError(\"HANDOFF_SUPERSEDE_NOTICE_CERTIFIED_GATE_MISMATCH\")\n",
+      "source_sha256": "59626dec318f9d28f6a3682f8054234cc4b60dd457023224d1ccaaf0ef38d043",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "            or _clean(handoff.get(\"supersession_authorization_ref\")) != auth):\n            raise HandoffConflictError(\"HANDOFF_SUPERSEDE_IDEMPOTENCY_CONFLICT\")\n",
+      "path": "tools/mirror_sync/worker_cross_domain_handoff.py",
+      "replacement": "            or _clean(handoff.get(\"supersession_authorization_ref\")) != auth\n            or (handoff.get(\"informational_notice_closed\") is True) != notice_only\n            or (notice_only and (\n                _clean(handoff.get(\"supersession_notice_gate_id\")) != notice_gate\n                or _clean(handoff.get(\"supersession_notice_request_key\")) != notice_key\n                or _clean(handoff.get(\"supersession_evidence_authorization_ref\")) != evidence_auth\n            ))\n        ):\n            raise HandoffConflictError(\"HANDOFF_SUPERSEDE_IDEMPOTENCY_CONFLICT\")\n",
+      "source_sha256": "fbc29a203f8b9d8b560358b70a28dd605874eccf0409fa5d0af4ad3514fb6367",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "    return {\"status\": \"PREFLIGHT_READY\", \"handoff_id\": hid, \"superseded_by_job_id\": jid,\n            \"actor_email\": actor[\"email\"], \"authorization_ref\": auth,\n            \"reason\": reason, \"evidence\": evidence, \"production_touched\": False}\n",
+      "path": "tools/mirror_sync/worker_cross_domain_handoff.py",
+      "replacement": "    return {\"status\": \"PREFLIGHT_READY\", \"handoff_id\": hid, \"superseded_by_job_id\": jid,\n            \"actor_email\": actor[\"email\"], \"authorization_ref\": auth,\n            \"reason\": reason, \"evidence\": evidence,\n            \"notification_only\": notice_only, \"notice_gate_id\": notice_gate if notice_only else None,\n            \"notice_request_key\": notice_key if notice_only else None,\n            \"evidence_authorization_ref\": evidence_auth if notice_only else None,\n            \"production_touched\": False}\n",
+      "source_sha256": "abbc7a5cba8c9ea78a5c2f5e82206251d4468642bd2b99dd7af943836e52653d",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "            record[\"updated_at_utc\"] = record[\"superseded_at_utc\"]\n            _append_history(record, \"ADMINISTRATIVELY_SUPERSEDED\",\n                            actor_email=pf[\"actor_email\"],\n                            details={\"superseded_by_job_id\": pf[\"superseded_by_job_id\"],\n                                     \"authorization_ref\": pf[\"authorization_ref\"],\n                                     \"reason\": pf[\"reason\"]})\n",
+      "path": "tools/mirror_sync/worker_cross_domain_handoff.py",
+      "replacement": "            record[\"updated_at_utc\"] = record[\"superseded_at_utc\"]\n            if pf.get(\"notification_only\") is True:\n                record[\"informational_notice_closed\"] = True\n                record[\"supersession_notice_gate_id\"] = pf[\"notice_gate_id\"]\n                record[\"supersession_notice_request_key\"] = pf[\"notice_request_key\"]\n                record[\"supersession_evidence_authorization_ref\"] = pf[\"evidence_authorization_ref\"]\n            details = {\"superseded_by_job_id\": pf[\"superseded_by_job_id\"],\n                       \"authorization_ref\": pf[\"authorization_ref\"],\n                       \"reason\": pf[\"reason\"]}\n            if pf.get(\"notification_only\") is True:\n                details[\"notification_only\"] = True\n                details[\"notice_gate_id\"] = pf[\"notice_gate_id\"]\n            _append_history(record, \"ADMINISTRATIVELY_SUPERSEDED\",\n                            actor_email=pf[\"actor_email\"], details=details)\n",
+      "source_sha256": "78a862343cdee3d4f304411b556079b581381b86fc1ba45ea8bcb4fa0ddf73ed",
+      "type": "replace_text"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "_SUPERSEDE_CONSTRAINTS = (\n    \"handoff_id\", \"superseded_by_job_id\", \"expected_source_job_id\",\n    \"authorization_ref\", \"reason\",\n)",
+      "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+      "replacement": "_SUPERSEDE_CONSTRAINTS = (\n    \"handoff_id\", \"superseded_by_job_id\", \"expected_source_job_id\",\n    \"authorization_ref\", \"reason\", \"notification_only\",\n    \"expected_notice_request_key\", \"expected_notice_gate_id\",\n    \"certified_job_authorization_ref\",\n)",
+      "source_sha256": "fcda721639167d927f28f50ee6ed354bd8de084cb9997a8bd17931fcc2951c48",
+      "type": "replace_text"
+    },
+    {
+      "anchor": "ER-GATE\"}},\n            current_user=actor, state_root=qroot)\n    with pytest.raises(handoff_mod.HandoffSecurityError, match=\"SQL_RBAC_DENIED\"):\n        handoff_mod.preflight_supersede_cross_domain_handoff(\n            req, current_user={**actor, \"permissions\": [\"worker:submit\"]}, state_root=qroot)\n",
+      "path": "backend/tests/test_worker_universal_multichat_handoff_p2.py",
+      "replacement": "\n\n\ndef test_informational_notice_supersession_requires_exact_gate_binding(tmp_path, monkeypatch):\n    repo, _head, _sha = _init_git_repo(tmp_path)\n    qroot = _setup_queue(repo)\n    actor = _canonical_actor()\n    gate = \"WK60-TEST-NOTICE-GATE-R1\"\n    notice_key = \"wk60-notice-info-test\"\n    cert_auth = \"GO-WK60-TEST-NOTICE-GATE-R1-20261128\"\n    created = handoff_mod.register_cross_domain_handoff(\n        {\"objective\": \"Comunicar consentimiento previo de Gate sin activar ejecutor.\",\n         \"bounded_context\": \"SEC_RBAC\", \"mode\": \"READ_ONLY\",\n         \"request_key\": notice_key,\n         \"constraints\": {\n             \"target_domain\": \"WORKER_CONTROL_PLANE\",\n             \"requested_capability\": \"GATE_AUTHORIZATION_LIFECYCLE\",\n             \"requested_constraints\": {\"action\": \"CONSENT_STATUS\", \"gate_id\": gate,\n                                       \"consent_request_id\": \"CONSENT-WK60-TEST-NOTICE\"},\n             \"auto_dispatch\": False,\n             \"acceptance_criteria\": [\"only verify prior consent\", \"do not create job\"]}},\n        current_user=actor, state_root=qroot,\n    )\n    hid = created[\"handoff_id\"]\n    record = handoff_mod.load_handoff(hid, state_root=qroot)\n    assert record[\"source_job_id\"] is None\n    assert record[\"handoff_mode\"] == \"READ_ONLY\"\n    assert record[\"auto_dispatch\"] is False\n    assert record[\"has_executor\"] is False\n    _write_certified_result(qroot, \"SEM-CERT-NOTICE-TEST\",\n                            domain=\"WORKER_CONTROL_PLANE\",\n                            status=\"INTEGRATED\", certification=\"CERTIFIED\")\n    res_path = qroot / \"results\" / \"SEM-CERT-NOTICE-TEST.json\"\n    payload = json.loads(res_path.read_text(encoding=\"utf-8\"))\n    payload[\"development_sha\"] = \"d\" * 40\n    payload[\"git_sync_status\"] = \"CERTIFIED_GIT_SYNC\"\n    payload[\"files_changed\"] = [\"tools/mirror_sync/worker_cross_domain_handoff.py\"]\n    res_path.write_text(json.dumps(payload), encoding=\"utf-8\")\n    done_path = qroot / \"done\" / \"SEM-CERT-NOTICE-TEST.json\"\n    done = json.loads(done_path.read_text(encoding=\"utf-8\"))\n    done[\"authorization_ref\"] = cert_auth\n    done_path.write_text(json.dumps(done), encoding=\"utf-8\")\n    req = {\n        \"objective\": \"Retirar aviso de consentimiento historico informativo.\",\n        \"bounded_context\": \"WORKER_CONTROL_PLANE\", \"mode\": \"MUTATION\",\n        \"capability\": \"CROSS_DOMAIN_HANDOFF_SUPERSEDE\",\n        \"constraints\": {\n            \"handoff_id\": hid,\n            \"superseded_by_job_id\": \"SEM-CERT-NOTICE-TEST\",\n            \"authorization_ref\": \"GO-WK60-TEST-NOTICE-CLOSURE-R2\",\n            \"reason\": \"Aviso informativo ya cubierto por ejecucion certificada posterior.\",\n            \"notification_only\": True,\n            \"expected_notice_request_key\": notice_key,\n            \"expected_notice_gate_id\": gate,\n            \"certified_job_authorization_ref\": cert_auth,\n        },\n    }\n    monkeypatch.setattr(handoff_mod, \"_verify_authorization_ref\",\n                        lambda *args, **kwargs: {\"verified\": True})\n    assert handoff_mod.preflight_supersede_cross_domain_handoff(\n        req, current_user=actor, state_root=qroot)[\"status\"] == \"PREFLIGHT_READY\"\n    assert handoff_mod.supersede_cross_domain_handoff(\n        req, current_user=actor, state_root=qroot)[\"status\"] == \"SUPERSEDED\"\n    saved = handoff_mod.load_handoff(hid, state_root=qroot)\n    assert saved[\"informational_notice_closed\"] is True\n    assert saved[\"dependency_satisfied\"] is False\n    assert saved[\"certification\"] == \"NOT_CERTIFIED\"\n    assert saved[\"source_resumed\"] is False\n    assert saved[\"resolution_job_id\"] is None\n    assert saved[\"supersession_evidence_authorization_ref\"] == cert_auth\n    history_count = len(saved[\"history\"])\n    assert handoff_mod.supersede_cross_domain_handoff(\n        req, current_user=actor, state_root=qroot)[\"status\"] == \"EXISTS\"\n    assert len(handoff_mod.load_handoff(hid, state_root=qroot)[\"history\"]) == history_count\n    handoff_mod.reconcile_cross_domain_handoffs(state_root=qroot, max_dispatches=0)\n    assert handoff_mod.load_handoff(hid, state_root=qroot)[\"lifecycle_state\"] == \"SUPERSEDED\"\n\n    for bad in (\n        {\"expected_notice_request_key\": \"wrong-request-key\"},\n        {\"expected_notice_gate_id\": \"WRONG-GATE\"},\n        {\"certified_job_authorization_ref\": \"GO-WRONG-GATE-20261128\"},\n        {\"notification_only\": False},\n    ):\n        invalid = {**req, \"constraints\": {**req[\"constraints\"], **bad}}\n        with pytest.raises(handoff_mod.HandoffError):\n            handoff_mod.preflight_supersede_cross_domain_handoff(\n                invalid, current_user=actor, state_root=qroot)\n\n\ndef test_informational_notice_does_not_allow_executable_handoff(tmp_path, monkeypatch):\n    repo, _head, _sha = _init_git_repo(tmp_path)\n    qroot = _setup_queue(repo)\n    actor = _canonical_actor()\n    created = handoff_mod.register_cross_domain_handoff(\n        {\"objective\": \"Ejecucion real de un Gate que no es aviso informativo.\",\n         \"bounded_context\": \"SEC_RBAC\", \"mode\": \"READ_ONLY\",\n         \"request_key\": \"wk60-executable-test\",\n         \"constraints\": {\"target_domain\": \"WORKER_CONTROL_PLANE\",\n                         \"source_job_id\": \"SEM-EXEC-SOURCE-JOB\",\n                         \"requested_capability\": \"GATE_AUTHORIZATION_LIFECYCLE\",\n                         \"requested_constraints\": {\"action\": \"INSPECT\", \"gate_id\": \"TEST-GATE\"},\n                         \"auto_dispatch\": False}},\n        current_user=actor, state_root=qroot,\n    )\n    req = {\n        \"objective\": \"No retirar como aviso un handoff con job origen.\",\n        \"bounded_context\": \"WORKER_CONTROL_PLANE\", \"mode\": \"MUTATION\",\n        \"capability\": \"CROSS_DOMAIN_HANDOFF_SUPERSEDE\",\n        \"constraints\": {\n            \"handoff_id\": created[\"handoff_id\"],\n            \"superseded_by_job_id\": \"SEM-CERT-NOTICE-TEST\",\n            \"authorization_ref\": \"GO-TEST-NOTICE-R2\",\n            \"reason\": \"Evitar clasificacion falsa de trabajo ejecutable.\",\n            \"notification_only\": True,\n            \"expected_notice_request_key\": \"wk60-executable-test\",\n            \"expected_notice_gate_id\": \"TEST-GATE\",\n            \"certified_job_authorization_ref\": \"GO-TEST-GATE-20261128\",\n        },\n    }\n    with pytest.raises(handoff_mod.HandoffSecurityError, match=\"NOT_INFORMATIONAL_NOTICE\"):\n        handoff_mod.preflight_supersede_cross_domain_handoff(\n            req, current_user=actor, state_root=qroot)\n",
+      "source_sha256": "bcaecdb730db4f175a27c8c7cc59c8316ccd810990cdc5dba3d535614c9009d5",
+      "type": "insert_after"
+    }
+  ],
+  "authorization_ref": "GO-WK60-HANDOFF-INFORMATIONAL-CLOSURE-R2-20261128",
+  "checks": [
+    {
+      "paths": [
+        "tools/mirror_sync/worker_cross_domain_handoff.py",
+        "backend/modules/worker_ingress/semantic_capabilities.py",
+        "backend/tests/test_worker_universal_multichat_handoff_p2.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_universal_multichat_handoff_p2.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-3AA32042FE49822C79C0FE72",
+  "mode": "MUTATION",
+  "objective": "Ampliar exclusivamente la transición canónica de handoffs para permitir SUPERSEDED administrativo a avisos READ_ONLY sin source_job_id cuando se comprueben request_key, Gate original, sin executor ni autodispatch, resultado CERTIFIED del dominio propietario y authorization_ref de ese resultado; mantener validación estricta de trabajos reales, SQL RBAC, historial, idempotencia, fail-closed, sin tocar Producción.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
