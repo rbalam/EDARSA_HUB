@@ -3919,6 +3919,30 @@ def preflight_gate_authorization_lifecycle(
             "production_touched": False,
         }
 
+    # Recover only an ID-only request; never merge caller-supplied scope with
+    # persisted scope. Full requests retain the existing strict validation.
+    if action in {"PREFLIGHT", "MATERIALIZE"} and constraints.get("consent_request_id") and set(constraints) <= {"action", "gate_id", "consent_request_id"}:
+        cid = _safe_id(str(constraints["consent_request_id"]))
+        doc = _read_json_safe(_consent_requests_dir(qroot) / f"{cid}.json")
+        if not isinstance(doc, dict) or doc.get("schema") != SCHEMA_CONSENT_REQUEST:
+            raise GateAuthorizationError("CONSENT_REQUEST_NOT_FOUND")
+        if doc.get("production_allowed") is not False:
+            raise GateAuthorizationError("PRODUCTION_AUTHORIZATION_FORBIDDEN")
+        if int(doc.get("requested_by_usuario_id") or 0) != actor["usuario_id"] or str(doc.get("requested_by_email") or "").strip().lower() != actor["email"]:
+            raise GateAuthorizationError("CONSENT_IMPERSONATION_FORBIDDEN")
+        if doc.get("domain") != domain:
+            raise GateAuthorizationError("CONSENT_DOMAIN_MISMATCH")
+        if doc.get("gate_id") != gate_id:
+            raise GateAuthorizationError("CONSENT_GATE_MISMATCH")
+        # The original digest and both attestations are still verified below.
+        constraints = {**constraints, **{key: doc.get(key) for key in (
+            "authorization_id", "authorized_operations", "allowed_paths",
+            "source_sha256", "base_head_sha", "ttl_hours",
+            "verification_tests", "rollback_plan",
+        )}}
+        request = {**request, "objective": doc.get("objective"), "constraints": constraints}
+        _assert_no_auth_prompt_injection(request, "authorization_request")
+
     # PREFLIGHT or MATERIALIZE: validate all 18 bound invariants!
     objective = str(request.get("objective") or constraints.get("objective") or "").strip()
     if len(objective) < 10 or len(objective) > 2000:

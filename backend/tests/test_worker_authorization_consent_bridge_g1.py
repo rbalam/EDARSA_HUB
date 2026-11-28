@@ -295,8 +295,21 @@ def test_legitimate_e2e_consent_bridge_oauth_mcp_and_6_tools_preserved(tmp_path,
     assert st["ready_to_materialize"] is True
     assert st["approval_id"] == approved["approval_id"]
 
-    # 8. MATERIALIZE succeeds cleanly with consent_request_id and consumes consent
-    mat = wis.submit_objective(mat_req, current_user=actor)
+    # 8. ID-only materialization recovers the original signed scope.
+    minimal = {**mat_req, "objective": "Recuperar alcance aprobado por identificador.", "constraints": {
+        "action": "MATERIALIZE", "gate_id": mat_req["constraints"]["gate_id"], "consent_request_id": cid,
+    }}
+    with pytest.raises(lr.GateAuthorizationError, match="AUTHORIZATION_OPERATIONS_REQUIRED"):
+        lr.preflight_gate_authorization_lifecycle(
+            {**minimal, "constraints": {**minimal["constraints"], "allowed_paths": ["backend/modules/other.py"]}},
+            current_user=actor, state_root=qroot, repo_root=repo,
+        )
+    with pytest.raises(lr.GateAuthorizationError, match="CONSENT_GATE_MISMATCH"):
+        lr.preflight_gate_authorization_lifecycle(
+            {**minimal, "constraints": {**minimal["constraints"], "gate_id": "OTHER-GATE"}},
+            current_user=actor, state_root=qroot, repo_root=repo,
+        )
+    mat = wis.submit_objective(minimal, current_user=actor)
     assert mat["status"] == "MATERIALIZED"
     assert mat["gate_id"] == "DEMO-BRIDGE-G1"
     assert mat["authorization_id"] == "GO-DEMO-BRIDGE-G1-20261127"
