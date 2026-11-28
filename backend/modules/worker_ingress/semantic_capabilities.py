@@ -2144,6 +2144,7 @@ _CAPABILITY_METADATA["SQL_READONLY_PROFILE_AUDIT"] = {
 # Declarative extension of the existing Capability Registry (no parallel MCP server/tool).
 # A handoff request NEVER grants permissions to target_domain.
 _CROSS_DOMAIN_HANDOFF_ALLOWED_CONSTRAINTS: tuple[str, ...] = (
+    "existing_handoff_id",
     "acceptance_criteria",
     "authorization_ref",
     "auto_dispatch",

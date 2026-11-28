@@ -990,3 +990,49 @@ def test_informational_notice_does_not_allow_executable_handoff(tmp_path, monkey
     with pytest.raises(handoff_mod.HandoffSecurityError, match="NOT_INFORMATIONAL_NOTICE"):
         handoff_mod.preflight_supersede_cross_domain_handoff(
             req, current_user=actor, state_root=qroot)
+
+
+
+def test_aap05_successor_by_id_preserves_original(tmp_path):
+    qroot = _setup_queue(tmp_path)
+    actor = _canonical_actor()
+    request = {
+        "objective": "Existing dependency for ID based continuation",
+        "bounded_context": "SQL_RBAC_019", "mode": "READ_ONLY",
+        "capability": "CROSS_DOMAIN_HANDOFF_REGISTER",
+        "request_key": "aap05-original",
+        "constraints": {"target_domain": "WORKER_CONTROL_PLANE", "auto_dispatch": False},
+    }
+    initial = handoff_mod.validate_handoff_constraints(request, current_user=actor, state_root=qroot)
+    record = dict(initial["candidate"])
+    record.update(lifecycle_state="RETURNED_TO_SOURCE", dependency_satisfied=True,
+                  certification="CERTIFIED_READ_ONLY", resolution_job_id="CERTIFIED-ORIGINAL")
+    handoff_mod.save_handoff(record, state_root=qroot)
+    hid = record["handoff_id"]
+    spec = {"objective": "Read existing certified evidence", "bounded_context": "SQL_RBAC_019",
+            "mode": "READ_ONLY", "capability": "WORKER_RESULT_DETAIL_READ",
+            "request_key": "aap05-successor", "constraints": {"source_job_id": "CERTIFIED-ORIGINAL"}}
+    req = {**request, "objective": "Continue by persistent handoff identifier",
+           "request_key": "aap05-continuation",
+           "constraints": {"existing_handoff_id": hid, "successor_spec": spec}}
+    pf = handoff_mod.validate_handoff_constraints(req, current_user=actor, state_root=qroot)
+    assert pf["successor_update"] is True
+    assert handoff_mod.load_handoff(hid, state_root=qroot) == record
+    for invalid in (
+        {**req, "bounded_context": "FINANZAS"},
+        {**req, "mode": "MUTATION"},
+        {**req, "constraints": {**req["constraints"], "auto_dispatch": True}},
+        {**req, "constraints": {**req["constraints"], "successor_spec": {**spec, "mode": "MUTATION"}}},
+    ):
+        with pytest.raises(handoff_mod.HandoffError):
+            handoff_mod.validate_handoff_constraints(invalid, current_user=actor, state_root=qroot)
+    result = handoff_mod.register_cross_domain_handoff(req, current_user=actor, state_root=qroot)
+    assert result["status"] == "SUCCESSOR_REGISTERED"
+    saved = handoff_mod.load_handoff(hid, state_root=qroot)
+    for key in ("payload_fingerprint", "request_key", "certification", "resolution_job_id", "dependency_satisfied"):
+        assert saved[key] == record[key]
+    assert handoff_mod.validate_handoff_constraints(req, current_user=actor, state_root=qroot)["duplicate"] is True
+    assert handoff_mod.register_cross_domain_handoff(req, current_user=actor, state_root=qroot)["status"] == "EXISTS"
+    conflict = {**req, "constraints": {**req["constraints"], "successor_spec": {**spec, "request_key": "different-successor"}}}
+    with pytest.raises(handoff_mod.HandoffConflictError):
+        handoff_mod.validate_handoff_constraints(conflict, current_user=actor, state_root=qroot)

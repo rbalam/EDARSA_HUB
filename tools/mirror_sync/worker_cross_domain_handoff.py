@@ -2082,10 +2082,54 @@ def validate_handoff_constraints(
         "auto_dispatch",
         "resolution_job_id",
         "successor_spec",
+        "existing_handoff_id",
     }
     extra = sorted(set(constraints.keys()) - allowed_keys)
     if extra:
         raise HandoffError(f"SEMANTIC_CONSTRAINTS_UNSUPPORTED:{','.join(extra)}")
+
+    if "existing_handoff_id" in constraints:
+        # A narrow ID-based continuation, never a new handoff or mutation successor.
+        if set(constraints) != {"existing_handoff_id", "successor_spec"}:
+            raise HandoffSecurityError("HANDOFF_SUCCESSOR_ID_FIELDS_INVALID")
+        if handoff_mode != "READ_ONLY":
+            raise HandoffSecurityError("HANDOFF_SUCCESSOR_ID_READ_ONLY_REQUIRED")
+        hid = _validate_optional_token(constraints.get("existing_handoff_id"), field_name="existing_handoff_id", job_id_style=True)
+        if not hid:
+            raise HandoffError("HANDOFF_ID_INVALID")
+        existing = load_handoff(hid, state_root=qroot)
+        if existing is None:
+            raise HandoffError("HANDOFF_NOT_FOUND")
+        if existing.get("handoff_id") != hid or existing.get("source_domain") != source_domain:
+            raise HandoffSecurityError("HANDOFF_SUCCESSOR_DOMAIN_MISMATCH")
+        target = validate_domain_token(existing.get("target_domain"), field_name="target_domain")
+        if existing.get("production_allowed") is not False or existing.get("production_touched") is not False:
+            raise HandoffSecurityError("HANDOFF_PRODUCTION_FORBIDDEN")
+        if existing.get("handoff_mode") != "READ_ONLY":
+            raise HandoffSecurityError("HANDOFF_SUCCESSOR_ID_READ_ONLY_REQUIRED")
+        _verify_caller_rbac_and_scope(
+            current_user=current_user, requester=requester, source_domain=source_domain,
+            target_domain=target, handoff_mode="READ_ONLY",
+        )
+        spec = _validate_successor_spec(constraints.get("successor_spec"), source_domain=source_domain)
+        if spec is None or spec["mode"] != "READ_ONLY" or spec.get("authorization_ref"):
+            raise HandoffSecurityError("HANDOFF_SUCCESSOR_ID_READ_ONLY_REQUIRED")
+        fingerprint = existing.get("payload_fingerprint")
+        if not fingerprint:
+            raise HandoffSecurityError("HANDOFF_SUCCESSOR_PAYLOAD_CONFLICT")
+        prior = existing.get("successor_spec")
+        if prior is not None and prior != spec:
+            raise HandoffConflictError("HANDOFF_SUCCESSOR_ALREADY_DEFINED")
+        if prior is None:
+            _validate_existing_successor_registration(existing, spec, current_user=current_user)
+        return {
+            "duplicate": prior is not None, "pending_update": False,
+            "successor_update": prior is None, "existing_handoff": existing,
+            "successor_spec": spec, "handoff_id": hid,
+            "dependency_id": existing["dependency_id"], "source_domain": source_domain,
+            "target_domain": target, "request_key": existing["request_key"],
+            "payload_fingerprint": fingerprint, "production_touched": False,
+        }
 
     target_domain = validate_domain_token(constraints.get("target_domain"), field_name="target_domain")
     request_key = _clean(request.get("request_key"))
