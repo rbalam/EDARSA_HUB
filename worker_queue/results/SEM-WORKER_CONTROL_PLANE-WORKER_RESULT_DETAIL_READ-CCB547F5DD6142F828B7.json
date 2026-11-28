@@ -1,0 +1,54 @@
+{
+  "base_sha": "17bc3254bb3d93a9d7e065ea5e8a2ba99c93d501",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_RESULT_DETAIL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-11-28T07:40:53Z",
+  "execution_base_sha": "17bc3254bb3d93a9d7e065ea5e8a2ba99c93d501",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SEM-WORKER_CONTROL_PLANE-WORKER_RESULT_DETAIL_READ-CCB547F5DD6142F828B7",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-11-28T07:41:57Z",
+  "quality_gate": "PASS",
+  "result_detail_evidence": {
+    "checks": [
+      {
+        "blockers": [],
+        "certification": "PENDING_AUDIT_EVIDENCE",
+        "evidence_availability": {
+          "maintenance_history_evidence": "NOT_APPLICABLE",
+          "repository_contract_evidence": "NOT_APPLICABLE",
+          "sql_readonly_evidence": "NOT_APPLICABLE",
+          "worker_result_semantic_evidence": "NOT_APPLICABLE"
+        },
+        "evidence_status": "ABSENT",
+        "evidence_truncated": false,
+        "failed_checks": [],
+        "files_changed": [
+          "backend/tests/test_worker_authorization_consent_bridge_g1.py",
+          "tools/mirror_sync/worker_lifecycle_recovery.py"
+        ],
+        "percent_complete": 95,
+        "production_touched": false,
+        "quality_gate": "PASS",
+        "result_status": "INTEGRATED",
+        "source_completed_at_utc": "2026-11-28T07:39:08Z",
+        "source_job_id": "SEM-REQUEST-7ED87E560B0E0EF4ABB40540",
+        "source_terminal": true,
+        "tests": "PASS"
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-11-28T07:40:53Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
