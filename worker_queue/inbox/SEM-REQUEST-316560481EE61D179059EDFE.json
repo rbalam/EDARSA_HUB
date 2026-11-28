@@ -1,0 +1,111 @@
+{
+  "actions": [
+    {
+      "expected_occurrences": 1,
+      "old_text": "    \"ESCALATED_HUMAN_REQUIRED\",\n})\n\nACTIVE_HANDOFF_STATES",
+      "path": "tools/mirror_sync/worker_cross_domain_handoff.py",
+      "replacement": "    \"ESCALATED_HUMAN_REQUIRED\",\n    \"SUPERSEDED\",\n})\n\nACTIVE_HANDOFF_STATES",
+      "source_sha256": "b29518475356857a77d653515e0b229f6e691df85491ac87c2ffdb2609c8f127",
+      "type": "replace_text"
+    },
+    {
+      "anchor": "def reconcile_cross_domain_handoffs(\n",
+      "path": "tools/mirror_sync/worker_cross_domain_handoff.py",
+      "replacement": "def preflight_supersede_cross_domain_handoff(\n    request: Mapping[str, Any],\n    *,\n    current_user: Mapping[str, Any] | None = None,\n    requester: Mapping[str, Any] | None = None,\n    state_root: Path | None = None,\n) -> dict[str, Any]:\n    \"\"\"Fail-closed administrative supersession, distinct from certified resolution.\"\"\"\n    qroot = state_root or _default_state_root()\n    if _clean(request.get(\"mode\")).upper() != \"MUTATION\":\n        raise HandoffSecurityError(\"HANDOFF_SUPERSEDE_MUTATION_MODE_REQUIRED\")\n    c = request.get(\"constraints\")\n    if not isinstance(c, Mapping):\n        raise HandoffError(\"SEMANTIC_CONSTRAINTS_INVALID\")\n    _assert_no_secrets(c, \"handoff_supersede\")\n    _assert_no_untrusted_prompt(c, \"handoff_supersede\")\n    hid = _validate_optional_token(c.get(\"handoff_id\"), field_name=\"handoff_id\", job_id_style=True)\n    jid = _validate_optional_token(c.get(\"superseded_by_job_id\"), field_name=\"superseded_by_job_id\", job_id_style=True)\n    source_id = _validate_optional_token(c.get(\"expected_source_job_id\"), field_name=\"expected_source_job_id\", job_id_style=True)\n    auth = _validate_optional_token(c.get(\"authorization_ref\"), field_name=\"authorization_ref\", job_id_style=False)\n    reason = _clean(c.get(\"reason\"))\n    if not all((hid, jid, source_id, auth)):\n        raise HandoffSecurityError(\"HANDOFF_SUPERSEDE_PROOFS_REQUIRED\")\n    if not 12 <= len(reason) <= 500:\n        raise HandoffError(\"HANDOFF_SUPERSEDE_REASON_INVALID\")\n    handoff = load_handoff(hid, state_root=qroot)\n    if handoff is None:\n        raise HandoffError(\"HANDOFF_NOT_FOUND\")\n    if handoff.get(\"production_allowed\") is not False or handoff.get(\"production_touched\") is not False:\n        raise HandoffSecurityError(\"HANDOFF_PRODUCTION_FORBIDDEN\")\n    source = _clean(handoff.get(\"source_domain\")).upper()\n    owner = _clean(handoff.get(\"target_domain\")).upper()\n    if _clean(request.get(\"bounded_context\")).upper() != owner:\n        raise HandoffSecurityError(\"HANDOFF_SUPERSEDE_OWNER_DOMAIN_MISMATCH\")\n    if _clean(handoff.get(\"source_job_id\")) != source_id:\n        raise HandoffSecurityError(\"HANDOFF_SUPERSEDE_SOURCE_JOB_MISMATCH\")\n    try:\n        actor = lifecycle_rec._validate_authorized_actor_identity(current_user)\n    except lifecycle_rec.GateAuthorizationError as exc:\n        raise HandoffSecurityError(f\"HANDOFF_SUPERSEDE_SQL_RBAC_DENIED:{exc}\") from exc\n    _verify_caller_rbac_and_scope(\n        current_user=current_user, requester=requester,\n        source_domain=source, target_domain=owner, handoff_mode=\"MUTATION\",\n    )\n    auth_check = _verify_authorization_ref(\n        auth, source_domain=owner, target_domain=owner,\n        handoff_mode=\"MUTATION\", state_root=qroot,\n    )\n    if auth_check.get(\"verified\") is not True:\n        raise HandoffSecurityError(\"HANDOFF_SUPERSEDE_AUTHORIZATION_UNVERIFIED\")\n    evidence = _verify_terminal_result_certification(jid, state_root=qroot)\n    if evidence is None or evidence.get(\"status\") != \"INTEGRATED\" or evidence.get(\"certification\") != \"CERTIFIED\":\n        raise HandoffSecurityError(\"HANDOFF_SUPERSEDE_SOURCE_NOT_CERTIFIED\")\n    raw = _read_json_safe(qroot / \"results\" / f\"{jid}.json\") or {}\n    if _extract_result_bounded_context(raw, jid, qroot) != source:\n        raise HandoffSecurityError(\"HANDOFF_SUPERSEDE_SOURCE_DOMAIN_MISMATCH\")\n    state = _clean(handoff.get(\"lifecycle_state\")).upper()\n    if state == \"SUPERSEDED\":\n        if (_clean(handoff.get(\"superseded_by_job_id\")) != jid\n            or _clean(handoff.get(\"supersession_reason\")) != reason\n            or _clean(handoff.get(\"supersession_authorization_ref\")) != auth):\n            raise HandoffConflictError(\"HANDOFF_SUPERSEDE_IDEMPOTENCY_CONFLICT\")\n        return {\"status\": \"EXISTS\", \"handoff_id\": hid, \"superseded_by_job_id\": jid,\n                \"duplicate_prevented\": True, \"production_touched\": False}\n    if (state not in UPDATABLE_HANDOFF_STATES or handoff.get(\"dependency_satisfied\") is True\n        or _clean(handoff.get(\"resolution_job_id\")) or handoff.get(\"source_resumed\") is True):\n        raise HandoffConflictError(\"HANDOFF_SUPERSEDE_STATE_NOT_ELIGIBLE\")\n    return {\"status\": \"PREFLIGHT_READY\", \"handoff_id\": hid, \"superseded_by_job_id\": jid,\n            \"actor_email\": actor[\"email\"], \"authorization_ref\": auth,\n            \"reason\": reason, \"evidence\": evidence, \"production_touched\": False}\n\n\ndef supersede_cross_domain_handoff(\n    request: Mapping[str, Any],\n    *,\n    current_user: Mapping[str, Any] | None = None,\n    requester: Mapping[str, Any] | None = None,\n    state_root: Path | None = None,\n) -> dict[str, Any]:\n    \"\"\"Retire a stale handoff atomically; preserve NOT_CERTIFIED and original history.\"\"\"\n    import fcntl\n    qroot = state_root or _default_state_root()\n    initial = preflight_supersede_cross_domain_handoff(\n        request, current_user=current_user, requester=requester, state_root=qroot,\n    )\n    if initial[\"status\"] == \"EXISTS\":\n        return initial\n    hid = initial[\"handoff_id\"]\n    with open(handoffs_dir(qroot) / f\"{hid}.supersede.lock\", \"a+\", encoding=\"utf-8\") as fh:\n        fcntl.flock(fh.fileno(), fcntl.LOCK_EX)\n        try:\n            pf = preflight_supersede_cross_domain_handoff(\n                request, current_user=current_user, requester=requester, state_root=qroot,\n            )\n            if pf[\"status\"] == \"EXISTS\":\n                return pf\n            record = load_handoff(hid, state_root=qroot)\n            if record is None:\n                raise HandoffError(\"HANDOFF_NOT_FOUND\")\n            ev = pf[\"evidence\"]\n            _ensure_history(record)\n            record.update(\n                lifecycle_state=\"SUPERSEDED\",\n                superseded_by_job_id=pf[\"superseded_by_job_id\"],\n                supersession_reason=pf[\"reason\"],\n                supersession_authorization_ref=pf[\"authorization_ref\"],\n                supersession_evidence={\n                    \"job_id\": ev[\"job_id\"], \"certification\": ev[\"certification\"],\n                    \"certification_source\": ev[\"certification_source\"],\n                    \"commit_sha\": ev.get(\"commit_sha\"),\n                    \"published_result_commit\": ev.get(\"published_result_commit\"),\n                    \"production_touched\": False,\n                },\n                superseded_at_utc=utc_now(), next_allowed_action=\"NONE\",\n                requires_human_intervention=False, human_intervention_reason=None,\n                has_executor=False, executor_status=\"SUPERSEDED\",\n                dependency_satisfied=False, certification=\"NOT_CERTIFIED\",\n                resolution_job_id=None, source_resumed=False,\n                exception_code=None, exception_reason=None,\n            )\n            record[\"updated_at_utc\"] = record[\"superseded_at_utc\"]\n            _append_history(record, \"ADMINISTRATIVELY_SUPERSEDED\",\n                            actor_email=pf[\"actor_email\"],\n                            details={\"superseded_by_job_id\": pf[\"superseded_by_job_id\"],\n                                     \"authorization_ref\": pf[\"authorization_ref\"],\n                                     \"reason\": pf[\"reason\"]})\n            save_handoff(record, state_root=qroot)\n            return {\"status\": \"SUPERSEDED\", \"handoff_id\": hid,\n                    \"superseded_by_job_id\": pf[\"superseded_by_job_id\"],\n                    \"lifecycle_state\": \"SUPERSEDED\", \"dependency_satisfied\": False,\n                    \"certification\": \"NOT_CERTIFIED\", \"production_touched\": False}\n        finally:\n            fcntl.flock(fh.fileno(), fcntl.LOCK_UN)\n\n\n",
+      "source_sha256": "a68ab927641702d797bdc6ca4bf705d9603a3207119cccb3f419bcd5f004c344",
+      "type": "insert_before"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "if state in {\"BLOCKED_CYCLE\", \"BLOCKED_POLICY\"}:\n            continue",
+      "path": "tools/mirror_sync/worker_cross_domain_handoff.py",
+      "replacement": "if state in {\"BLOCKED_CYCLE\", \"BLOCKED_POLICY\", \"SUPERSEDED\"}:\n            continue",
+      "source_sha256": "4483c4615ca63f0c8d59421af07c074d07abae4da58f6125c0c6c0a52d4689e9",
+      "type": "replace_text"
+    },
+    {
+      "anchor": "# P2A: Autonomous Gate Authorization Lifecycle capability",
+      "path": "backend/modules/worker_ingress/semantic_capabilities.py",
+      "replacement": "# Administrative supersession remains distinct from terminal certification.\n_SUPERSEDE_CONSTRAINTS = (\n    \"handoff_id\", \"superseded_by_job_id\", \"expected_source_job_id\",\n    \"authorization_ref\", \"reason\",\n)\n\n\ndef _handoff_supersede_submitter(\n    request: Mapping[str, Any], requester: Mapping[str, Any],\n) -> dict[str, Any]:\n    from tools.mirror_sync import worker_cross_domain_handoff as hm\n    from . import service as ingress\n    user = request.get(\"_current_user\") if isinstance(request.get(\"_current_user\"), Mapping) else None\n    clean = {k: v for k, v in request.items() if not str(k).startswith(\"_\")}\n    try:\n        return hm.supersede_cross_domain_handoff(\n            clean, current_user=user, requester=dict(requester), state_root=ingress.STATE_ROOT,\n        )\n    except hm.HandoffError as exc:\n        raise SemanticCapabilityError(str(exc)) from exc\n\n\nregister_capability(\n    SemanticCapability(\n        code=\"CROSS_DOMAIN_HANDOFF_SUPERSEDE\",\n        modes=(\"MUTATION\",),\n        submitter=_handoff_supersede_submitter,\n    )\n)\n_CAPABILITY_METADATA[\"CROSS_DOMAIN_HANDOFF_SUPERSEDE\"] = {\n    \"bounded_context_rule\": \"ANY_VALID_TOKEN\",\n    \"required_constraints\": _SUPERSEDE_CONSTRAINTS,\n    \"allowed_constraints\": _SUPERSEDE_CONSTRAINTS,\n    \"allowed_path_roots\": (),\n}\n\n\n",
+      "source_sha256": "6598b447e5ea16ddea338a0dc5d6bfb795906474949a63bbfc2fac6e390e0b67",
+      "type": "insert_before"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "{\"CROSS_DOMAIN_HANDOFF_REGISTER\", \"GATE_AUTHORIZATION_LIFECYCLE\"}",
+      "path": "backend/modules/worker_ingress/service.py",
+      "replacement": "{\"CROSS_DOMAIN_HANDOFF_REGISTER\", \"CROSS_DOMAIN_HANDOFF_SUPERSEDE\", \"GATE_AUTHORIZATION_LIFECYCLE\"}",
+      "source_sha256": "ad2f663ce2f0dc08ea901c04c470edf8ad0ffac0d455296d28100de8ad488217",
+      "type": "replace_text"
+    },
+    {
+      "anchor": "        if capability_code == \"CROSS_DOMAIN_HANDOFF_REGISTER\":\n",
+      "path": "backend/modules/worker_ingress/service.py",
+      "replacement": "        if capability_code == \"CROSS_DOMAIN_HANDOFF_SUPERSEDE\":\n            return {\n                \"status\": result.get(\"status\"),\n                \"job_id\": result.get(\"handoff_id\"),\n                \"handoff_id\": result.get(\"handoff_id\"),\n                \"superseded_by_job_id\": result.get(\"superseded_by_job_id\"),\n                \"dependency_satisfied\": False,\n                \"certification\": \"NOT_CERTIFIED\",\n                \"duplicate_prevented\": bool(result.get(\"duplicate_prevented\")),\n                \"production_touched\": False,\n                \"capability\": capability_code, \"bounded_context\": bounded_context,\n            }\n\n",
+      "source_sha256": "887ee1e08027b1ab5f283d363ef4aa7792a89097630dd34b8ca7728fe7dc8358",
+      "type": "insert_before"
+    },
+    {
+      "anchor": "            if capability.code == \"CROSS_DOMAIN_HANDOFF_REGISTER\":\n",
+      "path": "backend/modules/worker_ingress/service.py",
+      "replacement": "            if capability.code == \"CROSS_DOMAIN_HANDOFF_SUPERSEDE\":\n                from tools.mirror_sync import worker_cross_domain_handoff as hm\n                try:\n                    checked = hm.preflight_supersede_cross_domain_handoff(\n                        payload, current_user=current_user, state_root=STATE_ROOT,\n                    )\n                except hm.HandoffError as exc:\n                    raise WorkerIngressError(str(exc)) from exc\n                return {\n                    \"schema\": \"edarsahub.worker-semantic-preflight.v1\",\n                    \"ok\": True, \"status\": checked[\"status\"],\n                    \"handoff_id\": checked[\"handoff_id\"],\n                    \"superseded_by_job_id\": checked[\"superseded_by_job_id\"],\n                    \"duplicate_detected\": bool(checked.get(\"duplicate_prevented\")),\n                    \"capability\": capability.code, \"bounded_context\": bounded_context,\n                    \"mode\": requested_mode,\n                    \"production_allowed\": False, \"production_touched\": False,\n                }\n",
+      "source_sha256": "19e027d8609c9e8fcad6803ad9c3d6ebe5c8edd8085b8d894e3befe4e3b9069a",
+      "type": "insert_before"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "    with pytest.raises(handoff_mod.HandoffSecurityError):\n        handoff_mod.validate_handoff_constraints(cross, current_user=actor, state_root=qroot)\n",
+      "path": "backend/tests/test_worker_universal_multichat_handoff_p2.py",
+      "replacement": "    with pytest.raises(handoff_mod.HandoffSecurityError):\n        handoff_mod.validate_handoff_constraints(cross, current_user=actor, state_root=qroot)\n\n\n\ndef test_supersede_handoff_preserves_certification_history_and_idempotency(tmp_path, monkeypatch):\n    repo, _head, _sha = _init_git_repo(tmp_path)\n    qroot = _setup_queue(repo)\n    actor = _canonical_actor()\n    h = handoff_mod.register_cross_domain_handoff(\n        {\"objective\": \"Auditar historico Gate RBAC sin repetirlo.\",\n         \"bounded_context\": \"SEC_RBAC\", \"mode\": \"READ_ONLY\",\n         \"request_key\": \"supersede-rbac-test\",\n         \"constraints\": {\"target_domain\": \"WORKER_CONTROL_PLANE\",\n                         \"source_job_id\": \"RBAC-GATE-HISTORICO\", \"auto_dispatch\": False}},\n        current_user=actor, state_root=qroot,\n    )\n    hid = h[\"handoff_id\"]\n    _write_certified_result(qroot, \"SEM-CERT-RBAC-TEST\", domain=\"SEC_RBAC\",\n                            status=\"INTEGRATED\", certification=\"CERTIFIED\")\n    req = {\"objective\": \"Cerrar administrativamente Gate historico con evidencia.\",\n           \"bounded_context\": \"WORKER_CONTROL_PLANE\", \"mode\": \"MUTATION\",\n           \"capability\": \"CROSS_DOMAIN_HANDOFF_SUPERSEDE\",\n           \"constraints\": {\n               \"handoff_id\": hid, \"expected_source_job_id\": \"RBAC-GATE-HISTORICO\",\n               \"superseded_by_job_id\": \"SEM-CERT-RBAC-TEST\",\n               \"authorization_ref\": \"GO-TEST-SUPERSEDE\",\n               \"reason\": \"El trabajo posterior ya fue integrado y certificado.\"}}\n    assert \"CROSS_DOMAIN_HANDOFF_SUPERSEDE\" in sem_caps.registered_capabilities()\n    with pytest.raises(handoff_mod.HandoffSecurityError, match=\"AUTHORIZATION\"):\n        handoff_mod.preflight_supersede_cross_domain_handoff(\n            req, current_user=actor, state_root=qroot)\n    monkeypatch.setattr(handoff_mod, \"_verify_authorization_ref\",\n                        lambda *args, **kwargs: {\"verified\": True})\n    assert handoff_mod.preflight_supersede_cross_domain_handoff(\n        req, current_user=actor, state_root=qroot)[\"status\"] == \"PREFLIGHT_READY\"\n    assert handoff_mod.supersede_cross_domain_handoff(\n        req, current_user=actor, state_root=qroot)[\"status\"] == \"SUPERSEDED\"\n    saved = handoff_mod.load_handoff(hid, state_root=qroot)\n    assert saved[\"lifecycle_state\"] == \"SUPERSEDED\"\n    assert saved[\"dependency_satisfied\"] is False\n    assert saved[\"certification\"] == \"NOT_CERTIFIED\"\n    assert saved[\"resolution_job_id\"] is None\n    assert saved[\"source_resumed\"] is False\n    assert saved[\"supersession_evidence\"][\"certification\"] == \"CERTIFIED\"\n    assert saved[\"history\"][-1][\"event\"] == \"ADMINISTRATIVELY_SUPERSEDED\"\n    n = len(saved[\"history\"])\n    assert handoff_mod.supersede_cross_domain_handoff(\n        req, current_user=actor, state_root=qroot)[\"status\"] == \"EXISTS\"\n    assert len(handoff_mod.load_handoff(hid, state_root=qroot)[\"history\"]) == n\n    handoff_mod.reconcile_cross_domain_handoffs(state_root=qroot, max_dispatches=0)\n    assert handoff_mod.load_handoff(hid, state_root=qroot)[\"lifecycle_state\"] == \"SUPERSEDED\"\n    with pytest.raises(handoff_mod.HandoffSecurityError, match=\"SOURCE_JOB_MISMATCH\"):\n        handoff_mod.preflight_supersede_cross_domain_handoff(\n            {**req, \"constraints\": {**req[\"constraints\"], \"expected_source_job_id\": \"OTHER-GATE\"}},\n            current_user=actor, state_root=qroot)\n    with pytest.raises(handoff_mod.HandoffSecurityError, match=\"SQL_RBAC_DENIED\"):\n        handoff_mod.preflight_supersede_cross_domain_handoff(\n            req, current_user={**actor, \"permissions\": [\"worker:submit\"]}, state_root=qroot)\n",
+      "source_sha256": "90448aba3b21a6ce957a3aec77ffdfc7e8cac4a4d5fc25c16b88a6a5e7657da4",
+      "type": "replace_text"
+    }
+  ],
+  "authorization_ref": "GO-WK60-HANDOFF-SUPERSEDED-LIFECYCLE-R1-20261128",
+  "checks": [
+    {
+      "paths": [
+        "tools/mirror_sync/worker_cross_domain_handoff.py",
+        "backend/modules/worker_ingress/semantic_capabilities.py",
+        "backend/modules/worker_ingress/service.py",
+        "backend/tests/test_worker_universal_multichat_handoff_p2.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_universal_multichat_handoff_p2.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-316560481EE61D179059EDFE",
+  "mode": "MUTATION",
+  "objective": "Implementar transicion administrativa SUPERSEDED en el handoff canonico, con RBAC SQL, vinculacion a resultado CERTIFIED/INTEGRATED del dominio de origen, idempotencia, auditoria y fail closed. No ejecutar cierre real de handoffs ni modificar Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "WORKER_CONTROL_PLANE",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "WORKER_CONTROL_PLANE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
