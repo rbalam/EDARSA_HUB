@@ -1,0 +1,50 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 40,
+        "paths": [
+          "backend/core/server_registry.py",
+          "backend/core/connections/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "create_server",
+          "update_server",
+          "check_duplicate_server",
+          "tipo_conexion",
+          "server_registry",
+          "server_create",
+          "remote_desktop"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-A900F2D5AC782B4E142D904A",
+  "mode": "READ_ONLY",
+  "objective": "Gate 2A.2 READ_ONLY: identificar contrato exacto de escritura canónica de servidores, tipos de conexión, permisos efectivos, deduplicación y asignación empresa/sucursal para integrar parser RDP certificado sin crear catálogo paralelo, sin ejecutar red ni SQL externo y sin repetir auditoría de integrations_center.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COMUNICACIONES_DNS_REMOTE",
+    "conflict_domains": [
+      "COMUNICACIONES_DNS_REMOTE"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
