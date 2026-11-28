@@ -1,0 +1,46 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 40,
+        "paths": [
+          "backend/modules/",
+          "backend/tests/"
+        ],
+        "search_terms": [
+          "COA_Expedientes",
+          "RepositorioExpedientesCaja",
+          "idempotencia_ambito",
+          "COA_ExpedienteReferencias"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "SEM-REQUEST-8AB12BBD26C0B346291BFD52",
+  "mode": "READ_ONLY",
+  "objective": "[HANDOFF HO-COMERCIALPOS-COA-5C597971BD3982BA COMERCIAL_POS->COA] CAJAS Gate12 -> COA: bounded READ_ONLY ownership and idempotency compatibility of COA_Expedientes schema with Cajas expediente service; existing SQL certified, no reuse of PublicUUID as idempotency, no DDL/DML or Production.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "remote-canonical-ingress",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "edarsahub-worker-ingress"
+  },
+  "scheduling": {
+    "bounded_context": "COA",
+    "conflict_domains": [
+      "COA"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
