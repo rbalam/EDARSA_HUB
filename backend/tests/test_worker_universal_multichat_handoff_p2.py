@@ -1036,3 +1036,40 @@ def test_aap05_successor_by_id_preserves_original(tmp_path):
     conflict = {**req, "constraints": {**req["constraints"], "successor_spec": {**spec, "request_key": "different-successor"}}}
     with pytest.raises(handoff_mod.HandoffConflictError):
         handoff_mod.validate_handoff_constraints(conflict, current_user=actor, state_root=qroot)
+
+
+
+def test_p0b_standalone_rbac_bootstrap_and_denial():
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[2]
+    code = """
+import sys
+from pathlib import Path
+from unittest.mock import patch
+root = Path.cwd()
+sys.path.insert(0, str(root / 'tools' / 'mirror_sync'))
+import worker_cross_domain_handoff as hm
+sys.path[:] = [p for p in sys.path if p and Path(p).resolve() not in {root, root / 'backend'}]
+# Intercept only the SQL lookup after the canonical imports succeed.
+import builtins
+original_import = builtins.__import__
+def guarded_import(name, *args, **kwargs):
+    result = original_import(name, *args, **kwargs)
+    if name == 'modules.auth.repository':
+        from unittest.mock import Mock
+        result.AuthRepository.get_user_by_email = Mock(return_value=None)
+    return result
+with patch('builtins.__import__', side_effect=guarded_import):
+    try:
+        hm._resolve_canonical_sql_service_identity('test@example.invalid')
+    except hm.HandoffSecurityError as exc:
+        assert str(exc).endswith('USER_NOT_FOUND_OR_INACTIVE'), str(exc)
+    else:
+        raise AssertionError('Missing SQL identity must be denied')
+assert str(root / 'backend') in sys.path
+"""
+    proc = subprocess.run([sys.executable, "-I", "-c", code], cwd=root, capture_output=True, text=True, timeout=60)
+    assert proc.returncode == 0, proc.stderr

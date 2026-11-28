@@ -597,10 +597,16 @@ def _resolve_canonical_sql_service_identity(email: str) -> dict[str, Any]:
         raise HandoffSecurityError("HANDOFF_DISPATCH_IDENTITY_UNVERIFIABLE:INVALID_EMAIL")
 
     try:
+        # The standalone control plane does not run the backend bootstrap.
+        # Reuse the canonical requester module before importing backend services.
+        import sys
+        repo_root = str(Path(__file__).resolve().parents[2])
+        if repo_root not in sys.path:
+            sys.path.insert(0, repo_root)
+        from tools.mirror_sync.worker_requester_rbac import authorize_requester
         from modules.auth.repository import AuthRepository
         from core.rbac_sql.service import RBACSQLService
         from modules.worker_mcp.oauth_server import resolve_identity_scopes
-        from tools.mirror_sync.worker_requester_rbac import authorize_requester
     except Exception as exc:
         raise HandoffSecurityError(
             f"HANDOFF_DISPATCH_IDENTITY_UNVERIFIABLE:CANONICAL_RBAC_UNAVAILABLE:{type(exc).__name__}"
